@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:claude.com)",
+      "Bash(npm run dev:*)",
+      "Bash(echo:*)",
+      "Bash(python3:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm ls:*)",
+      "WebFetch(domain:www.goodreads.com)",
+      "WebFetch(domain:www.azquotes.com)",
+      "WebFetch(domain:www.oliverburkeman.com)",
+      "WebFetch(domain:nextbigideaclub.com)",
+      "Bash(lsof:*)",
+      "WebFetch(domain:data.rijksmuseum.nl)",
+      "Bash(gh auth status)",
+      "Bash(git --version)",
+      "Bash(git init)",
+      "Bash(git add -A)"
+    ]
+  }
+}

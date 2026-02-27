@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  /* Vandaag warm stone palette */
+  --color-canvas: #FAF9F7;
+  --color-card: #FFFFFF;
+  --color-charcoal: #2A2724;
+  --color-stone: #7A746A;
+  --color-border: #E8E4DD;
+  --color-border-light: #F0EEEB;
+
+  /* Category colors */
+  --color-cat-marketing: #3B7A6E;
+  --color-cat-marketing-bg: #E8F2EF;
+  --color-cat-ops: #B8863A;
+  --color-cat-ops-bg: #F5EFE3;
+  --color-cat-admin: #8B8680;
+  --color-cat-admin-bg: #F0EEEB;
+  --color-cat-finance: #4A6FA5;
+  --color-cat-finance-bg: #E9EFF6;
+  --color-cat-product: #7E5BA5;
+  --color-cat-product-bg: #F0EAF6;
+  --color-cat-personal: #A5635E;
+  --color-cat-personal-bg: #F6ECEA;
+
+  /* Citadel / Dark mode */
+  --color-citadel-bg: #1A1816;
+  --color-citadel-text: #D4CFC5;
+  --color-citadel-accent: #8BA898;
+
+  /* Status colors */
+  --color-amber: #B8863A;
+  --color-red: #A5635E;
+  --color-green: #3B7A6E;
+
+  /* Status badge colors (waiting / avoided) */
+  --color-status-amber-bg: #F5EBE0;
+  --color-status-amber-text: #9A7045;
+  --color-status-red-bg: #F2E4E4;
+  --color-status-red-text: #8B5A5A;
+
+  /* Typography */
+  --font-serif: "Fraunces", serif;
+  --font-sans: "DM Sans", sans-serif;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(42, 39, 36, 0.06), 0 1px 2px rgba(42, 39, 36, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(42, 39, 36, 0.08), 0 2px 4px rgba(42, 39, 36, 0.04);
+  --shadow-modal: 0 20px 60px rgba(42, 39, 36, 0.15), 0 8px 20px rgba(42, 39, 36, 0.08);
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-canvas);
+  color: var(--color-charcoal);
+  margin: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* BlockNote editor overrides */
+.vandaag-editor .bn-editor {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-charcoal);
+  padding: 0;
+}
+.vandaag-editor .bn-block-group {
+  padding: 0;
+}
+.vandaag-editor .bn-container {
+  border: none;
+  box-shadow: none;
+}
+.vandaag-editor [class*="blockNote"] {
+  --bn-colors-editor-background: transparent;
+  --bn-colors-editor-text: var(--color-charcoal);
+  --bn-font-family: var(--font-sans);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-stone);
+}

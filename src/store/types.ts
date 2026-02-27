@@ -1,0 +1,102 @@
+import type { StoreApi } from 'zustand'
+import type { Project, Task, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule } from '../types'
+
+export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
+
+export interface VandaagState {
+  // Data
+  projects: Project[]
+  orphanTasks: Task[]
+  recurringTasks: Task[]
+  settings: Settings
+  dailyPlan: DailyPlan | null
+  tomorrowPlan: DailyPlan | null
+  personalRules: string[]
+
+  // UI state
+  swapModalProjectId: string | null
+  swapModalTargetStatus: 'in_progress' | 'waiting' | null  // destination for the incoming project
+  waitingPromptProjectId: string | null  // triggers "Op wie wacht je?" modal
+  resolveWaitingProjectId: string | null  // triggers "Resolve waiting-on" modal
+  activeView: ActiveView
+  greetedDate: string | null  // YYYY-MM-DD — last date the morning screen was dismissed
+  artworkLoadingIds: string[]  // project IDs with in-flight artwork fetch (not persisted)
+
+  // Navigation
+  setActiveView: (view: ActiveView) => void
+  setGreetedDate: (date: string) => void
+  markArtworkLoading: (id: string) => void
+  unmarkArtworkLoading: (id: string) => void
+
+  // Project actions
+  addProject: (title: string, category: Category) => string
+  updateProject: (id: string, updates: Partial<Omit<Project, 'id'>>) => void
+  deleteProject: (id: string) => void
+  moveProject: (id: string, newStatus: ProjectStatus) => boolean
+  reorderProjects: (activeId: string, overId: string) => void
+  setSwapModalProjectId: (id: string | null) => void
+  setWaitingPromptProjectId: (id: string | null) => void
+  setResolveWaitingProjectId: (id: string | null) => void
+
+  // Task actions
+  addTask: (title: string, projectId?: string) => string
+  updateTask: (taskId: string, projectId: string | undefined, updates: Partial<Omit<Task, 'id'>>) => void
+  deleteTask: (taskId: string, projectId?: string) => void
+  addOrphanTask: (title: string) => string
+  updateOrphanTask: (taskId: string, updates: Partial<Omit<Task, 'id'>>) => void
+  deleteOrphanTask: (taskId: string) => void
+  moveOrphanTaskToProject: (taskId: string, projectId: string) => void
+
+  // Recurring tasks
+  addRecurringTask: (title: string, rule: RecurrenceRule, projectId?: string) => string
+  updateRecurringTask: (taskId: string, updates: Partial<Omit<Task, 'id'>>) => void
+  deleteRecurringTask: (taskId: string) => void
+  getTodayRecurringTasks: () => Task[]
+
+  // Checkbox-task sync
+  syncCheckboxTasks: (projectId: string, checkboxTexts: string[]) => void
+
+  // Progress tracking
+  recordDayWorked: (projectId: string) => void
+
+  // Daily plan actions
+  setDailyPlan: (plan: DailyPlan) => void
+  setDeepBlock: (projectId: string, intention?: string) => void
+  clearDeepBlock: () => void
+  addShortTask: (taskId: string) => void
+  removeShortTask: (taskId: string) => void
+  addMaintenanceTask: (taskId: string) => void
+  removeMaintenanceTask: (taskId: string) => void
+  addQuickMaintenanceTask: (title: string) => string
+  completeDailyPlan: () => void
+  getTodayPlan: () => DailyPlan | null
+  isDayComplete: () => boolean
+
+  // Planning mode (tomorrow)
+  setTomorrowDeepBlock: (projectId: string, intention?: string) => void
+  clearTomorrowDeepBlock: () => void
+  addTomorrowShortTask: (taskId: string) => void
+  removeTomorrowShortTask: (taskId: string) => void
+  addTomorrowMaintenanceTask: (taskId: string) => void
+  removeTomorrowMaintenanceTask: (taskId: string) => void
+  lockInTomorrow: () => void
+  clearTomorrowPlan: () => void
+  loadTomorrowPlanIfReady: () => boolean
+
+  // Personal rules
+  addPersonalRule: (rule: string) => void
+  updatePersonalRule: (index: number, rule: string) => void
+  deletePersonalRule: (index: number) => void
+
+  // Settings actions
+  updateSettings: (updates: Partial<Settings>) => void
+  updateSettingsWithLimitTracking: (limit: number) => void
+
+  // Selectors
+  getProjectsByStatus: (status: ProjectStatus) => Project[]
+  getInProgressCount: () => number
+  getWipCount: () => number  // in_progress + waiting combined
+}
+
+export type StoreSet = StoreApi<VandaagState>['setState']
+export type StoreGet = StoreApi<VandaagState>['getState']
