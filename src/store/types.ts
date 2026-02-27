@@ -67,6 +67,10 @@ export interface VandaagState {
   removeShortTask: (taskId: string) => void
   addMaintenanceTask: (taskId: string) => void
   removeMaintenanceTask: (taskId: string) => void
+  addShortProject: (projectId: string) => void
+  removeShortProject: (projectId: string) => void
+  addMaintenanceProject: (projectId: string) => void
+  removeMaintenanceProject: (projectId: string) => void
   addQuickMaintenanceTask: (title: string) => string
   completeDailyPlan: () => void
   getTodayPlan: () => DailyPlan | null
@@ -79,6 +83,10 @@ export interface VandaagState {
   removeTomorrowShortTask: (taskId: string) => void
   addTomorrowMaintenanceTask: (taskId: string) => void
   removeTomorrowMaintenanceTask: (taskId: string) => void
+  addTomorrowShortProject: (projectId: string) => void
+  removeTomorrowShortProject: (projectId: string) => void
+  addTomorrowMaintenanceProject: (projectId: string) => void
+  removeTomorrowMaintenanceProject: (projectId: string) => void
   lockInTomorrow: () => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean

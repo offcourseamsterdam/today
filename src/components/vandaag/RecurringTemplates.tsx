@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus, RotateCcw, Trash2, ChevronDown, Pencil } from 'lucide-react'
 import { useStore } from '../../store'
 import type { Task } from '../../types'
-import { describeRule, buildRule } from '../../lib/recurrence'
+import { describeRule, buildRule, getMostRecentOccurrenceDate } from '../../lib/recurrence'
 import {
   RecurrenceFrequencyPicker,
   type RecurrenceFormState,
@@ -60,6 +60,7 @@ export function RecurringTemplates() {
       monthlyWeek: rule.monthlyWeekday?.week ?? 1,
       monthlyDay: rule.monthlyWeekday?.day ?? 1,
       customDays: rule.customDays ?? [],
+      annualDates: rule.annualDates ?? [],
     })
     setEditProjectId(task.projectId)
   }
@@ -136,7 +137,7 @@ export function RecurringTemplates() {
                     <div className="flex gap-2 items-center pt-1">
                       <button
                         type="submit"
-                        disabled={!editTitle.trim() || (editForm.freq === 'custom' && editForm.customDays.length === 0)}
+                        disabled={!editTitle.trim() || (editForm.freq === 'custom' && editForm.customDays.length === 0) || (editForm.freq === 'annual_dates' && editForm.annualDates.length === 0)}
                         className="text-[11px] px-3 py-1.5 rounded-[4px] bg-charcoal text-canvas
                           disabled:opacity-40 transition-opacity"
                       >
@@ -153,6 +154,21 @@ export function RecurringTemplates() {
                   </form>
                 ) : (
                   <div className="flex items-center gap-2 py-1 group">
+                    {/* Missed indicator dot */}
+                    {(() => {
+                      const mostRecent = task.recurrenceRule
+                        ? getMostRecentOccurrenceDate(task.recurrenceRule, new Date())
+                        : null
+                      const isMissed = mostRecent !== null && (task.lastCompletedDate ?? '') < mostRecent
+                      return isMissed ? (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                          title="Last occurrence not completed"
+                        />
+                      ) : (
+                        <span className="w-1.5 h-1.5 flex-shrink-0" />
+                      )
+                    })()}
                     <span className="text-[12px] text-charcoal flex-1 leading-tight">{task.title}</span>
                     {task.projectId && (
                       <span className="text-[9px] text-stone/30 truncate max-w-[80px]">
@@ -214,7 +230,7 @@ export function RecurringTemplates() {
               <div className="flex gap-2 items-center pt-1">
                 <button
                   type="submit"
-                  disabled={!newTitle.trim() || (addForm.freq === 'custom' && addForm.customDays.length === 0)}
+                  disabled={!newTitle.trim() || (addForm.freq === 'custom' && addForm.customDays.length === 0) || (addForm.freq === 'annual_dates' && addForm.annualDates.length === 0)}
                   className="text-[11px] px-3 py-1.5 rounded-[4px] bg-charcoal text-canvas
                     disabled:opacity-40 transition-opacity"
                 >

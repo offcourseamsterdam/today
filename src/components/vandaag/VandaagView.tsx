@@ -17,6 +17,7 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
   const dailyPlan = useStore(s => s.dailyPlan)
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
   const projects = useStore(s => s.projects)
+  const orphanTasks = useStore(s => s.orphanTasks)
 
   const shortTaskIds = dailyPlan?.shortTasks || []
   const maintenanceTaskIds = dailyPlan?.maintenanceTasks || []
@@ -25,6 +26,14 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
 
   const hasDeepBlock = !!deepBlockProjectId
   const quote = getTodayQuote()
+
+  // Stats
+  const missionCriticalDays = projects
+    .filter(p => p.missionCritical)
+    .reduce((sum, p) => sum + p.daysWorked, 0)
+  const uncomfortableDone =
+    projects.flatMap(p => p.tasks).filter(t => t.isUncomfortable && t.status === 'done').length +
+    orphanTasks.filter(t => t.isUncomfortable && t.status === 'done').length
 
   const tiersActive = [
     hasDeepBlock,
@@ -108,6 +117,22 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
             <ShortTasks />
             <MaintenanceTier />
           </div>
+
+          {/* Stats */}
+          {(missionCriticalDays > 0 || uncomfortableDone > 0) && (
+            <div className="mt-3 flex items-center gap-5 px-1">
+              {missionCriticalDays > 0 && (
+                <span className="text-[11px] text-stone/50">
+                  Mission critical: <span className="text-stone">{missionCriticalDays} days worked</span>
+                </span>
+              )}
+              {uncomfortableDone > 0 && (
+                <span className="text-[11px] text-stone/50">
+                  Uncomfortable tasks done: <span className="text-stone">{uncomfortableDone}</span>
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Quote + day done */}
           <div className="mt-4 flex items-end justify-between gap-6">

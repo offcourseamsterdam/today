@@ -147,6 +147,12 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
             if (dow !== day) return false
             return Math.ceil(dom / 7) === week
           }
+          case 'annual_dates': {
+            const dates = rule.annualDates ?? []
+            const month = now.getMonth() + 1
+            const day = now.getDate()
+            return dates.some(d => d.month === month && d.day === day)
+          }
           default: return false
         }
       })

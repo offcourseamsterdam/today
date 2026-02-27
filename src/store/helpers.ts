@@ -22,13 +22,19 @@ export function getTomorrowString(): string {
 export function ensureTodayPlan(state: VandaagState): DailyPlan {
   const today = getTodayString()
   if (state.dailyPlan && state.dailyPlan.date === today) {
-    return state.dailyPlan
+    return {
+      shortProjects: [],
+      maintenanceProjects: [],
+      ...state.dailyPlan,
+    }
   }
   return {
     date: today,
     deepBlock: { projectId: '' },
     shortTasks: [],
+    shortProjects: [],
     maintenanceTasks: [],
+    maintenanceProjects: [],
     isComplete: false,
   }
 }
@@ -36,13 +42,19 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
 export function ensureTomorrowPlan(state: VandaagState): DailyPlan {
   const tomorrow = getTomorrowString()
   if (state.tomorrowPlan && state.tomorrowPlan.date === tomorrow) {
-    return state.tomorrowPlan
+    return {
+      shortProjects: [],
+      maintenanceProjects: [],
+      ...state.tomorrowPlan,
+    }
   }
   return {
     date: tomorrow,
     deepBlock: { projectId: '' },
     shortTasks: [],
+    shortProjects: [],
     maintenanceTasks: [],
+    maintenanceProjects: [],
     isComplete: false,
   }
 }
@@ -78,6 +90,24 @@ export function makePlanActions(
     removeMaintenanceTask: (taskId: string) => {
       const plan = ensurePlan(get())
       setPlan({ ...plan, maintenanceTasks: plan.maintenanceTasks.filter(id => id !== taskId) })
+    },
+    addShortProject: (projectId: string) => {
+      const plan = ensurePlan(get())
+      if (plan.shortProjects.includes(projectId)) return
+      setPlan({ ...plan, shortProjects: [...plan.shortProjects, projectId] })
+    },
+    removeShortProject: (projectId: string) => {
+      const plan = ensurePlan(get())
+      setPlan({ ...plan, shortProjects: plan.shortProjects.filter(id => id !== projectId) })
+    },
+    addMaintenanceProject: (projectId: string) => {
+      const plan = ensurePlan(get())
+      if (plan.maintenanceProjects.includes(projectId)) return
+      setPlan({ ...plan, maintenanceProjects: [...plan.maintenanceProjects, projectId] })
+    },
+    removeMaintenanceProject: (projectId: string) => {
+      const plan = ensurePlan(get())
+      setPlan({ ...plan, maintenanceProjects: plan.maintenanceProjects.filter(id => id !== projectId) })
     },
   }
 }

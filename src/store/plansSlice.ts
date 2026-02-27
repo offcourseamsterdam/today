@@ -24,6 +24,10 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     removeShortTask: todayActions.removeShortTask,
     addMaintenanceTask: todayActions.addMaintenanceTask,
     removeMaintenanceTask: todayActions.removeMaintenanceTask,
+    addShortProject: todayActions.addShortProject,
+    removeShortProject: todayActions.removeShortProject,
+    addMaintenanceProject: todayActions.addMaintenanceProject,
+    removeMaintenanceProject: todayActions.removeMaintenanceProject,
 
     addQuickMaintenanceTask: (title: string): string => {
       const id = uuid()
@@ -79,6 +83,10 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     removeTomorrowShortTask: tomorrowActions.removeShortTask,
     addTomorrowMaintenanceTask: tomorrowActions.addMaintenanceTask,
     removeTomorrowMaintenanceTask: tomorrowActions.removeMaintenanceTask,
+    addTomorrowShortProject: tomorrowActions.addShortProject,
+    removeTomorrowShortProject: tomorrowActions.removeShortProject,
+    addTomorrowMaintenanceProject: tomorrowActions.addMaintenanceProject,
+    removeTomorrowMaintenanceProject: tomorrowActions.removeMaintenanceProject,
 
     lockInTomorrow: () => {
       const state = get()

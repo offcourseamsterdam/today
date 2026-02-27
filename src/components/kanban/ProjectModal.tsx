@@ -223,6 +223,24 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             </button>
           </div>
 
+          {/* Mission critical toggle */}
+          <div className="flex items-center justify-between py-3 border-t border-border">
+            <div>
+              <span className="text-[13px] text-charcoal">Mission critical</span>
+              <span className="text-[11px] text-stone ml-2">This project must not stall</span>
+            </div>
+            <button
+              onClick={() => updateProject(project.id, { missionCritical: !project.missionCritical })}
+              className={`w-9 h-5 rounded-full transition-colors duration-200 relative
+                ${project.missionCritical ? 'bg-red' : 'bg-border'}`}
+            >
+              <span
+                className={`absolute top-0.5 w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-200
+                  ${project.missionCritical ? 'translate-x-4' : 'translate-x-0.5'}`}
+              />
+            </button>
+          </div>
+
           {/* Project afronden toggle */}
           <div className="flex items-center justify-between py-3 border-t border-border">
             <div>

@@ -4,7 +4,7 @@ export type ProjectStatus = 'backlog' | 'in_progress' | 'waiting' | 'done'
 
 export type TaskStatus = 'backlog' | 'vandaag' | 'done' | 'dropped'
 
-export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'monthly_date' | 'monthly_weekday' | 'custom'
+export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'monthly_date' | 'monthly_weekday' | 'custom' | 'annual_dates'
 
 export interface RecurrenceRule {
   frequency: RecurrenceFrequency
@@ -14,6 +14,7 @@ export interface RecurrenceRule {
     week: number                 // 1–5
     day: number                  // 0=Sun..6=Sat
   }
+  annualDates?: { month: number; day: number }[]  // for 'annual_dates' (e.g. Apr 1, Oct 1)
 }
 
 export interface WaitingOn {
@@ -33,6 +34,7 @@ export interface Project {
   bodyContent: string // Rich text (BlockNote JSON)
   tasks: Task[]
   trackProgress: boolean
+  missionCritical?: boolean
   daysWorked: number
   daysWorkedLog: string[] // Array of date strings (YYYY-MM-DD)
   waitingOn?: WaitingOn[]
@@ -51,6 +53,7 @@ export interface Task {
   fromEditor?: boolean  // true = created/managed by notes editor checkboxes
   createdAt: string
   completedAt?: string
+  lastCompletedDate?: string  // YYYY-MM-DD — last date this recurring task was checked off
 }
 
 export interface DailyPlan {
@@ -60,7 +63,9 @@ export interface DailyPlan {
     intention?: string
   }
   shortTasks: string[] // Task IDs (up to ~3)
+  shortProjects: string[] // Project IDs added to short tasks tier
   maintenanceTasks: string[] // Task IDs (from recurring + manual)
+  maintenanceProjects: string[] // Project IDs added to maintenance tier
   isComplete: boolean
   completedAt?: string
 }
