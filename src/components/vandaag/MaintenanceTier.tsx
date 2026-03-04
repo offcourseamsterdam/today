@@ -1,23 +1,36 @@
 import { useState } from 'react'
-import { Plus, X, RotateCcw } from 'lucide-react'
+import { format } from 'date-fns'
+import { Plus, X, RotateCcw, ChevronDown } from 'lucide-react'
 import { useStore } from '../../store'
+import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
+import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { RecurringTemplates } from './RecurringTemplates'
 
 export function MaintenanceTier() {
+  const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const recurringTasks = useStore(s => s.recurringTasks)
   const addQuickMaintenanceTask = useStore(s => s.addQuickMaintenanceTask)
   const updateOrphanTask = useStore(s => s.updateOrphanTask)
+  const updateRecurringTask = useStore(s => s.updateRecurringTask)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
-  const { maintenanceTaskIds, addMaintenanceTask, removeMaintenanceTask } = useTodayPlan()
+  const {
+    maintenanceTaskIds, addMaintenanceTask, removeMaintenanceTask,
+    maintenanceProjectIds, addMaintenanceProject, removeMaintenanceProject,
+  } = useTodayPlan()
 
   const [quickAdd, setQuickAdd] = useState('')
   const [completedToday, setCompletedToday] = useState<Set<string>>(new Set())
+  const [showProjectPicker, setShowProjectPicker] = useState(false)
+
+  const inProgressProjects = projects.filter(p => p.status === 'in_progress')
+  const availableProjects = inProgressProjects.filter(p => !maintenanceProjectIds.includes(p.id))
 
   function handleToggle(taskId: string) {
+    const wasCompleted = completedToday.has(taskId)
     setCompletedToday(prev => {
       const next = new Set(prev)
       if (next.has(taskId)) next.delete(taskId)
@@ -27,8 +40,14 @@ export function MaintenanceTier() {
     const orphan = orphanTasks.find(t => t.id === taskId)
     if (orphan) {
       updateOrphanTask(taskId, {
-        status: completedToday.has(taskId) ? 'vandaag' : 'done',
-        completedAt: completedToday.has(taskId) ? undefined : new Date().toISOString(),
+        status: wasCompleted ? 'vandaag' : 'done',
+        completedAt: wasCompleted ? undefined : new Date().toISOString(),
+      })
+    }
+    const recurring = recurringTasks.find(t => t.id === taskId)
+    if (recurring) {
+      updateRecurringTask(taskId, {
+        lastCompletedDate: wasCompleted ? undefined : format(new Date(), 'yyyy-MM-dd'),
       })
     }
   }
@@ -76,6 +95,26 @@ export function MaintenanceTier() {
 
       {/* Today's tasks */}
       <div className="min-h-[40px] flex-1">
+        {/* Selected projects */}
+        {maintenanceProjectIds.map(projectId => {
+          const project = projects.find(p => p.id === projectId)
+          if (!project) return null
+          return (
+            <ProjectTaskPreview
+              key={projectId}
+              project={project}
+              onRemove={() => removeMaintenanceProject(projectId)}
+              previewCount={1}
+            />
+          )
+        })}
+
+        {/* Divider between projects and tasks when both present */}
+        {maintenanceProjectIds.length > 0 && maintenanceTaskIds.length > 0 && (
+          <div className="border-t border-border/30 my-1" />
+        )}
+
+        {/* Individual tasks */}
         {maintenanceTaskIds.map(taskId => {
           const task = findTaskById(taskId, [], orphanTasks, recurringTasks)?.task ?? null
           if (!task) return null
@@ -101,12 +140,51 @@ export function MaintenanceTier() {
             </div>
           )
         })}
-        {slotsUsed === 0 && (
+        {maintenanceProjectIds.length === 0 && slotsUsed === 0 && (
           <div className="text-[12px] text-stone/30 py-2 italic">
             The recurring work that keeps life running
           </div>
         )}
       </div>
+
+      {/* Add project picker */}
+      <button
+        onClick={() => setShowProjectPicker(!showProjectPicker)}
+        className="w-full flex items-center justify-between px-3 py-2 mt-2 rounded-[6px]
+          border border-dashed border-stone/15 text-[12px] text-stone/40
+          hover:border-stone/25 hover:text-stone/60 transition-all"
+      >
+        <span>Add project</span>
+        <ChevronDown size={12} className={`transition-transform ${showProjectPicker ? 'rotate-180' : ''}`} />
+      </button>
+
+      {showProjectPicker && (
+        <div className="mt-2 max-h-[180px] overflow-y-auto animate-slide-up">
+          {availableProjects.length === 0 ? (
+            <div className="text-[12px] text-stone/40 py-3 text-center italic">
+              No projects available
+            </div>
+          ) : (
+            availableProjects.map(p => {
+              const config = CATEGORY_CONFIG[p.category]
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => { addMaintenanceProject(p.id); setShowProjectPicker(false) }}
+                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-[6px]
+                    text-left hover:bg-canvas transition-colors"
+                >
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: config.color }}
+                  />
+                  <span className="text-[12px] text-charcoal truncate">{p.title}</span>
+                </button>
+              )
+            })
+          )}
+        </div>
+      )}
 
       {/* Quick add */}
       <form onSubmit={handleQuickAdd} className="flex items-center gap-2 mt-2 mb-4">

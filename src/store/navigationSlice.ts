@@ -8,5 +8,7 @@ export function makeNavigationActions(set: StoreSet, _get: StoreGet) {
       set(state => ({ artworkLoadingIds: [...state.artworkLoadingIds, id] })),
     unmarkArtworkLoading: (id: string) =>
       set(state => ({ artworkLoadingIds: state.artworkLoadingIds.filter(i => i !== id) })),
+    showToast: (projectId: string) => set({ toastProjectId: projectId }),
+    dismissToast: () => set({ toastProjectId: null }),
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, X, Target } from 'lucide-react'
+import { ChevronDown, X, Target, Check } from 'lucide-react'
 import { useStore } from '../../store'
 import { CategoryBadge } from '../ui/CategoryBadge'
 import { PomodoroTimer } from './PomodoroTimer'
@@ -15,6 +15,8 @@ export function DeepBlock({ onEnterCitadel }: DeepBlockProps) {
   const setDeepBlock = useStore(s => s.setDeepBlock)
   const clearDeepBlock = useStore(s => s.clearDeepBlock)
   const recordDayWorked = useStore(s => s.recordDayWorked)
+  const setOpenProjectId = useStore(s => s.setOpenProjectId)
+  const showToast = useStore(s => s.showToast)
 
   const [showPicker, setShowPicker] = useState(false)
   const [intention, setIntention] = useState(dailyPlan?.deepBlock.intention || '')
@@ -31,6 +33,12 @@ export function DeepBlock({ onEnterCitadel }: DeepBlockProps) {
   }
 
   function handleClear() {
+    clearDeepBlock()
+    setIntention('')
+  }
+
+  function handleDoneForToday() {
+    if (selectedProject) showToast(selectedProject.id)
     clearDeepBlock()
     setIntention('')
   }
@@ -67,17 +75,31 @@ export function DeepBlock({ onEnterCitadel }: DeepBlockProps) {
                   </div>
                 )}
                 <div>
-                  <div className="text-[15px] font-medium text-charcoal">{selectedProject.title}</div>
+                  <button
+                    onClick={() => setOpenProjectId(selectedProject.id)}
+                    className="text-[15px] font-medium text-charcoal hover:text-stone transition-colors text-left"
+                  >
+                    {selectedProject.title}
+                  </button>
                   <CategoryBadge category={selectedProject.category} />
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleClear}
-              className="text-stone/40 hover:text-stone transition-colors p-1"
-            >
-              <X size={14} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleDoneForToday}
+                title="Done for today"
+                className="text-stone/30 hover:text-green transition-colors p-1"
+              >
+                <Check size={14} />
+              </button>
+              <button
+                onClick={handleClear}
+                className="text-stone/40 hover:text-stone transition-colors p-1"
+              >
+                <X size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Intention */}
@@ -117,10 +139,14 @@ export function DeepBlock({ onEnterCitadel }: DeepBlockProps) {
                 .filter(t => t.status !== 'done')
                 .slice(0, 3)
                 .map(task => (
-                  <div key={task.id} className="text-[12px] text-stone py-0.5 flex items-center gap-2">
+                  <button
+                    key={task.id}
+                    onClick={() => setOpenProjectId(selectedProject.id)}
+                    className="text-[12px] text-stone py-0.5 flex items-center gap-2 hover:text-charcoal transition-colors w-full text-left"
+                  >
                     <span className="w-1.5 h-1.5 rounded-full bg-stone/20 flex-shrink-0" />
                     {task.title}
-                  </div>
+                  </button>
                 ))}
               {selectedProject.tasks.filter(t => t.status !== 'done').length > 3 && (
                 <div className="text-[11px] text-stone/40 mt-1">

@@ -3,20 +3,23 @@ import { format, getDay } from 'date-fns'
 import type { Task, RecurrenceRule } from '../types'
 import type { StoreSet, StoreGet } from './types'
 
+/** Factory that builds a Task with sensible defaults. Spread overrides last. */
+function createTask(overrides: Partial<Task> & { id: string; title: string }): Task {
+  return {
+    status: 'backlog',
+    isRecurring: false,
+    isUncomfortable: false,
+    createdAt: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
 export function makeTaskActions(set: StoreSet, get: StoreGet) {
   return {
     // Task actions (within projects)
     addTask: (title: string, projectId?: string): string => {
       const id = uuid()
-      const task: Task = {
-        id,
-        projectId,
-        title,
-        status: 'backlog',
-        isRecurring: false,
-        isUncomfortable: false,
-        createdAt: new Date().toISOString(),
-      }
+      const task = createTask({ id, title, projectId })
       if (projectId) {
         set(state => ({
           projects: state.projects.map(p =>
@@ -59,14 +62,7 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
 
     addOrphanTask: (title: string): string => {
       const id = uuid()
-      const task: Task = {
-        id,
-        title,
-        status: 'backlog',
-        isRecurring: false,
-        isUncomfortable: false,
-        createdAt: new Date().toISOString(),
-      }
+      const task = createTask({ id, title })
       set(state => ({ orphanTasks: [...state.orphanTasks, task] }))
       return id
     },
@@ -101,16 +97,7 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
     // Recurring tasks
     addRecurringTask: (title: string, rule: RecurrenceRule, projectId?: string): string => {
       const id = uuid()
-      const task: Task = {
-        id,
-        projectId,
-        title,
-        status: 'backlog',
-        isRecurring: true,
-        recurrenceRule: rule,
-        isUncomfortable: false,
-        createdAt: new Date().toISOString(),
-      }
+      const task = createTask({ id, title, projectId, isRecurring: true, recurrenceRule: rule })
       set(state => ({ recurringTasks: [...state.recurringTasks, task] }))
       return id
     },
@@ -147,6 +134,12 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
             if (dow !== day) return false
             return Math.ceil(dom / 7) === week
           }
+          case 'annual_dates': {
+            const dates = rule.annualDates ?? []
+            const month = now.getMonth() + 1
+            const day = now.getDate()
+            return dates.some(d => d.month === month && d.day === day)
+          }
           default: return false
         }
       })
@@ -177,16 +170,7 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
             if (existingManual) return { ...existingManual, fromEditor: true }
 
             // New checkbox → create new task
-            return {
-              id: uuid(),
-              projectId,
-              title: text,
-              status: 'backlog' as const,
-              isRecurring: false,
-              isUncomfortable: false,
-              fromEditor: true,
-              createdAt: new Date().toISOString(),
-            }
+            return createTask({ id: uuid(), title: text, projectId, fromEditor: true })
           })
 
           // Remove manual tasks that got promoted to editor tasks (to avoid duplicates)

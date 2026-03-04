@@ -1,28 +1,23 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
+import { useStore } from '../../store'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
-import { UncomfortableBadge } from '../ui/UncomfortableBadge'
-import type { Project, Task } from '../../types'
+import { CATEGORY_CONFIG } from '../../types'
+import type { Project } from '../../types'
 
 interface ProjectModalTasksProps {
   project: Project
-  categoryConfig: { color: string }
-  addTask: (title: string, projectId: string) => void
-  updateTask: (id: string, projectId: string, updates: Partial<Task>) => void
-  deleteTask: (id: string, projectId: string) => void
-  recordDayWorked: (projectId: string) => void
 }
 
-export function ProjectModalTasks({
-  project,
-  categoryConfig,
-  addTask,
-  updateTask,
-  deleteTask,
-  recordDayWorked,
-}: ProjectModalTasksProps) {
+export function ProjectModalTasks({ project }: ProjectModalTasksProps) {
+  const addTask = useStore(s => s.addTask)
+  const updateTask = useStore(s => s.updateTask)
+  const deleteTask = useStore(s => s.deleteTask)
+  const recordDayWorked = useStore(s => s.recordDayWorked)
+
   const [newTaskTitle, setNewTaskTitle] = useState('')
 
+  const categoryConfig = CATEGORY_CONFIG[project.category]
   const doneTasks = project.tasks.filter(t => t.status === 'done').length
   const totalTasks = project.tasks.length
 
@@ -90,13 +85,15 @@ export function ProjectModalTasks({
           >
             {task.title}
           </span>
-          {task.isUncomfortable && <UncomfortableBadge />}
           <button
             onClick={() => handleToggleUncomfortable(task.id)}
-            title={task.isUncomfortable ? 'Remove "avoided" tag' : 'Mark as task you\'ve been avoiding'}
-            className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-[10px] text-stone transition-all px-1"
+            title={task.isUncomfortable ? 'Remove uncomfortable flag' : 'Mark as uncomfortable'}
+            className={`group/pill flex-shrink-0 flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border transition-all
+              ${task.isUncomfortable
+                ? 'bg-amber-50 text-amber-600 border-amber-200'
+                : 'border-stone/20 text-stone/30 hover:border-stone/40 hover:text-stone/50'}`}
           >
-            {task.isUncomfortable ? '✓' : '!'}
+            🔥<span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-200 group-hover/pill:max-w-[80px]">&nbsp;uncomfortable</span>
           </button>
           <button
             onClick={() => deleteTask(task.id, project.id)}

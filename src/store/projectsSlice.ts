@@ -111,5 +111,17 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
     setSwapModalProjectId: (id: string | null) => set({ swapModalProjectId: id }),
     setWaitingPromptProjectId: (id: string | null) => set({ waitingPromptProjectId: id }),
     setResolveWaitingProjectId: (id: string | null) => set({ resolveWaitingProjectId: id }),
+
+    getMissionCriticalStats: () => {
+      const { projects, orphanTasks } = get()
+      return {
+        missionCriticalDays: projects
+          .filter(p => p.missionCritical)
+          .reduce((sum, p) => sum + p.daysWorked, 0),
+        uncomfortableDone:
+          projects.flatMap(p => p.tasks).filter(t => t.isUncomfortable && t.status === 'done').length +
+          orphanTasks.filter(t => t.isUncomfortable && t.status === 'done').length,
+      }
+    },
   }
 }

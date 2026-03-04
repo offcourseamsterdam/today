@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Sun, Moon, BookOpen, Cloud, CloudOff, Loader2, LogOut, CloudAlert } from 'lucide-react'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
+import { ProjectModal } from './components/kanban/ProjectModal'
+import { Toast } from './components/ui/Toast'
 import { VandaagView } from './components/vandaag/VandaagView'
 import { PlanningMode } from './components/vandaag/PlanningMode'
 import { CitadelMode } from './components/vandaag/CitadelMode'
@@ -16,6 +18,10 @@ import { useFirestoreSync } from './hooks/useFirestoreSync'
 function App() {
   const activeView = useStore(s => s.activeView)
   const setActiveView = useStore(s => s.setActiveView)
+  const openProjectId = useStore(s => s.openProjectId)
+  const setOpenProjectId = useStore(s => s.setOpenProjectId)
+  const projects = useStore(s => s.projects)
+  const openProject = openProjectId ? (projects.find(p => p.id === openProjectId) ?? null) : null
   const completeDailyPlan = useStore(s => s.completeDailyPlan)
   const loadTomorrowPlanIfReady = useStore(s => s.loadTomorrowPlanIfReady)
   const greetedDate = useStore(s => s.greetedDate)
@@ -171,6 +177,14 @@ function App() {
           />
         </div>
       </>
+
+      {/* Project modal — openable from any view */}
+      {openProject && (
+        <ProjectModal project={openProject} onClose={() => setOpenProjectId(null)} />
+      )}
+
+      {/* Update-reminder toast */}
+      <Toast />
 
       {/* Main content */}
       <main className="px-6 pb-12">

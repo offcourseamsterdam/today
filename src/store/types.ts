@@ -14,6 +14,8 @@ export interface VandaagState {
   personalRules: string[]
 
   // UI state
+  openProjectId: string | null  // project modal open from any view
+  toastProjectId: string | null  // project ID for update-reminder toast
   swapModalProjectId: string | null
   swapModalTargetStatus: 'in_progress' | 'waiting' | null  // destination for the incoming project
   waitingPromptProjectId: string | null  // triggers "Op wie wacht je?" modal
@@ -23,6 +25,9 @@ export interface VandaagState {
   artworkLoadingIds: string[]  // project IDs with in-flight artwork fetch (not persisted)
 
   // Navigation
+  setOpenProjectId: (id: string | null) => void
+  showToast: (projectId: string) => void
+  dismissToast: () => void
   setActiveView: (view: ActiveView) => void
   setGreetedDate: (date: string) => void
   markArtworkLoading: (id: string) => void
@@ -67,6 +72,10 @@ export interface VandaagState {
   removeShortTask: (taskId: string) => void
   addMaintenanceTask: (taskId: string) => void
   removeMaintenanceTask: (taskId: string) => void
+  addShortProject: (projectId: string) => void
+  removeShortProject: (projectId: string) => void
+  addMaintenanceProject: (projectId: string) => void
+  removeMaintenanceProject: (projectId: string) => void
   addQuickMaintenanceTask: (title: string) => string
   completeDailyPlan: () => void
   getTodayPlan: () => DailyPlan | null
@@ -79,6 +88,10 @@ export interface VandaagState {
   removeTomorrowShortTask: (taskId: string) => void
   addTomorrowMaintenanceTask: (taskId: string) => void
   removeTomorrowMaintenanceTask: (taskId: string) => void
+  addTomorrowShortProject: (projectId: string) => void
+  removeTomorrowShortProject: (projectId: string) => void
+  addTomorrowMaintenanceProject: (projectId: string) => void
+  removeTomorrowMaintenanceProject: (projectId: string) => void
   lockInTomorrow: () => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean
@@ -96,6 +109,7 @@ export interface VandaagState {
   getProjectsByStatus: (status: ProjectStatus) => Project[]
   getInProgressCount: () => number
   getWipCount: () => number  // in_progress + waiting combined
+  getMissionCriticalStats: () => { missionCriticalDays: number; uncomfortableDone: number }
 }
 
 export type StoreSet = StoreApi<VandaagState>['setState']

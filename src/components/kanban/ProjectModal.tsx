@@ -7,6 +7,7 @@ import { ProjectModalCover } from './ProjectModalCover'
 import { ProjectModalTasks } from './ProjectModalTasks'
 import { ProjectModalWaiting } from './ProjectModalWaiting'
 import { ProjectModalRecurring } from './ProjectModalRecurring'
+import { ToggleSwitch } from '../ui/ToggleSwitch'
 
 interface ProjectModalProps {
   project: Project | null
@@ -18,11 +19,7 @@ const categories = Object.entries(CATEGORY_CONFIG) as [Category, typeof CATEGORY
 export function ProjectModal({ project, onClose }: ProjectModalProps) {
   const updateProject = useStore(s => s.updateProject)
   const deleteProject = useStore(s => s.deleteProject)
-  const addTask = useStore(s => s.addTask)
-  const updateTask = useStore(s => s.updateTask)
-  const deleteTask = useStore(s => s.deleteTask)
   const syncCheckboxTasks = useStore(s => s.syncCheckboxTasks)
-  const recordDayWorked = useStore(s => s.recordDayWorked)
   const contexts = useStore(s => s.settings.contexts ?? [])
 
   const [editingTitle, setEditingTitle] = useState(false)
@@ -211,16 +208,23 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               <span className="text-[13px] text-charcoal">Track progress</span>
               <span className="text-[11px] text-stone ml-2">Count days you work on this</span>
             </div>
-            <button
-              onClick={() => updateProject(project.id, { trackProgress: !project.trackProgress })}
-              className={`w-9 h-5 rounded-full transition-colors duration-200 relative
-                ${project.trackProgress ? 'bg-green' : 'bg-border'}`}
-            >
-              <span
-                className={`absolute top-0.5 w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-200
-                  ${project.trackProgress ? 'translate-x-4' : 'translate-x-0.5'}`}
-              />
-            </button>
+            <ToggleSwitch
+              active={!!project.trackProgress}
+              onChange={() => updateProject(project.id, { trackProgress: !project.trackProgress })}
+            />
+          </div>
+
+          {/* Mission critical toggle */}
+          <div className="flex items-center justify-between py-3 border-t border-border">
+            <div>
+              <span className="text-[13px] text-charcoal">Mission critical</span>
+              <span className="text-[11px] text-stone ml-2">This project must not stall</span>
+            </div>
+            <ToggleSwitch
+              active={!!project.missionCritical}
+              onChange={() => updateProject(project.id, { missionCritical: !project.missionCritical })}
+              activeColor="bg-red"
+            />
           </div>
 
           {/* Project afronden toggle */}
@@ -229,8 +233,9 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               <span className="text-[13px] text-charcoal">Project afronden</span>
               <span className="text-[11px] text-stone ml-2">Verplaatst naar de Done List</span>
             </div>
-            <button
-              onClick={() => {
+            <ToggleSwitch
+              active={project.status === 'done'}
+              onChange={() => {
                 if (project.status === 'done') {
                   updateProject(project.id, { status: 'in_progress' })
                 } else {
@@ -238,28 +243,14 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                   onClose()
                 }
               }}
-              className={`w-9 h-5 rounded-full transition-colors duration-200 relative
-                ${project.status === 'done' ? 'bg-green' : 'bg-border'}`}
-            >
-              <span
-                className={`absolute top-0.5 w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-200
-                  ${project.status === 'done' ? 'translate-x-4' : 'translate-x-0.5'}`}
-              />
-            </button>
+            />
           </div>
 
           <ProjectModalWaiting project={project} updateProject={updateProject} />
 
           <ProjectModalRecurring project={project} />
 
-          <ProjectModalTasks
-            project={project}
-            categoryConfig={categoryConfig}
-            addTask={addTask}
-            updateTask={updateTask}
-            deleteTask={deleteTask}
-            recordDayWorked={recordDayWorked}
-          />
+          <ProjectModalTasks project={project} />
 
           {/* Delete project */}
           <div className="mt-6 pt-4 border-t border-border">
