@@ -23,9 +23,9 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
   const today = getTodayString()
   if (state.dailyPlan && state.dailyPlan.date === today) {
     return {
-      shortProjects: [],
-      maintenanceProjects: [],
       ...state.dailyPlan,
+      shortProjects: state.dailyPlan.shortProjects ?? [],
+      maintenanceProjects: state.dailyPlan.maintenanceProjects ?? [],
     }
   }
   return {
@@ -43,9 +43,9 @@ export function ensureTomorrowPlan(state: VandaagState): DailyPlan {
   const tomorrow = getTomorrowString()
   if (state.tomorrowPlan && state.tomorrowPlan.date === tomorrow) {
     return {
-      shortProjects: [],
-      maintenanceProjects: [],
       ...state.tomorrowPlan,
+      shortProjects: state.tomorrowPlan.shortProjects ?? [],
+      maintenanceProjects: state.tomorrowPlan.maintenanceProjects ?? [],
     }
   }
   return {

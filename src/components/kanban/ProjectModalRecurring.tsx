@@ -60,6 +60,7 @@ export function ProjectModalRecurring({ project }: ProjectModalRecurringProps) {
       monthlyWeek: rule.monthlyWeekday?.week ?? 1,
       monthlyDay: rule.monthlyWeekday?.day ?? 1,
       customDays: rule.customDays ?? [],
+      annualDates: rule.annualDates ?? [],
     })
   }
 

@@ -1,27 +1,23 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
+import { useStore } from '../../store'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
-import type { Project, Task } from '../../types'
+import { CATEGORY_CONFIG } from '../../types'
+import type { Project } from '../../types'
 
 interface ProjectModalTasksProps {
   project: Project
-  categoryConfig: { color: string }
-  addTask: (title: string, projectId: string) => void
-  updateTask: (id: string, projectId: string, updates: Partial<Task>) => void
-  deleteTask: (id: string, projectId: string) => void
-  recordDayWorked: (projectId: string) => void
 }
 
-export function ProjectModalTasks({
-  project,
-  categoryConfig,
-  addTask,
-  updateTask,
-  deleteTask,
-  recordDayWorked,
-}: ProjectModalTasksProps) {
+export function ProjectModalTasks({ project }: ProjectModalTasksProps) {
+  const addTask = useStore(s => s.addTask)
+  const updateTask = useStore(s => s.updateTask)
+  const deleteTask = useStore(s => s.deleteTask)
+  const recordDayWorked = useStore(s => s.recordDayWorked)
+
   const [newTaskTitle, setNewTaskTitle] = useState('')
 
+  const categoryConfig = CATEGORY_CONFIG[project.category]
   const doneTasks = project.tasks.filter(t => t.status === 'done').length
   const totalTasks = project.tasks.length
 

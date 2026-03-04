@@ -17,7 +17,7 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
   const dailyPlan = useStore(s => s.dailyPlan)
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
   const projects = useStore(s => s.projects)
-  const orphanTasks = useStore(s => s.orphanTasks)
+  const getMissionCriticalStats = useStore(s => s.getMissionCriticalStats)
 
   const shortTaskIds = dailyPlan?.shortTasks || []
   const maintenanceTaskIds = dailyPlan?.maintenanceTasks || []
@@ -28,12 +28,7 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
   const quote = getTodayQuote()
 
   // Stats
-  const missionCriticalDays = projects
-    .filter(p => p.missionCritical)
-    .reduce((sum, p) => sum + p.daysWorked, 0)
-  const uncomfortableDone =
-    projects.flatMap(p => p.tasks).filter(t => t.isUncomfortable && t.status === 'done').length +
-    orphanTasks.filter(t => t.isUncomfortable && t.status === 'done').length
+  const { missionCriticalDays, uncomfortableDone } = getMissionCriticalStats()
 
   const tiersActive = [
     hasDeepBlock,

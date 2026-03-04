@@ -9,6 +9,45 @@ import {
   EMPTY_RULE_STATE,
 } from '../ui/RecurrenceFrequencyPicker'
 
+// ─── Local helpers ────────────────────────────────────────────────────────────
+
+/** Returns true when the form has enough data to save/add. */
+function isRecurringFormValid(title: string, form: RecurrenceFormState): boolean {
+  if (!title.trim()) return false
+  if (form.freq === 'custom' && form.customDays.length === 0) return false
+  if (form.freq === 'annual_dates' && form.annualDates.length === 0) return false
+  return true
+}
+
+/** Returns true when the task's most recent scheduled occurrence hasn't been completed. */
+function isMissedOccurrence(task: Task): boolean {
+  const mostRecent = task.recurrenceRule
+    ? getMostRecentOccurrenceDate(task.recurrenceRule, new Date())
+    : null
+  return mostRecent !== null && (task.lastCompletedDate ?? '') < mostRecent
+}
+
+/** Unified form state for add and edit forms. */
+function useRecurringForm() {
+  const [title, setTitle] = useState('')
+  const [form, setForm] = useState<RecurrenceFormState>(EMPTY_RULE_STATE)
+  const [projectId, setProjectId] = useState<string | undefined>(undefined)
+
+  function patch(p: Partial<RecurrenceFormState>) {
+    setForm(prev => ({ ...prev, ...p }))
+  }
+
+  function reset() {
+    setTitle('')
+    setForm(EMPTY_RULE_STATE)
+    setProjectId(undefined)
+  }
+
+  return { title, setTitle, form, patch, projectId, setProjectId, reset }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function RecurringTemplates() {
   const recurringTasks = useStore(s => s.recurringTasks)
   const addRecurringTask = useStore(s => s.addRecurringTask)
@@ -18,42 +57,26 @@ export function RecurringTemplates() {
 
   const [showRecurring, setShowRecurring] = useState(false)
   const [showAddRecurring, setShowAddRecurring] = useState(false)
-
-  // Add form state
-  const [newTitle, setNewTitle] = useState('')
-  const [addForm, setAddForm] = useState<RecurrenceFormState>(EMPTY_RULE_STATE)
-  const [addProjectId, setAddProjectId] = useState<string | undefined>(undefined)
-
-  // Edit form state
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editForm, setEditForm] = useState<RecurrenceFormState>(EMPTY_RULE_STATE)
-  const [editProjectId, setEditProjectId] = useState<string | undefined>(undefined)
 
-  function patchAdd(patch: Partial<RecurrenceFormState>) {
-    setAddForm(prev => ({ ...prev, ...patch }))
-  }
-
-  function patchEdit(patch: Partial<RecurrenceFormState>) {
-    setEditForm(prev => ({ ...prev, ...patch }))
-  }
+  const addRec = useRecurringForm()
+  const editRec = useRecurringForm()
 
   function handleAddRecurring(e: React.FormEvent) {
     e.preventDefault()
-    if (!newTitle.trim()) return
-    const rule = buildRule(addForm)
-    addRecurringTask(newTitle.trim(), rule, addProjectId)
-    setNewTitle('')
-    setAddForm(EMPTY_RULE_STATE)
-    setAddProjectId(undefined)
+    if (!isRecurringFormValid(addRec.title, addRec.form)) return
+    const rule = buildRule(addRec.form)
+    addRecurringTask(addRec.title.trim(), rule, addRec.projectId)
+    addRec.reset()
     setShowAddRecurring(false)
   }
 
   function startEdit(task: Task) {
     const rule = task.recurrenceRule!
     setEditingId(task.id)
-    setEditTitle(task.title)
-    setEditForm({
+    editRec.setTitle(task.title)
+    editRec.setProjectId(task.projectId)
+    editRec.patch({
       freq: rule.frequency,
       weeklyDay: rule.customDays?.[0] ?? 1,
       monthlyDate: rule.monthlyDate ?? 1,
@@ -62,15 +85,15 @@ export function RecurringTemplates() {
       customDays: rule.customDays ?? [],
       annualDates: rule.annualDates ?? [],
     })
-    setEditProjectId(task.projectId)
   }
 
   function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault()
-    if (!editTitle.trim() || !editingId) return
-    const rule = buildRule(editForm)
-    updateRecurringTask(editingId, { title: editTitle.trim(), recurrenceRule: rule, projectId: editProjectId })
+    if (!isRecurringFormValid(editRec.title, editRec.form) || !editingId) return
+    const rule = buildRule(editRec.form)
+    updateRecurringTask(editingId, { title: editRec.title.trim(), recurrenceRule: rule, projectId: editRec.projectId })
     setEditingId(null)
+    editRec.reset()
   }
 
   return (
@@ -108,21 +131,21 @@ export function RecurringTemplates() {
                   >
                     <input
                       type="text"
-                      value={editTitle}
-                      onChange={e => setEditTitle(e.target.value)}
+                      value={editRec.title}
+                      onChange={e => editRec.setTitle(e.target.value)}
                       autoFocus
                       className="w-full text-[12px] text-charcoal placeholder:text-stone/30
                         bg-transparent border-none outline-none"
                     />
 
-                    <RecurrenceFrequencyPicker value={editForm} onChange={patchEdit} />
+                    <RecurrenceFrequencyPicker value={editRec.form} onChange={editRec.patch} />
 
                     {projects.length > 0 && (
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-stone/50">Project</span>
                         <select
-                          value={editProjectId ?? ''}
-                          onChange={e => setEditProjectId(e.target.value || undefined)}
+                          value={editRec.projectId ?? ''}
+                          onChange={e => editRec.setProjectId(e.target.value || undefined)}
                           className="flex-1 text-[11px] text-charcoal bg-transparent border border-border
                             rounded px-2 py-1 outline-none focus:border-stone/40 transition-colors"
                         >
@@ -137,7 +160,7 @@ export function RecurringTemplates() {
                     <div className="flex gap-2 items-center pt-1">
                       <button
                         type="submit"
-                        disabled={!editTitle.trim() || (editForm.freq === 'custom' && editForm.customDays.length === 0) || (editForm.freq === 'annual_dates' && editForm.annualDates.length === 0)}
+                        disabled={!isRecurringFormValid(editRec.title, editRec.form)}
                         className="text-[11px] px-3 py-1.5 rounded-[4px] bg-charcoal text-canvas
                           disabled:opacity-40 transition-opacity"
                       >
@@ -145,7 +168,7 @@ export function RecurringTemplates() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setEditingId(null)}
+                        onClick={() => { setEditingId(null); editRec.reset() }}
                         className="text-[11px] text-stone hover:text-charcoal transition-colors"
                       >
                         Cancel
@@ -155,20 +178,14 @@ export function RecurringTemplates() {
                 ) : (
                   <div className="flex items-center gap-2 py-1 group">
                     {/* Missed indicator dot */}
-                    {(() => {
-                      const mostRecent = task.recurrenceRule
-                        ? getMostRecentOccurrenceDate(task.recurrenceRule, new Date())
-                        : null
-                      const isMissed = mostRecent !== null && (task.lastCompletedDate ?? '') < mostRecent
-                      return isMissed ? (
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
-                          title="Last occurrence not completed"
-                        />
-                      ) : (
-                        <span className="w-1.5 h-1.5 flex-shrink-0" />
-                      )
-                    })()}
+                    {isMissedOccurrence(task) ? (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                        title="Last occurrence not completed"
+                      />
+                    ) : (
+                      <span className="w-1.5 h-1.5 flex-shrink-0" />
+                    )}
                     <span className="text-[12px] text-charcoal flex-1 leading-tight">{task.title}</span>
                     {task.projectId && (
                       <span className="text-[9px] text-stone/30 truncate max-w-[80px]">
@@ -200,22 +217,22 @@ export function RecurringTemplates() {
             <form onSubmit={handleAddRecurring} className="p-3 rounded-[8px] bg-canvas border border-border/50 space-y-3">
               <input
                 type="text"
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
+                value={addRec.title}
+                onChange={e => addRec.setTitle(e.target.value)}
                 placeholder="Task name"
                 autoFocus
                 className="w-full text-[12px] text-charcoal placeholder:text-stone/30
                   bg-transparent border-none outline-none"
               />
 
-              <RecurrenceFrequencyPicker value={addForm} onChange={patchAdd} />
+              <RecurrenceFrequencyPicker value={addRec.form} onChange={addRec.patch} />
 
               {projects.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-stone/50">Project</span>
                   <select
-                    value={addProjectId ?? ''}
-                    onChange={e => setAddProjectId(e.target.value || undefined)}
+                    value={addRec.projectId ?? ''}
+                    onChange={e => addRec.setProjectId(e.target.value || undefined)}
                     className="flex-1 text-[11px] text-charcoal bg-transparent border border-border
                       rounded px-2 py-1 outline-none focus:border-stone/40 transition-colors"
                   >
@@ -230,7 +247,7 @@ export function RecurringTemplates() {
               <div className="flex gap-2 items-center pt-1">
                 <button
                   type="submit"
-                  disabled={!newTitle.trim() || (addForm.freq === 'custom' && addForm.customDays.length === 0) || (addForm.freq === 'annual_dates' && addForm.annualDates.length === 0)}
+                  disabled={!isRecurringFormValid(addRec.title, addRec.form)}
                   className="text-[11px] px-3 py-1.5 rounded-[4px] bg-charcoal text-canvas
                     disabled:opacity-40 transition-opacity"
                 >
@@ -238,7 +255,7 @@ export function RecurringTemplates() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowAddRecurring(false); setNewTitle('') }}
+                  onClick={() => { setShowAddRecurring(false); addRec.reset() }}
                   className="text-[11px] text-stone hover:text-charcoal transition-colors"
                 >
                   Cancel

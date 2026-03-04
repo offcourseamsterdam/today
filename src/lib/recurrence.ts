@@ -74,6 +74,23 @@ export function buildRule(opts: BuildRuleOpts): RecurrenceRule {
 }
 
 /**
+ * Returns the Date of the N-th occurrence of `day` (0=Sun…6=Sat) in the given
+ * year/month, or null if it doesn't exist (e.g. 5th Monday in a short month).
+ */
+export function findNthWeekday(year: number, month: number, week: number, day: number): Date | null {
+  let count = 0
+  for (let d = 1; d <= 31; d++) {
+    const dt = new Date(year, month, d)
+    if (dt.getMonth() !== month) break
+    if (getDay(dt) === day) {
+      count++
+      if (count === week) return dt
+    }
+  }
+  return null
+}
+
+/**
  * Returns the most recent date (≤ today) when this rule was supposed to fire,
  * formatted as YYYY-MM-DD. Returns null if the rule has no meaningful past occurrence
  * (e.g. annual_dates with no dates configured).
@@ -125,22 +142,10 @@ export function getMostRecentOccurrenceDate(rule: RecurrenceRule, today: Date): 
     case 'monthly_weekday': {
       if (!rule.monthlyWeekday) return null
       const { week, day } = rule.monthlyWeekday
-      function findNthWeekday(year: number, month: number): Date | null {
-        let count = 0
-        for (let d = 1; d <= 31; d++) {
-          const dt = new Date(year, month, d)
-          if (dt.getMonth() !== month) break
-          if (getDay(dt) === day) {
-            count++
-            if (count === week) return dt
-          }
-        }
-        return null
-      }
-      const thisMonth = findNthWeekday(today.getFullYear(), today.getMonth())
+      const thisMonth = findNthWeekday(today.getFullYear(), today.getMonth(), week, day)
       if (thisMonth && thisMonth <= today) return fmt(thisMonth)
       const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-      const prevMonth = findNthWeekday(prev.getFullYear(), prev.getMonth())
+      const prevMonth = findNthWeekday(prev.getFullYear(), prev.getMonth(), week, day)
       return prevMonth ? fmt(prevMonth) : null
     }
     case 'annual_dates': {

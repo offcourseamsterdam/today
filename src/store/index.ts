@@ -19,6 +19,8 @@ export const useStore = create<VandaagState>()(
       dailyPlan: null,
       tomorrowPlan: null,
       personalRules: [],
+      openProjectId: null,
+      toastProjectId: null,
       swapModalProjectId: null,
       swapModalTargetStatus: null,
       waitingPromptProjectId: null,
@@ -26,6 +28,8 @@ export const useStore = create<VandaagState>()(
       activeView: 'vandaag',
       greetedDate: null,
       artworkLoadingIds: [],
+
+      setOpenProjectId: (id) => set({ openProjectId: id }),
 
       // Slices
       ...makeNavigationActions(set, get),

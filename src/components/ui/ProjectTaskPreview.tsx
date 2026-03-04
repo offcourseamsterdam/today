@@ -4,6 +4,7 @@ import type { Project } from '../../types'
 import { CATEGORY_CONFIG } from '../../types'
 import { TaskCheckbox } from './TaskCheckbox'
 import { useTaskToggle } from '../../hooks/useTaskToggle'
+import { useStore } from '../../store'
 
 interface ProjectTaskPreviewProps {
   project: Project
@@ -13,7 +14,9 @@ interface ProjectTaskPreviewProps {
 
 export function ProjectTaskPreview({ project, onRemove, previewCount = 2 }: ProjectTaskPreviewProps) {
   const [expanded, setExpanded] = useState(false)
-  const toggleTask = useTaskToggle()
+  const showToast = useStore(s => s.showToast)
+  const toggleTask = useTaskToggle(showToast)
+  const setOpenProjectId = useStore(s => s.setOpenProjectId)
   const config = CATEGORY_CONFIG[project.category]
 
   const openTasks = project.tasks.filter(t => t.status !== 'done')
@@ -28,9 +31,12 @@ export function ProjectTaskPreview({ project, onRemove, previewCount = 2 }: Proj
           className="w-2 h-2 rounded-full flex-shrink-0"
           style={{ background: config.color }}
         />
-        <span className="text-[13px] font-medium text-charcoal flex-1 truncate">
+        <button
+          onClick={() => setOpenProjectId(project.id)}
+          className="text-[13px] font-medium text-charcoal flex-1 truncate text-left hover:text-stone transition-colors"
+        >
           {project.title}
-        </span>
+        </button>
         <button
           onClick={onRemove}
           className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all"
