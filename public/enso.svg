@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!--
+    Enso favicon — animated brushstroke.
+
+    Circle r=12 → circumference 2π×12 ≈ 75.40
+    Gap  35° →  35/360 × 75.40 ≈ 7.33
+    Drawn 325° → 325/360 × 75.40 ≈ 68.07
+    rotate(-107.5) centres the gap at the top (12 o'clock).
+
+    Animation: stroke draws in over 1.8 s, eased so it starts
+    fast (confident brush contact) and slows to a near-stop as
+    the brush lifts off the paper.
+  -->
+  <defs>
+    <!-- Bristle / ink texture — subtle displacement on the stroke -->
+    <filter id="ink" x="-14%" y="-14%" width="128%" height="128%"
+            color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise"
+                    baseFrequency="0.80 0.60"
+                    numOctaves="4"
+                    seed="9"
+                    result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise"
+                         scale="0.7"
+                         xChannelSelector="R"
+                         yChannelSelector="G"/>
+    </filter>
+
+    <!-- Ink-spread glow: a blurry duplicate below the main stroke -->
+    <filter id="bleed" x="-18%" y="-18%" width="136%" height="136%"
+            color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="1.1"/>
+    </filter>
+  </defs>
+
+  <!-- Layer 1 — ink bleed (soft glow under the brushstroke) -->
+  <circle cx="16" cy="16" r="12"
+          stroke="#2A2724"
+          stroke-width="5.5"
+          stroke-linecap="round"
+          stroke-dasharray="68.07 7.33"
+          transform="rotate(-107.5 16 16)"
+          filter="url(#bleed)"
+          opacity="0.10"
+          stroke-dashoffset="68.07">
+    <animate attributeName="stroke-dashoffset"
+             from="68.07" to="0"
+             dur="1.8s" begin="0s" fill="freeze"
+             calcMode="spline"
+             keyTimes="0;1"
+             keySplines="0.38 0 0.06 1"/>
+  </circle>
+
+  <!-- Layer 2 — main brushstroke with bristle displacement -->
+  <circle cx="16" cy="16" r="12"
+          stroke="#2A2724"
+          stroke-width="3.4"
+          stroke-linecap="round"
+          stroke-dasharray="68.07 7.33"
+          transform="rotate(-107.5 16 16)"
+          filter="url(#ink)"
+          stroke-dashoffset="68.07">
+    <animate attributeName="stroke-dashoffset"
+             from="68.07" to="0"
+             dur="1.8s" begin="0s" fill="freeze"
+             calcMode="spline"
+             keyTimes="0;1"
+             keySplines="0.38 0 0.06 1"/>
+  </circle>
+
+  <!-- Layer 3 — thin crisp inner edge (depth / ink density) -->
+  <circle cx="16" cy="16" r="12"
+          stroke="#2A2724"
+          stroke-width="1.0"
+          stroke-linecap="round"
+          stroke-dasharray="68.07 7.33"
+          transform="rotate(-107.5 16 16)"
+          opacity="0.30"
+          stroke-dashoffset="68.07">
+    <animate attributeName="stroke-dashoffset"
+             from="68.07" to="0"
+             dur="1.8s" begin="0s" fill="freeze"
+             calcMode="spline"
+             keyTimes="0;1"
+             keySplines="0.38 0 0.06 1"/>
+  </circle>
+</svg>
