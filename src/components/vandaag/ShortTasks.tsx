@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Check, ChevronDown } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Plus, Check, ChevronDown, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
@@ -9,6 +9,8 @@ import { useTaskToggle } from '../../hooks/useTaskToggle'
 import { TaskPickerList } from '../ui/TaskPickerList'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { TaskItem } from '../ui/TaskItem'
+import { MeetingItem } from '../meetings/MeetingItem'
+import { AllMeetingsPanel } from '../meetings/AllMeetingsPanel'
 
 export function ShortTasks() {
   const projects = useStore(s => s.projects)
@@ -16,9 +18,13 @@ export function ShortTasks() {
   const addOrphanTask = useStore(s => s.addOrphanTask)
   const moveOrphanTaskToProject = useStore(s => s.moveOrphanTaskToProject)
   const setOpenProjectId = useStore(s => s.setOpenProjectId)
+  const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
+  const allMeetings = useStore(s => s.meetings)
+  const recurringMeetings = useStore(s => s.recurringMeetings)
   const {
     shortTaskIds, addShortTask, removeShortTask,
     shortProjectIds, addShortProject, removeShortProject,
+    meetingIds, removeMeetingFromPlan,
   } = useTodayPlan()
   const showToast = useStore(s => s.showToast)
   const toggleTask = useTaskToggle(showToast)
@@ -29,6 +35,18 @@ export function ShortTasks() {
   const availableTasks = getAvailableTasks(projects, orphanTasks, shortTaskIds)
   const inProgressProjects = projects.filter(p => p.status === 'in_progress')
   const availableProjects = inProgressProjects.filter(p => !shortProjectIds.includes(p.id))
+
+  // Resolve meetings from IDs
+  const planMeetings = useMemo(() => {
+    return meetingIds
+      .map(id => allMeetings.find(m => m.id === id) ?? recurringMeetings.find(m => m.id === id))
+      .filter(Boolean) as typeof allMeetings
+  }, [meetingIds, allMeetings, recurringMeetings])
+
+  // Sort meetings by time
+  const sortedMeetings = useMemo(() => {
+    return [...planMeetings].sort((a, b) => a.time.localeCompare(b.time))
+  }, [planMeetings])
 
   function handleQuickAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -50,11 +68,31 @@ export function ShortTasks() {
             Short three
           </span>
           <span className="text-[11px] text-stone/50">{slotsUsed}/3 tasks</span>
+          {sortedMeetings.length > 0 && (
+            <span className="text-[11px] text-stone/50 flex items-center gap-1">
+              <Clock size={10} /> {sortedMeetings.length}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Task list */}
+      {/* Content list */}
       <div className="min-h-[60px]">
+        {/* Meetings (sorted by time, shown first) */}
+        {sortedMeetings.map(meeting => (
+          <MeetingItem
+            key={meeting.id}
+            meeting={meeting}
+            onRemove={() => removeMeetingFromPlan(meeting.id)}
+            onEdit={() => setOpenMeetingId(meeting.id)}
+          />
+        ))}
+
+        {/* Divider between meetings and projects/tasks */}
+        {sortedMeetings.length > 0 && (shortProjectIds.length > 0 || shortTaskIds.length > 0) && (
+          <div className="border-t border-border/30 my-1" />
+        )}
+
         {/* Selected projects */}
         {shortProjectIds.map(projectId => {
           const project = projects.find(p => p.id === projectId)
@@ -91,14 +129,14 @@ export function ShortTasks() {
           )
         })}
 
-        {shortProjectIds.length === 0 && slotsUsed === 0 && !showPicker && (
+        {shortProjectIds.length === 0 && slotsUsed === 0 && sortedMeetings.length === 0 && !showPicker && (
           <div className="text-[13px] text-stone/30 py-3 text-center italic">
             Especially the ones you've been putting off
           </div>
         )}
       </div>
 
-      {/* Add from project tasks */}
+      {/* Add buttons */}
       {!slotsFull && (
         <>
           <button
@@ -179,6 +217,20 @@ export function ShortTasks() {
           </form>
         </>
       )}
+
+      {/* Add meeting button */}
+      <button
+        onClick={() => setOpenMeetingId('new')}
+        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 mt-2 rounded-[6px]
+          border border-dashed border-stone/15 text-[12px] text-stone/40
+          hover:border-stone/25 hover:text-stone/60 transition-all"
+      >
+        <Clock size={11} />
+        <span>Add meeting</span>
+      </button>
+
+      {/* All meetings panel */}
+      <AllMeetingsPanel />
     </div>
   )
 }

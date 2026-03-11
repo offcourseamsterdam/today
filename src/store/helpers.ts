@@ -26,6 +26,7 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
       ...state.dailyPlan,
       shortProjects: state.dailyPlan.shortProjects ?? [],
       maintenanceProjects: state.dailyPlan.maintenanceProjects ?? [],
+      meetings: state.dailyPlan.meetings ?? [],
     }
   }
   return {
@@ -35,6 +36,7 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
     shortProjects: [],
     maintenanceTasks: [],
     maintenanceProjects: [],
+    meetings: [],
     isComplete: false,
   }
 }
@@ -46,6 +48,7 @@ export function ensureTomorrowPlan(state: VandaagState): DailyPlan {
       ...state.tomorrowPlan,
       shortProjects: state.tomorrowPlan.shortProjects ?? [],
       maintenanceProjects: state.tomorrowPlan.maintenanceProjects ?? [],
+      meetings: state.tomorrowPlan.meetings ?? [],
     }
   }
   return {
@@ -55,6 +58,7 @@ export function ensureTomorrowPlan(state: VandaagState): DailyPlan {
     shortProjects: [],
     maintenanceTasks: [],
     maintenanceProjects: [],
+    meetings: [],
     isComplete: false,
   }
 }
@@ -108,6 +112,15 @@ export function makePlanActions(
     removeMaintenanceProject: (projectId: string) => {
       const plan = ensurePlan(get())
       setPlan({ ...plan, maintenanceProjects: plan.maintenanceProjects.filter(id => id !== projectId) })
+    },
+    addMeeting: (meetingId: string) => {
+      const plan = ensurePlan(get())
+      if (plan.meetings.includes(meetingId)) return
+      setPlan({ ...plan, meetings: [...plan.meetings, meetingId] })
+    },
+    removeMeeting: (meetingId: string) => {
+      const plan = ensurePlan(get())
+      setPlan({ ...plan, meetings: plan.meetings.filter(id => id !== meetingId) })
     },
   }
 }
