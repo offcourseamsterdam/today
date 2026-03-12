@@ -5,10 +5,12 @@ import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { getTodayQuote } from '../../lib/quotes'
 import { findTaskById } from '../../lib/taskLookup'
+import { resolveMeetingIds } from '../../lib/meetingLookup'
 import { getAvailableTasks } from '../../lib/availableTasks'
 import { UncomfortableBadge } from '../ui/UncomfortableBadge'
 import { TaskPickerList } from '../ui/TaskPickerList'
 import { MeetingModal } from '../meetings/MeetingModal'
+import { useTomorrowPlan } from '../../hooks/useTomorrowPlan'
 
 interface PlanningModeProps {
   onExit: () => void
@@ -18,22 +20,22 @@ export function PlanningMode({ onExit }: PlanningModeProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const recurringTasks = useStore(s => s.recurringTasks)
-  const tomorrowPlan = useStore(s => s.tomorrowPlan)
-  const setTomorrowDeepBlock = useStore(s => s.setTomorrowDeepBlock)
-  const clearTomorrowDeepBlock = useStore(s => s.clearTomorrowDeepBlock)
-  const addTomorrowShortTask = useStore(s => s.addTomorrowShortTask)
-  const removeTomorrowShortTask = useStore(s => s.removeTomorrowShortTask)
-  const addTomorrowMaintenanceTask = useStore(s => s.addTomorrowMaintenanceTask)
-  const removeTomorrowMaintenanceTask = useStore(s => s.removeTomorrowMaintenanceTask)
-  const lockInTomorrow = useStore(s => s.lockInTomorrow)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
   const addOrphanTask = useStore(s => s.addOrphanTask)
   const allMeetings = useStore(s => s.meetings)
   const recurringMeetingsStore = useStore(s => s.recurringMeetings)
-  const addTomorrowMeeting = useStore(s => s.addTomorrowMeeting)
-  const removeTomorrowMeeting = useStore(s => s.removeTomorrowMeeting)
   const getTodayRecurringMeetings = useStore(s => s.getTodayRecurringMeetings)
   const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
+
+  const {
+    tomorrowPlan,
+    shortTaskIds, maintenanceTaskIds, meetingIds: tomorrowMeetingIds,
+    setTomorrowDeepBlock, clearTomorrowDeepBlock,
+    addTomorrowShortTask, removeTomorrowShortTask,
+    addTomorrowMaintenanceTask, removeTomorrowMaintenanceTask,
+    addTomorrowMeeting, removeTomorrowMeeting,
+    lockInTomorrow,
+  } = useTomorrowPlan()
 
   const [showProjectPicker, setShowProjectPicker] = useState(false)
   const [showTaskPicker, setShowTaskPicker] = useState(false)
@@ -50,10 +52,6 @@ export function PlanningMode({ onExit }: PlanningModeProps) {
   const selectedProjectId = tomorrowPlan?.deepBlock.projectId || ''
   const selectedProject = projects.find(p => p.id === selectedProjectId)
 
-  const shortTaskIds = tomorrowPlan?.shortTasks || []
-  const maintenanceTaskIds = tomorrowPlan?.maintenanceTasks || []
-  const tomorrowMeetingIds = tomorrowPlan?.meetings ?? []
-
   const availableTasks = getAvailableTasks(projects, [], shortTaskIds)
 
   // Recurring tasks for auto-populate
@@ -65,9 +63,7 @@ export function PlanningMode({ onExit }: PlanningModeProps) {
   const notYetAddedRecurringMeetings = todayRecurringMeetings.filter(m => !tomorrowMeetingIds.includes(m.id))
 
   // Resolve tomorrow's meetings
-  const tomorrowMeetings = tomorrowMeetingIds
-    .map(id => allMeetings.find(m => m.id === id) ?? recurringMeetingsStore.find(m => m.id === id))
-    .filter(Boolean) as typeof allMeetings
+  const tomorrowMeetings = resolveMeetingIds(tomorrowMeetingIds, allMeetings, recurringMeetingsStore)
 
   function handleSelectProject(projectId: string) {
     setTomorrowDeepBlock(projectId, intention || undefined)

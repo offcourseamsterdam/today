@@ -13,22 +13,28 @@ export function useTomorrowPlan() {
   const removeTomorrowShortTask = useStore(s => s.removeTomorrowShortTask)
   const addTomorrowMaintenanceTask = useStore(s => s.addTomorrowMaintenanceTask)
   const removeTomorrowMaintenanceTask = useStore(s => s.removeTomorrowMaintenanceTask)
+  const addTomorrowMeeting = useStore(s => s.addTomorrowMeeting)
+  const removeTomorrowMeeting = useStore(s => s.removeTomorrowMeeting)
   const lockInTomorrow = useStore(s => s.lockInTomorrow)
   const clearTomorrowPlan = useStore(s => s.clearTomorrowPlan)
 
   const shortTaskIds = useMemo(() => tomorrowPlan?.shortTasks ?? [], [tomorrowPlan])
   const maintenanceTaskIds = useMemo(() => tomorrowPlan?.maintenanceTasks ?? [], [tomorrowPlan])
+  const meetingIds = useMemo(() => tomorrowPlan?.meetings ?? [], [tomorrowPlan])
 
   return {
     tomorrowPlan,
     shortTaskIds,
     maintenanceTaskIds,
+    meetingIds,
     setTomorrowDeepBlock,
     clearTomorrowDeepBlock,
     addTomorrowShortTask,
     removeTomorrowShortTask,
     addTomorrowMaintenanceTask,
     removeTomorrowMaintenanceTask,
+    addTomorrowMeeting,
+    removeTomorrowMeeting,
     lockInTomorrow,
     clearTomorrowPlan,
   }

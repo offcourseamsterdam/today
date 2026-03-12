@@ -3,6 +3,7 @@ import { Plus, Check, ChevronDown, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
+import { resolveMeetingIds } from '../../lib/meetingLookup'
 import { getAvailableTasks } from '../../lib/availableTasks'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { useTaskToggle } from '../../hooks/useTaskToggle'
@@ -36,17 +37,11 @@ export function ShortTasks() {
   const inProgressProjects = projects.filter(p => p.status === 'in_progress')
   const availableProjects = inProgressProjects.filter(p => !shortProjectIds.includes(p.id))
 
-  // Resolve meetings from IDs
-  const planMeetings = useMemo(() => {
-    return meetingIds
-      .map(id => allMeetings.find(m => m.id === id) ?? recurringMeetings.find(m => m.id === id))
-      .filter(Boolean) as typeof allMeetings
-  }, [meetingIds, allMeetings, recurringMeetings])
-
-  // Sort meetings by time
+  // Resolve and sort meetings by time
   const sortedMeetings = useMemo(() => {
-    return [...planMeetings].sort((a, b) => a.time.localeCompare(b.time))
-  }, [planMeetings])
+    return resolveMeetingIds(meetingIds, allMeetings, recurringMeetings)
+      .sort((a, b) => a.time.localeCompare(b.time))
+  }, [meetingIds, allMeetings, recurringMeetings])
 
   function handleQuickAdd(e: React.FormEvent) {
     e.preventDefault()

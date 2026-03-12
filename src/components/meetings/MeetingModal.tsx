@@ -1,30 +1,20 @@
 import { useState, useEffect } from 'react'
 import { X, Trash2, RotateCcw } from 'lucide-react'
-import { useStore } from '../../store'
 import { RecurrenceFrequencyPicker, EMPTY_RULE_STATE, type RecurrenceFormState } from '../ui/RecurrenceFrequencyPicker'
 import { buildRule } from '../../lib/recurrence'
+import { useMeetingModal } from '../../hooks/useMeetingModal'
 import type { Meeting } from '../../types'
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90]
 
 export function MeetingModal() {
-  const openMeetingId = useStore(s => s.openMeetingId)
-  const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
-  const meetings = useStore(s => s.meetings)
-  const recurringMeetings = useStore(s => s.recurringMeetings)
-  const addMeeting = useStore(s => s.addMeeting)
-  const updateMeeting = useStore(s => s.updateMeeting)
-  const deleteMeeting = useStore(s => s.deleteMeeting)
-  const addRecurringMeeting = useStore(s => s.addRecurringMeeting)
-  const updateRecurringMeeting = useStore(s => s.updateRecurringMeeting)
-  const deleteRecurringMeeting = useStore(s => s.deleteRecurringMeeting)
-  const addMeetingToPlan = useStore(s => s.addMeetingToPlan)
-
-  const isOpen = openMeetingId !== null
-  const isNew = openMeetingId === 'new'
-  const existingMeeting = !isNew && openMeetingId
-    ? meetings.find(m => m.id === openMeetingId) ?? recurringMeetings.find(m => m.id === openMeetingId)
-    : null
+  const {
+    openMeetingId, setOpenMeetingId,
+    isOpen, isNew, existingMeeting, isInRecurring,
+    addMeeting, updateMeeting, deleteMeeting,
+    addRecurringMeeting, updateRecurringMeeting, deleteRecurringMeeting,
+    addMeetingToPlan,
+  } = useMeetingModal()
 
   const [title, setTitle] = useState('')
   const [time, setTime] = useState('09:00')
@@ -100,7 +90,6 @@ export function MeetingModal() {
       }
       addMeetingToPlan(id)
     } else if (existingMeeting) {
-      const isInRecurring = recurringMeetings.some(m => m.id === existingMeeting.id)
       if (isInRecurring) {
         updateRecurringMeeting(existingMeeting.id, meetingData)
       } else {
@@ -113,7 +102,6 @@ export function MeetingModal() {
 
   function handleDelete() {
     if (!existingMeeting) return
-    const isInRecurring = recurringMeetings.some(m => m.id === existingMeeting.id)
     if (isInRecurring) {
       deleteRecurringMeeting(existingMeeting.id)
     } else {

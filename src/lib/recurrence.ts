@@ -61,6 +61,35 @@ export type BuildRuleOpts = {
   annualDates?: { month: number; day: number }[]
 }
 
+/**
+ * Returns true if the given recurrence rule fires on the specified date (defaults to today).
+ * Used by both recurring tasks and recurring meetings.
+ */
+export function isDueToday(rule: RecurrenceRule, date: Date = new Date()): boolean {
+  const dow = getDay(date) // 0=Sun...6=Sat
+  const dom = date.getDate() // 1–31
+  switch (rule.frequency) {
+    case 'daily': return true
+    case 'weekdays': return dow >= 1 && dow <= 5
+    case 'weekly': return rule.customDays?.includes(dow) ?? dow === 1
+    case 'custom': return rule.customDays?.includes(dow) ?? false
+    case 'monthly_date': return rule.monthlyDate === dom
+    case 'monthly_weekday': {
+      if (!rule.monthlyWeekday) return false
+      const { week, day } = rule.monthlyWeekday
+      if (dow !== day) return false
+      return Math.ceil(dom / 7) === week
+    }
+    case 'annual_dates': {
+      const dates = rule.annualDates ?? []
+      const month = date.getMonth() + 1
+      const day = date.getDate()
+      return dates.some(d => d.month === month && d.day === day)
+    }
+    default: return false
+  }
+}
+
 export function buildRule(opts: BuildRuleOpts): RecurrenceRule {
   const { freq, weeklyDay = 1, monthlyDate = 1, monthlyWeek = 1, monthlyDay = 1, customDays = [], annualDates = [] } = opts
   switch (freq) {
