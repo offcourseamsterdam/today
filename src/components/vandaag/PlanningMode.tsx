@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { ChevronDown, X, Check, Moon, RotateCcw, Lock, ArrowLeft } from 'lucide-react'
+import { ChevronDown, X, Check, Moon, RotateCcw, Lock, ArrowLeft, Clock } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { getTodayQuote } from '../../lib/quotes'
 import { findTaskById } from '../../lib/taskLookup'
+import { resolveMeetingIds } from '../../lib/meetingLookup'
 import { getAvailableTasks } from '../../lib/availableTasks'
 import { UncomfortableBadge } from '../ui/UncomfortableBadge'
 import { TaskPickerList } from '../ui/TaskPickerList'
+import { MeetingModal } from '../meetings/MeetingModal'
+import { useTomorrowPlan } from '../../hooks/useTomorrowPlan'
 
 interface PlanningModeProps {
   onExit: () => void
@@ -17,16 +20,22 @@ export function PlanningMode({ onExit }: PlanningModeProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const recurringTasks = useStore(s => s.recurringTasks)
-  const tomorrowPlan = useStore(s => s.tomorrowPlan)
-  const setTomorrowDeepBlock = useStore(s => s.setTomorrowDeepBlock)
-  const clearTomorrowDeepBlock = useStore(s => s.clearTomorrowDeepBlock)
-  const addTomorrowShortTask = useStore(s => s.addTomorrowShortTask)
-  const removeTomorrowShortTask = useStore(s => s.removeTomorrowShortTask)
-  const addTomorrowMaintenanceTask = useStore(s => s.addTomorrowMaintenanceTask)
-  const removeTomorrowMaintenanceTask = useStore(s => s.removeTomorrowMaintenanceTask)
-  const lockInTomorrow = useStore(s => s.lockInTomorrow)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
   const addOrphanTask = useStore(s => s.addOrphanTask)
+  const allMeetings = useStore(s => s.meetings)
+  const recurringMeetingsStore = useStore(s => s.recurringMeetings)
+  const getTodayRecurringMeetings = useStore(s => s.getTodayRecurringMeetings)
+  const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
+
+  const {
+    tomorrowPlan,
+    shortTaskIds, maintenanceTaskIds, meetingIds: tomorrowMeetingIds,
+    setTomorrowDeepBlock, clearTomorrowDeepBlock,
+    addTomorrowShortTask, removeTomorrowShortTask,
+    addTomorrowMaintenanceTask, removeTomorrowMaintenanceTask,
+    addTomorrowMeeting, removeTomorrowMeeting,
+    lockInTomorrow,
+  } = useTomorrowPlan()
 
   const [showProjectPicker, setShowProjectPicker] = useState(false)
   const [showTaskPicker, setShowTaskPicker] = useState(false)
@@ -43,14 +52,18 @@ export function PlanningMode({ onExit }: PlanningModeProps) {
   const selectedProjectId = tomorrowPlan?.deepBlock.projectId || ''
   const selectedProject = projects.find(p => p.id === selectedProjectId)
 
-  const shortTaskIds = tomorrowPlan?.shortTasks || []
-  const maintenanceTaskIds = tomorrowPlan?.maintenanceTasks || []
-
   const availableTasks = getAvailableTasks(projects, [], shortTaskIds)
 
   // Recurring tasks for auto-populate
   const todayRecurring = getTodayRecurringTasks()
   const notYetAddedRecurring = todayRecurring.filter(t => !maintenanceTaskIds.includes(t.id))
+
+  // Recurring meetings for auto-populate
+  const todayRecurringMeetings = getTodayRecurringMeetings()
+  const notYetAddedRecurringMeetings = todayRecurringMeetings.filter(m => !tomorrowMeetingIds.includes(m.id))
+
+  // Resolve tomorrow's meetings
+  const tomorrowMeetings = resolveMeetingIds(tomorrowMeetingIds, allMeetings, recurringMeetingsStore)
 
   function handleSelectProject(projectId: string) {
     setTomorrowDeepBlock(projectId, intention || undefined)
@@ -325,6 +338,68 @@ export function PlanningMode({ onExit }: PlanningModeProps) {
           )}
         </section>
 
+        {/* ── MEETINGS ── */}
+        <section className="bg-card rounded-[10px] p-5 shadow-card border border-border/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock size={12} className="text-cat-marketing" />
+              <span className="text-[11px] uppercase tracking-[0.08em] text-stone font-medium">
+                Meetings
+              </span>
+              <span className="text-[11px] text-stone/40">{tomorrowMeetingIds.length} scheduled</span>
+            </div>
+
+            {!isLocked && notYetAddedRecurringMeetings.length > 0 && (
+              <button
+                onClick={() => { for (const m of notYetAddedRecurringMeetings) addTomorrowMeeting(m.id) }}
+                className="text-[11px] text-stone/50 hover:text-stone px-2 py-1 rounded
+                  border border-border/50 hover:border-stone/20 transition-all"
+              >
+                + Add {notYetAddedRecurringMeetings.length} recurring
+              </button>
+            )}
+          </div>
+
+          <div className="min-h-[40px]">
+            {tomorrowMeetings.map(meeting => (
+              <div key={meeting.id} className="flex items-center gap-3 py-2 group">
+                <Clock size={12} className="text-cat-marketing/40 flex-shrink-0" />
+                <span className="text-[10px] font-medium text-cat-marketing bg-cat-marketing/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                  {meeting.time}
+                </span>
+                <span className="text-[13px] text-charcoal flex-1 truncate">{meeting.title}</span>
+                <span className="text-[10px] text-stone/30">{meeting.durationMinutes}m</span>
+                {!isLocked && (
+                  <button
+                    onClick={() => removeTomorrowMeeting(meeting.id)}
+                    className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {tomorrowMeetingIds.length === 0 && (
+              <div className="text-[13px] text-stone/30 py-2 text-center italic">
+                No meetings scheduled yet
+              </div>
+            )}
+          </div>
+
+          {!isLocked && (
+            <button
+              onClick={() => setOpenMeetingId('new')}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 mt-2 rounded-[6px]
+                border border-dashed border-stone/15 text-[12px] text-stone/40
+                hover:border-stone/25 hover:text-stone/60 transition-all"
+            >
+              <Clock size={11} />
+              <span>Add meeting</span>
+            </button>
+          )}
+        </section>
+
         {/* ── MAINTENANCE ── */}
         <section className="bg-card rounded-[10px] p-5 shadow-card border border-border/50">
           <div className="flex items-center justify-between mb-4">
@@ -429,6 +504,9 @@ export function PlanningMode({ onExit }: PlanningModeProps) {
           )}
         </div>
       </div>
+
+      {/* Meeting modal */}
+      <MeetingModal />
     </div>
   )
 }

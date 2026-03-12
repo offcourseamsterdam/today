@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand'
-import type { Project, Task, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule } from '../types'
+import type { Project, Task, Meeting, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule } from '../types'
 
 export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
 
@@ -8,6 +8,8 @@ export interface VandaagState {
   projects: Project[]
   orphanTasks: Task[]
   recurringTasks: Task[]
+  meetings: Meeting[]
+  recurringMeetings: Meeting[]
   settings: Settings
   dailyPlan: DailyPlan | null
   tomorrowPlan: DailyPlan | null
@@ -20,6 +22,7 @@ export interface VandaagState {
   swapModalTargetStatus: 'in_progress' | 'waiting' | null  // destination for the incoming project
   waitingPromptProjectId: string | null  // triggers "Op wie wacht je?" modal
   resolveWaitingProjectId: string | null  // triggers "Resolve waiting-on" modal
+  openMeetingId: string | null  // null = closed, 'new' = create mode, uuid = edit mode
   activeView: ActiveView
   greetedDate: string | null  // YYYY-MM-DD — last date the morning screen was dismissed
   artworkLoadingIds: string[]  // project IDs with in-flight artwork fetch (not persisted)
@@ -52,6 +55,16 @@ export interface VandaagState {
   deleteOrphanTask: (taskId: string) => void
   moveOrphanTaskToProject: (taskId: string, projectId: string) => void
 
+  // Meeting actions
+  addMeeting: (meeting: Omit<Meeting, 'id' | 'createdAt'>) => string
+  updateMeeting: (id: string, updates: Partial<Omit<Meeting, 'id'>>) => void
+  deleteMeeting: (id: string) => void
+  addRecurringMeeting: (meeting: Omit<Meeting, 'id' | 'createdAt'>) => string
+  updateRecurringMeeting: (id: string, updates: Partial<Omit<Meeting, 'id'>>) => void
+  deleteRecurringMeeting: (id: string) => void
+  getTodayRecurringMeetings: () => Meeting[]
+  setOpenMeetingId: (id: string | null) => void
+
   // Recurring tasks
   addRecurringTask: (title: string, rule: RecurrenceRule, projectId?: string) => string
   updateRecurringTask: (taskId: string, updates: Partial<Omit<Task, 'id'>>) => void
@@ -76,6 +89,8 @@ export interface VandaagState {
   removeShortProject: (projectId: string) => void
   addMaintenanceProject: (projectId: string) => void
   removeMaintenanceProject: (projectId: string) => void
+  addMeetingToPlan: (meetingId: string) => void
+  removeMeetingFromPlan: (meetingId: string) => void
   addQuickMaintenanceTask: (title: string) => string
   completeDailyPlan: () => void
   getTodayPlan: () => DailyPlan | null
@@ -92,6 +107,8 @@ export interface VandaagState {
   removeTomorrowShortProject: (projectId: string) => void
   addTomorrowMaintenanceProject: (projectId: string) => void
   removeTomorrowMaintenanceProject: (projectId: string) => void
+  addTomorrowMeeting: (meetingId: string) => void
+  removeTomorrowMeeting: (meetingId: string) => void
   lockInTomorrow: () => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean

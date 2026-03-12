@@ -7,6 +7,7 @@ import { makeProjectActions } from './projectsSlice'
 import { makeTaskActions } from './tasksSlice'
 import { makeDailyPlanActions } from './plansSlice'
 import { makeSettingsActions } from './settingsSlice'
+import { makeMeetingActions } from './meetingsSlice'
 
 export const useStore = create<VandaagState>()(
   persist(
@@ -15,6 +16,8 @@ export const useStore = create<VandaagState>()(
       projects: [],
       orphanTasks: [],
       recurringTasks: [],
+      meetings: [],
+      recurringMeetings: [],
       settings: defaultSettings,
       dailyPlan: null,
       tomorrowPlan: null,
@@ -25,6 +28,7 @@ export const useStore = create<VandaagState>()(
       swapModalTargetStatus: null,
       waitingPromptProjectId: null,
       resolveWaitingProjectId: null,
+      openMeetingId: null,
       activeView: 'vandaag',
       greetedDate: null,
       artworkLoadingIds: [],
@@ -36,6 +40,7 @@ export const useStore = create<VandaagState>()(
       ...makeProjectActions(set, get),
       ...makeTaskActions(set, get),
       ...makeDailyPlanActions(set, get),
+      ...makeMeetingActions(set, get),
       ...makeSettingsActions(set, get),
 
       // Selectors
@@ -57,6 +62,8 @@ export const useStore = create<VandaagState>()(
         projects: state.projects,
         orphanTasks: state.orphanTasks,
         recurringTasks: state.recurringTasks,
+        meetings: state.meetings,
+        recurringMeetings: state.recurringMeetings,
         settings: state.settings,
         dailyPlan: state.dailyPlan,
         tomorrowPlan: state.tomorrowPlan,

@@ -18,11 +18,14 @@ export function useTodayPlan() {
   const removeMaintenanceProject = useStore(s => s.removeMaintenanceProject)
   const setDeepBlock = useStore(s => s.setDeepBlock)
   const clearDeepBlock = useStore(s => s.clearDeepBlock)
+  const addMeetingToPlan = useStore(s => s.addMeetingToPlan)
+  const removeMeetingFromPlan = useStore(s => s.removeMeetingFromPlan)
 
   const shortTaskIds = useMemo(() => dailyPlan?.shortTasks ?? [], [dailyPlan])
   const maintenanceTaskIds = useMemo(() => dailyPlan?.maintenanceTasks ?? [], [dailyPlan])
   const shortProjectIds = useMemo(() => dailyPlan?.shortProjects ?? [], [dailyPlan])
   const maintenanceProjectIds = useMemo(() => dailyPlan?.maintenanceProjects ?? [], [dailyPlan])
+  const meetingIds = useMemo(() => dailyPlan?.meetings ?? [], [dailyPlan])
 
   return {
     dailyPlan,
@@ -30,6 +33,7 @@ export function useTodayPlan() {
     maintenanceTaskIds,
     shortProjectIds,
     maintenanceProjectIds,
+    meetingIds,
     addShortTask,
     removeShortTask,
     addMaintenanceTask,
@@ -40,5 +44,7 @@ export function useTodayPlan() {
     removeMaintenanceProject,
     setDeepBlock,
     clearDeepBlock,
+    addMeetingToPlan,
+    removeMeetingFromPlan,
   }
 }

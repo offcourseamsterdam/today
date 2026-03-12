@@ -1,11 +1,13 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
-import type { Project, Task, Settings, DailyPlan } from '../types'
+import type { Project, Task, Meeting, Settings, DailyPlan } from '../types'
 
 export interface SyncData {
   projects: Project[]
   orphanTasks: Task[]
   recurringTasks: Task[]
+  meetings: Meeting[]
+  recurringMeetings: Meeting[]
   settings: Settings
   dailyPlan: DailyPlan | null
   tomorrowPlan: DailyPlan | null

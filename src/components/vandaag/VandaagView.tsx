@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import { DeepBlock } from './DeepBlock'
 import { ShortTasks } from './ShortTasks'
 import { MaintenanceTier } from './MaintenanceTier'
+import { MeetingModal } from '../meetings/MeetingModal'
 import { getTodayQuote } from '../../lib/quotes'
 
 interface VandaagViewProps {
@@ -21,6 +22,7 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
 
   const shortTaskIds = dailyPlan?.shortTasks || []
   const maintenanceTaskIds = dailyPlan?.maintenanceTasks || []
+  const meetingIds = dailyPlan?.meetings ?? []
   const deepBlockProjectId = dailyPlan?.deepBlock.projectId || ''
   const deepBlockProject = projects.find(p => p.id === deepBlockProjectId)
 
@@ -93,6 +95,15 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
             <span className="text-[10px] uppercase tracking-wider text-stone/40">Short</span>
             <span className="text-charcoal">{shortTaskIds.length} / 3</span>
           </div>
+          {meetingIds.length > 0 && (
+            <>
+              <div className="w-px h-3 bg-border" />
+              <div className="flex items-center gap-1.5">
+                <Clock size={10} className="text-stone/40" />
+                <span className="text-charcoal">{meetingIds.length}</span>
+              </div>
+            </>
+          )}
           <div className="w-px h-3 bg-border" />
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-wider text-stone/40">Maintenance</span>
@@ -152,6 +163,9 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
           </div>
         </>
       )}
+
+      {/* Meeting modal — always mounted for access from any state */}
+      <MeetingModal />
     </div>
   )
 }

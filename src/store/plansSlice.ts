@@ -28,6 +28,8 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     removeShortProject: todayActions.removeShortProject,
     addMaintenanceProject: todayActions.addMaintenanceProject,
     removeMaintenanceProject: todayActions.removeMaintenanceProject,
+    addMeetingToPlan: todayActions.addMeeting,
+    removeMeetingFromPlan: todayActions.removeMeeting,
 
     addQuickMaintenanceTask: (title: string): string => {
       const id = uuid()
@@ -87,6 +89,8 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     removeTomorrowShortProject: tomorrowActions.removeShortProject,
     addTomorrowMaintenanceProject: tomorrowActions.addMaintenanceProject,
     removeTomorrowMaintenanceProject: tomorrowActions.removeMaintenanceProject,
+    addTomorrowMeeting: tomorrowActions.addMeeting,
+    removeTomorrowMeeting: tomorrowActions.removeMeeting,
 
     lockInTomorrow: () => {
       const state = get()
