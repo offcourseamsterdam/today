@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Sun, Moon, BookOpen, Cloud, CloudOff, Loader2, LogOut, CloudAlert } from 'lucide-react'
+import { EnsoLogo } from './components/ui/EnsoLogo'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { VandaagView } from './components/vandaag/VandaagView'
 import { PlanningMode } from './components/vandaag/PlanningMode'
@@ -35,7 +36,7 @@ function App() {
   }, [])
 
   // Auth + sync
-  const { user, loading: authLoading, signIn, signOut } = useAuth()
+  const { user, loading: authLoading, signInError, signIn, signOut } = useAuth()
   const syncStatus = useFirestoreSync(user)
 
   // Auto-load tomorrow's plan when it becomes today
@@ -84,22 +85,25 @@ function App() {
     <div className="min-h-screen bg-canvas overflow-x-hidden">
       {/* Header */}
       <header className="max-w-[1400px] mx-auto px-6 pt-8 pb-6 flex justify-between items-start">
-        <div>
-          <h1 className="font-serif text-[22px] font-normal text-charcoal tracking-[-0.02em]">
-            Vandaag{' '}
-            <span className="text-stone/50 font-light">
-              / {dayName.toLowerCase()} {dateStr.toLowerCase()}
-            </span>
-          </h1>
-          <div className="text-[12px] text-stone/60 tracking-[0.04em] uppercase mt-1">
-            Week {weekNum}
+        <div className="flex items-center gap-3">
+          <EnsoLogo size={40} color="#2A2724" />
+          <div>
+            <h1 className="font-serif text-[22px] font-normal text-charcoal tracking-[-0.02em]">
+              Vandaag{' '}
+              <span className="text-stone/50 font-light">
+                / {dayName.toLowerCase()} {dateStr.toLowerCase()}
+              </span>
+            </h1>
+            <div className="text-[12px] text-stone/60 tracking-[0.04em] uppercase mt-1">
+              Week {weekNum}
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Sync indicator */}
           {!authLoading && (
-            <SyncIndicator status={syncStatus} isLoggedIn={!!user} onSignIn={signIn} />
+            <SyncIndicator status={syncStatus} isLoggedIn={!!user} onSignIn={signIn} signInError={signInError} />
           )}
 
           {/* View toggle */}
@@ -201,20 +205,28 @@ interface SyncIndicatorProps {
   status: ReturnType<typeof useFirestoreSync>
   isLoggedIn: boolean
   onSignIn: () => void
+  signInError: string | null
 }
 
-function SyncIndicator({ status, isLoggedIn, onSignIn }: SyncIndicatorProps) {
+function SyncIndicator({ status, isLoggedIn, onSignIn, signInError }: SyncIndicatorProps) {
   if (!isLoggedIn) {
     return (
-      <button
-        onClick={onSignIn}
-        className="flex items-center gap-1.5 px-3 py-2 text-[12px] text-stone/40
-          hover:text-stone transition-colors rounded-[6px] hover:bg-border-light"
-        title="Sign in to sync across devices"
-      >
-        <CloudOff size={13} />
-        <span className="hidden sm:inline">Sign in</span>
-      </button>
+      <div className="flex flex-col items-end gap-1">
+        <button
+          onClick={onSignIn}
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] text-stone/40
+            hover:text-stone transition-colors rounded-[6px] hover:bg-border-light"
+          title="Sign in to sync across devices"
+        >
+          <CloudOff size={13} />
+          <span className="hidden sm:inline">Sign in</span>
+        </button>
+        {signInError && (
+          <p className="text-[11px] text-[var(--color-status-red-text)] max-w-[260px] text-right leading-tight px-1">
+            {signInError}
+          </p>
+        )}
+      </div>
     )
   }
 
