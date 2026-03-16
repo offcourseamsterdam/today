@@ -51,6 +51,8 @@ export interface Task {
   recurrenceRule?: RecurrenceRule
   isUncomfortable: boolean
   fromEditor?: boolean  // true = created/managed by notes editor checkboxes
+  pomodoroSessions?: number
+  totalMinutesWorked?: number
   createdAt: string
   completedAt?: string
   lastCompletedDate?: string  // YYYY-MM-DD — last date this recurring task was checked off
@@ -76,14 +78,45 @@ export interface DailyPlan {
   deepBlock: {
     projectId: string
     intention?: string
+    calendarEventId?: string
   }
   shortTasks: string[] // Task IDs (up to ~3)
   shortProjects: string[] // Project IDs added to short tasks tier
   maintenanceTasks: string[] // Task IDs (from recurring + manual)
   maintenanceProjects: string[] // Project IDs added to maintenance tier
   meetings: string[] // Meeting IDs scheduled for this day
+  calendarEvents?: AssignedCalendarEvent[]
+  pomodoroLog?: PomodoroLogEntry[]
   isComplete: boolean
   completedAt?: string
+}
+
+// Calendar integration
+export interface CalendarEvent {
+  id: string
+  title: string
+  start: string        // ISO datetime
+  end: string          // ISO datetime
+  durationMinutes: number
+  isAllDay: boolean
+}
+
+export type TierAssignment = 'deep' | 'short' | 'maintenance' | 'unassigned'
+
+export interface AssignedCalendarEvent {
+  event: CalendarEvent
+  tier: TierAssignment
+  suggestedTier: TierAssignment
+}
+
+// Pomodoro tiers
+export type PlanTier = 'deep' | 'short' | 'maintenance'
+
+export interface PomodoroLogEntry {
+  taskId: string
+  tier: PlanTier
+  sessionsCompleted: number
+  totalMinutesWorked: number
 }
 
 export interface LifeWeeks {

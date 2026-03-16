@@ -8,6 +8,7 @@ import { makeTaskActions } from './tasksSlice'
 import { makeDailyPlanActions } from './plansSlice'
 import { makeSettingsActions } from './settingsSlice'
 import { makeMeetingActions } from './meetingsSlice'
+import { makeCalendarActions } from './calendarSlice'
 
 export const useStore = create<VandaagState>()(
   persist(
@@ -32,6 +33,9 @@ export const useStore = create<VandaagState>()(
       activeView: 'vandaag',
       greetedDate: null,
       artworkLoadingIds: [],
+      calendarEvents: [],
+      calendarLoading: false,
+      calendarError: null,
 
       setOpenProjectId: (id) => set({ openProjectId: id }),
 
@@ -42,6 +46,7 @@ export const useStore = create<VandaagState>()(
       ...makeDailyPlanActions(set, get),
       ...makeMeetingActions(set, get),
       ...makeSettingsActions(set, get),
+      ...makeCalendarActions(set, get),
 
       // Selectors
       getProjectsByStatus: (status) => get().projects.filter(p => p.status === status),

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import { DeepBlock } from './DeepBlock'
@@ -5,9 +6,17 @@ import { ShortTasks } from './ShortTasks'
 import { MaintenanceTier } from './MaintenanceTier'
 import { MeetingModal } from '../meetings/MeetingModal'
 import { getTodayQuote } from '../../lib/quotes'
+import type { PlanTier } from '../../types'
+
+interface CitadelContext {
+  tier: PlanTier
+  taskId: string
+  taskTitle: string
+  projectTitle?: string
+}
 
 interface VandaagViewProps {
-  onEnterCitadel: () => void
+  onEnterCitadel: (ctx?: CitadelContext) => void
   onDayDone: () => void
   collapsed: boolean
   onToggleCollapse: () => void
@@ -47,6 +56,37 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
           ? 'Getting started.'
           : null
 
+  // Tomorrow peek summary
+  const tomorrowDeepProjectId = tomorrowPlan?.deepBlock.projectId
+  const tomorrowDeepProject = tomorrowDeepProjectId
+    ? projects.find(p => p.id === tomorrowDeepProjectId)
+    : undefined
+  const tomorrowCalendarEventId = tomorrowPlan?.deepBlock.calendarEventId
+
+  const tomorrowIsComplete = tomorrowPlan?.isComplete === true
+
+  const [tomorrowVisible, setTomorrowVisible] = useState(false)
+  useEffect(() => {
+    if (tomorrowIsComplete) {
+      const t = setTimeout(() => setTomorrowVisible(true), 50)
+      return () => clearTimeout(t)
+    } else {
+      setTomorrowVisible(false)
+    }
+  }, [tomorrowIsComplete])
+
+  let tomorrowSummary = ''
+  if (tomorrowPlan && tomorrowIsComplete) {
+    const deepPart = tomorrowCalendarEventId
+      ? 'Meeting'
+      : tomorrowDeepProject
+        ? tomorrowDeepProject.title
+        : 'Deep block'
+    const shortCount = tomorrowPlan.shortTasks.length
+    const maintCount = tomorrowPlan.maintenanceTasks.length
+    tomorrowSummary = `${deepPart} · ${shortCount} short · ${maintCount} maint`
+  }
+
   return (
     <div className="max-w-[1400px] mx-auto mb-8">
       {/* Section header with collapse toggle */}
@@ -64,16 +104,31 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
           </span>
         </button>
         <div className="flex-1 h-px bg-border" />
-        {statusText && !collapsed && (
-          <span className="text-[11px] text-stone italic font-serif">{statusText}</span>
-        )}
-        {tomorrowPlan && (
+
+        {/* Tomorrow peek — shown when tomorrow plan is complete */}
+        {tomorrowIsComplete ? (
           <button
             onClick={onPeekTomorrow}
-            className="text-[11px] text-stone/40 hover:text-stone transition-colors flex items-center gap-1"
+            className={`text-[13px] text-stone cursor-pointer hover:text-charcoal transition-all
+              ${tomorrowVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}
+            style={{ transitionProperty: 'opacity, transform', transitionDuration: '300ms' }}
           >
-            Morgen →
+            Tomorrow → <span className="text-stone/50">{tomorrowSummary}</span>
           </button>
+        ) : (
+          <>
+            {statusText && !collapsed && (
+              <span className="text-[11px] text-stone italic font-serif">{statusText}</span>
+            )}
+            {tomorrowPlan && (
+              <button
+                onClick={onPeekTomorrow}
+                className="text-[11px] text-stone/40 hover:text-stone transition-colors flex items-center gap-1"
+              >
+                Morgen →
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -119,9 +174,13 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
       {!collapsed && (
         <>
           <div className="grid grid-cols-3 gap-4">
-            <DeepBlock onEnterCitadel={onEnterCitadel} />
-            <ShortTasks />
-            <MaintenanceTier />
+            <DeepBlock onEnterCitadel={() => onEnterCitadel()} />
+            <ShortTasks
+              onEnterCitadel={ctx => onEnterCitadel(ctx)}
+            />
+            <MaintenanceTier
+              onEnterCitadel={ctx => onEnterCitadel(ctx)}
+            />
           </div>
 
           {/* Stats */}

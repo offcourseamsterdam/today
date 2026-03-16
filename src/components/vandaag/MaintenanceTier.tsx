@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Plus, X, RotateCcw, ChevronDown } from 'lucide-react'
+import { Plus, X, RotateCcw, ChevronDown, Play } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
@@ -9,7 +9,11 @@ import { TaskCheckbox } from '../ui/TaskCheckbox'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { RecurringTemplates } from './RecurringTemplates'
 
-export function MaintenanceTier() {
+interface MaintenanceTierProps {
+  onEnterCitadel?: (ctx: { tier: 'maintenance'; taskId: string; taskTitle: string }) => void
+}
+
+export function MaintenanceTier({ onEnterCitadel }: MaintenanceTierProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const recurringTasks = useStore(s => s.recurringTasks)
@@ -131,6 +135,15 @@ export function MaintenanceTier() {
                 {task.title}
               </span>
               {task.isRecurring && <RotateCcw size={10} className="text-stone/25 flex-shrink-0" />}
+              {onEnterCitadel && (
+                <button
+                  onClick={() => onEnterCitadel({ tier: 'maintenance', taskId, taskTitle: task.title })}
+                  title="Start focus session"
+                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-stone transition-all"
+                >
+                  <Play size={13} />
+                </button>
+              )}
               <button
                 onClick={() => removeMaintenanceTask(taskId)}
                 className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all"

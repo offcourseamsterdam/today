@@ -15,6 +15,11 @@ import { PhilosophyPage } from './components/philosophy/PhilosophyPage'
 import { useStore } from './store'
 import { useAuth } from './hooks/useAuth'
 import { useFirestoreSync } from './hooks/useFirestoreSync'
+import type { PlanTier } from './types'
+
+type CitadelContext =
+  | { active: false }
+  | { active: true; tier: PlanTier; taskId: string; taskTitle: string; projectTitle?: string; intention?: string }
 
 function App() {
   const activeView = useStore(s => s.activeView)
@@ -27,7 +32,9 @@ function App() {
   const loadTomorrowPlanIfReady = useStore(s => s.loadTomorrowPlanIfReady)
   const greetedDate = useStore(s => s.greetedDate)
   const setGreetedDate = useStore(s => s.setGreetedDate)
-  const [citadelMode, setCitadelMode] = useState(false)
+  const dailyPlan = useStore(s => s.dailyPlan)
+  const projects = useStore(s => s.projects)
+  const [citadelCtx, setCitadelCtx] = useState<CitadelContext>({ active: false })
   const [showEnough, setShowEnough] = useState(false)
   const [vandaagCollapsed, setVandaagCollapsed] = useState(false)
   const [showTomorrowPeek, setShowTomorrowPeek] = useState(false)
@@ -70,8 +77,17 @@ function App() {
   }
 
   // Citadel Mode — full-screen dark focus overlay
-  if (citadelMode) {
-    return <CitadelMode onExit={() => setCitadelMode(false)} />
+  if (citadelCtx.active) {
+    return (
+      <CitadelMode
+        tier={citadelCtx.tier}
+        taskId={citadelCtx.taskId}
+        taskTitle={citadelCtx.taskTitle}
+        projectTitle={citadelCtx.projectTitle}
+        intention={citadelCtx.intention}
+        onExit={() => setCitadelCtx({ active: false })}
+      />
+    )
   }
 
   // Enough Screen — full-screen completion overlay
@@ -199,7 +215,23 @@ function App() {
         ) : (
           <>
             <VandaagView
-              onEnterCitadel={() => setCitadelMode(true)}
+              onEnterCitadel={(ctx) => {
+                if (ctx) {
+                  setCitadelCtx({ active: true, ...ctx })
+                } else {
+                  // Deep block entry — derive context from store
+                  const projectId = dailyPlan?.deepBlock.projectId ?? ''
+                  const project = projects.find(p => p.id === projectId)
+                  setCitadelCtx({
+                    active: true,
+                    tier: 'deep',
+                    taskId: projectId,
+                    taskTitle: project?.title ?? 'Deep Work',
+                    projectTitle: project?.title,
+                    intention: dailyPlan?.deepBlock.intention,
+                  })
+                }
+              }}
               onDayDone={() => setShowEnough(true)}
               collapsed={vandaagCollapsed}
               onToggleCollapse={() => setVandaagCollapsed(v => !v)}

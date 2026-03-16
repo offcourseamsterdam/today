@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
-import { auth, googleProvider } from '../lib/firebase'
+import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider, type User } from 'firebase/auth'
+import { auth, googleProvider, calendarProvider } from '../lib/firebase'
 
 export interface AuthState {
   user: User | null
   loading: boolean
   signInError: string | null
+  calendarAccessToken: string | null
   signIn: () => Promise<void>
   signOut: () => Promise<void>
+  requestCalendarAccess: () => Promise<string | null>
 }
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [signInError, setSignInError] = useState<string | null>(null)
+  const [calendarAccessToken, setCalendarAccessToken] = useState<string | null>(null)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -50,5 +53,22 @@ export function useAuth(): AuthState {
     }
   }
 
-  return { user, loading, signInError, signIn: handleSignIn, signOut: handleSignOut }
+  const requestCalendarAccess = async (): Promise<string | null> => {
+    try {
+      const result = await signInWithPopup(auth, calendarProvider)
+      const credential = GoogleAuthProvider.credentialFromResult(result)
+      const token = credential?.accessToken ?? null
+      setCalendarAccessToken(token)
+      return token
+    } catch (err: unknown) {
+      console.error('[Auth] calendar access failed:', err)
+      const code = (err as { code?: string }).code ?? ''
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return null
+      }
+      return null
+    }
+  }
+
+  return { user, loading, signInError, calendarAccessToken, signIn: handleSignIn, signOut: handleSignOut, requestCalendarAccess }
 }

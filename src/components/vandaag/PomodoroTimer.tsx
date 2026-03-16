@@ -1,14 +1,24 @@
 import { Play, Pause, RotateCcw } from 'lucide-react'
 import { useStore } from '../../store'
 import { usePomodoro } from '../../hooks/usePomodoro'
+import { TIER_DURATIONS } from '../../lib/calendar'
+import type { PlanTier } from '../../types'
 
 interface PomodoroTimerProps {
   onStartFocus?: () => void
+  tier?: PlanTier
 }
 
-export function PomodoroTimer({ onStartFocus }: PomodoroTimerProps) {
+export function PomodoroTimer({ onStartFocus, tier }: PomodoroTimerProps) {
   const settings = useStore(s => s.settings)
-  const { pomodoroMinutes: workMinutes, breakMinutes } = settings
+  const activeTier = tier ?? 'deep'
+  const workMinutes = activeTier === 'deep'
+    ? settings.pomodoroMinutes
+    : TIER_DURATIONS[activeTier].workMinutes
+  const breakMinutes = activeTier === 'deep'
+    ? settings.breakMinutes
+    : TIER_DURATIONS[activeTier].breakMinutes
+  const targetSessions = TIER_DURATIONS[activeTier].targetSessions
 
   const {
     isRunning,
@@ -78,7 +88,7 @@ export function PomodoroTimer({ onStartFocus }: PomodoroTimerProps) {
           </button>
         </div>
         <div className="text-[10px] uppercase tracking-wider text-stone/60">
-          {isBreak ? 'Break' : `Session ${sessionsCompleted + 1}`}
+          {isBreak ? 'Break' : `Session ${sessionsCompleted + 1} / ${targetSessions}`}
           {sessionsCompleted > 0 && !isBreak && (
             <span className="text-green ml-1">({sessionsCompleted} done)</span>
           )}

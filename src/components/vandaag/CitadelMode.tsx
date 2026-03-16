@@ -2,20 +2,23 @@ import { useState, useRef } from 'react'
 import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react'
 import { useStore } from '../../store'
 import { usePomodoro } from '../../hooks/usePomodoro'
+import { TIER_DURATIONS } from '../../lib/calendar'
+import type { PlanTier } from '../../types'
 
 interface CitadelModeProps {
+  tier: PlanTier
+  taskId: string
+  taskTitle: string
+  projectTitle?: string
+  intention?: string
   onExit: () => void
 }
 
-export function CitadelMode({ onExit }: CitadelModeProps) {
-  const projects = useStore(s => s.projects)
-  const dailyPlan = useStore(s => s.dailyPlan)
-  const settings = useStore(s => s.settings)
+export function CitadelMode({ tier, taskId, taskTitle, projectTitle, intention, onExit }: CitadelModeProps) {
   const addOrphanTask = useStore(s => s.addOrphanTask)
+  const logPomodoroSession = useStore(s => s.logPomodoroSession)
 
-  const projectId = dailyPlan?.deepBlock.projectId || ''
-  const project = projects.find(p => p.id === projectId)
-  const intention = dailyPlan?.deepBlock.intention
+  const { workMinutes, breakMinutes, targetSessions } = TIER_DURATIONS[tier]
 
   const {
     isRunning,
@@ -27,17 +30,17 @@ export function CitadelMode({ onExit }: CitadelModeProps) {
     toggle: handlePlayPause,
     reset: handleReset,
   } = usePomodoro({
-    workMinutes: settings.pomodoroMinutes,
-    breakMinutes: settings.breakMinutes,
+    workMinutes,
+    breakMinutes,
     autoStart: true,
+    onSessionComplete: () => logPomodoroSession(taskId, tier, workMinutes),
   })
 
-  // Scratchpad
+  // Scratchpad — only shown for deep/short tiers
   const [thought, setThought] = useState('')
   const [captured, setCaptured] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Capture intrusive thought → save as orphan task → clear
   function handleCapture(e: React.FormEvent) {
     e.preventDefault()
     if (!thought.trim()) return
@@ -47,9 +50,18 @@ export function CitadelMode({ onExit }: CitadelModeProps) {
     inputRef.current?.focus()
   }
 
-  // Radius for the large timer circle
   const radius = 120
   const circumference = 2 * Math.PI * radius
+
+  // Tier-specific labels
+  const sessionLabel =
+    tier === 'deep'
+      ? `${workMinutes} min focus · ${breakMinutes} min break`
+      : tier === 'short'
+        ? `1 session · ${workMinutes} min`
+        : `1 session · ${workMinutes} min`
+
+  const showScratchpad = tier === 'deep' || tier === 'short'
 
   return (
     <div className="fixed inset-0 z-50 bg-citadel-bg flex flex-col items-center justify-center animate-fade-in">
@@ -64,22 +76,41 @@ export function CitadelMode({ onExit }: CitadelModeProps) {
       </button>
 
       {/* Session counter — top right */}
-      {sessionsCompleted > 0 && (
-        <div className="absolute top-6 right-6 text-[11px] text-citadel-accent/60 uppercase tracking-wider">
-          {sessionsCompleted} session{sessionsCompleted > 1 ? 's' : ''} complete
-        </div>
-      )}
-
-      {/* Project name */}
-      <div className="text-center mb-12">
-        <h1 className="font-serif text-[28px] text-citadel-text tracking-[-0.02em]">
-          {project?.title || 'Deep Work'}
-        </h1>
-        {intention && (
-          <p className="text-[14px] text-citadel-text/40 mt-2 italic font-serif">
-            {intention}
-          </p>
+      <div className="absolute top-6 right-6 text-[11px] text-citadel-accent/60 uppercase tracking-wider">
+        Session {sessionsCompleted + 1} / {targetSessions}
+        {sessionsCompleted > 0 && (
+          <span className="ml-2 opacity-60">({sessionsCompleted} done)</span>
         )}
+      </div>
+
+      {/* Heading */}
+      <div className="text-center mb-12">
+        {tier === 'deep' ? (
+          <>
+            <h1 className="font-serif text-[28px] text-citadel-text tracking-[-0.02em]">
+              {projectTitle || taskTitle}
+            </h1>
+            {intention && (
+              <p className="text-[14px] text-citadel-text/40 mt-2 italic font-serif">
+                {intention}
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <h1 className="font-serif text-[24px] text-citadel-text tracking-[-0.02em]">
+              {taskTitle}
+            </h1>
+            {projectTitle && (
+              <p className="text-[13px] text-citadel-text/40 mt-1.5">
+                {projectTitle}
+              </p>
+            )}
+          </>
+        )}
+        <p className="text-[11px] text-citadel-accent/40 uppercase tracking-[0.1em] mt-3">
+          {sessionLabel}
+        </p>
       </div>
 
       {/* Large timer circle */}
@@ -132,35 +163,36 @@ export function CitadelMode({ onExit }: CitadelModeProps) {
         </button>
       </div>
 
-      {/* Scratchpad — capture intrusive thoughts */}
-      <div className="w-full max-w-[400px] px-6">
-        <form onSubmit={handleCapture} className="relative">
-          <input
-            ref={inputRef}
-            type="text"
-            value={thought}
-            onChange={e => setThought(e.target.value)}
-            placeholder="Intrusive thought? Capture it here and let it go..."
-            className="w-full bg-citadel-text/5 border border-citadel-text/10
-              rounded-[8px] px-4 py-3 text-[13px] text-citadel-text/70
-              placeholder:text-citadel-text/20 outline-none
-              focus:border-citadel-accent/30 transition-colors"
-          />
-        </form>
+      {/* Scratchpad — deep and short tiers only */}
+      {showScratchpad && (
+        <div className="w-full max-w-[400px] px-6">
+          <form onSubmit={handleCapture} className="relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={thought}
+              onChange={e => setThought(e.target.value)}
+              placeholder="Intrusive thought? Capture it here and let it go..."
+              className="w-full bg-citadel-text/5 border border-citadel-text/10
+                rounded-[8px] px-4 py-3 text-[13px] text-citadel-text/70
+                placeholder:text-citadel-text/20 outline-none
+                focus:border-citadel-accent/30 transition-colors"
+            />
+          </form>
 
-        {/* Recently captured thoughts */}
-        {captured.length > 0 && (
-          <div className="mt-3 space-y-1">
-            {captured.slice(-3).map((t, i) => (
-              <div key={i} className="text-[11px] text-citadel-text/20 flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-citadel-accent/30" />
-                {t}
-                <span className="text-citadel-accent/30 ml-auto">captured</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+          {captured.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {captured.slice(-3).map((t, i) => (
+                <div key={i} className="text-[11px] text-citadel-text/20 flex items-center gap-2">
+                  <span className="w-1 h-1 rounded-full bg-citadel-accent/30" />
+                  {t}
+                  <span className="text-citadel-accent/30 ml-auto">captured</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

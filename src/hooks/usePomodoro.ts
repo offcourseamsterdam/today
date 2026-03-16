@@ -5,6 +5,8 @@ interface UsePomodoroOptions {
   breakMinutes: number
   /** If true, timer starts running immediately on mount */
   autoStart?: boolean
+  /** Called after each completed work session */
+  onSessionComplete?: () => void
 }
 
 interface UsePomodoroReturn {
@@ -26,6 +28,7 @@ export function usePomodoro({
   workMinutes,
   breakMinutes,
   autoStart = false,
+  onSessionComplete,
 }: UsePomodoroOptions): UsePomodoroReturn {
   const [secondsLeft, setSecondsLeft] = useState(workMinutes * 60)
   const [isRunning, setIsRunning] = useState(autoStart)
@@ -39,9 +42,11 @@ export function usePomodoro({
   const isBreakRef = useRef(isBreak)
   const workMinutesRef = useRef(workMinutes)
   const breakMinutesRef = useRef(breakMinutes)
+  const onSessionCompleteRef = useRef(onSessionComplete)
   isBreakRef.current = isBreak
   workMinutesRef.current = workMinutes
   breakMinutesRef.current = breakMinutes
+  onSessionCompleteRef.current = onSessionComplete
 
   const stop = useCallback(() => {
     if (intervalRef.current) {
@@ -60,6 +65,7 @@ export function usePomodoro({
           stop()
           if (!isBreakRef.current) {
             setSessionsCompleted(s => s + 1)
+            onSessionCompleteRef.current?.()
             setIsBreak(true)
             return breakMinutesRef.current * 60
           } else {

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Check, ChevronDown, Clock } from 'lucide-react'
+import { Plus, X, Check, ChevronDown, Clock, Play } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
@@ -13,7 +13,11 @@ import { TaskItem } from '../ui/TaskItem'
 import { MeetingItem } from '../meetings/MeetingItem'
 import { AllMeetingsPanel } from '../meetings/AllMeetingsPanel'
 
-export function ShortTasks() {
+interface ShortTasksProps {
+  onEnterCitadel?: (ctx: { tier: 'short'; taskId: string; taskTitle: string; projectTitle?: string }) => void
+}
+
+export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const addOrphanTask = useStore(s => s.addOrphanTask)
@@ -111,16 +115,31 @@ export function ShortTasks() {
           const found = findTaskById(taskId, projects, orphanTasks)
           if (!found) return null
           return (
-            <TaskItem
-              key={taskId}
-              task={found.task}
-              projectTitle={found.projectTitle}
-              projects={projects}
-              onToggle={() => toggleTask(taskId)}
-              onRemove={() => removeShortTask(taskId)}
-              onAssignProject={(projectId) => moveOrphanTaskToProject(taskId, projectId)}
-              onOpenProject={setOpenProjectId}
-            />
+            <div key={taskId} className="flex items-center gap-3 py-2 group relative">
+              <TaskItem
+                task={found.task}
+                projectTitle={found.projectTitle}
+                projects={projects}
+                onToggle={() => toggleTask(taskId)}
+                onRemove={() => removeShortTask(taskId)}
+                onAssignProject={(projectId) => moveOrphanTaskToProject(taskId, projectId)}
+                onOpenProject={setOpenProjectId}
+              />
+              {onEnterCitadel && (
+                <button
+                  onClick={() => onEnterCitadel({
+                    tier: 'short',
+                    taskId,
+                    taskTitle: found.task.title,
+                    projectTitle: found.projectTitle,
+                  })}
+                  title="Start focus session"
+                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-stone transition-all flex-shrink-0"
+                >
+                  <Play size={13} />
+                </button>
+              )}
+            </div>
           )
         })}
 

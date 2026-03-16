@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand'
-import type { Project, Task, Meeting, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule } from '../types'
+import type { Project, Task, Meeting, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier } from '../types'
 
 export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
 
@@ -26,6 +26,11 @@ export interface VandaagState {
   activeView: ActiveView
   greetedDate: string | null  // YYYY-MM-DD — last date the morning screen was dismissed
   artworkLoadingIds: string[]  // project IDs with in-flight artwork fetch (not persisted)
+
+  // Calendar state (non-persisted)
+  calendarEvents: CalendarEvent[]
+  calendarLoading: boolean
+  calendarError: string | null
 
   // Navigation
   setOpenProjectId: (id: string | null) => void
@@ -112,6 +117,14 @@ export interface VandaagState {
   lockInTomorrow: () => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean
+
+  // Calendar actions
+  fetchCalendarEvents: (accessToken: string, date: string) => Promise<void>
+  setCalendarEvents: (events: CalendarEvent[]) => void
+  clearCalendarEvents: () => void
+
+  // Pomodoro logging
+  logPomodoroSession: (taskId: string, tier: PlanTier, minutesWorked: number) => void
 
   // Personal rules
   addPersonalRule: (rule: string) => void
