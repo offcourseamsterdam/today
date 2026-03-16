@@ -33,7 +33,6 @@ function App() {
   const greetedDate = useStore(s => s.greetedDate)
   const setGreetedDate = useStore(s => s.setGreetedDate)
   const dailyPlan = useStore(s => s.dailyPlan)
-  const projects = useStore(s => s.projects)
   const [citadelCtx, setCitadelCtx] = useState<CitadelContext>({ active: false })
   const [showEnough, setShowEnough] = useState(false)
   const [vandaagCollapsed, setVandaagCollapsed] = useState(false)

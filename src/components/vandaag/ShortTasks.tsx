@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, X, Check, ChevronDown, Clock, Play } from 'lucide-react'
+import { Plus, Check, ChevronDown, Clock, Play } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
