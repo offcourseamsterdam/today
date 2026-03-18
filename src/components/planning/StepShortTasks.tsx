@@ -6,7 +6,6 @@ import type { AssignedCalendarEvent } from '../../types'
 import { getAvailableTasks } from '../../lib/availableTasks'
 import { findTaskById } from '../../lib/taskLookup'
 import { TaskPickerList } from '../ui/TaskPickerList'
-import { getTodayString } from '../../store/helpers'
 
 interface StepShortTasksProps {
   taskIds: string[]
@@ -38,19 +37,12 @@ export function StepShortTasks({
   const addOrphanTask = useStore(s => s.addOrphanTask)
   const allMeetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
-  const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
-
   const [showPicker, setShowPicker] = useState(false)
   const [showMeetingPicker, setShowMeetingPicker] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
 
-  // Expand limit if there are overdue recurring tasks
-  const today = getTodayString()
-  const overdueCount = getTodayRecurringTasks().filter(t => t.lastCompletedDate !== today).length
-  const effectiveMax = overdueCount > 0 ? MAX_SLOTS + overdueCount : MAX_SLOTS
-
   const usedSlots = calendarShortEvents.length + taskIds.length + meetingIds.length
-  const remainingSlots = effectiveMax - usedSlots
+  const remainingSlots = MAX_SLOTS - usedSlots
 
   const availableTasks = getAvailableTasks(projects, orphanTasks, taskIds)
 
@@ -88,13 +80,8 @@ export function StepShortTasks({
         <div className="text-[11px] uppercase tracking-wider text-[#7A746A]/60">
           Short tasks
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-[#7A746A]/60">
-          {usedSlots}/{effectiveMax} slots
-          {overdueCount > 0 && (
-            <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5">
-              +{overdueCount} overdue
-            </span>
-          )}
+        <div className="text-[11px] text-[#7A746A]/60">
+          {usedSlots}/{MAX_SLOTS} slots
         </div>
       </div>
 
@@ -249,7 +236,7 @@ export function StepShortTasks({
 
       {remainingSlots === 0 && (
         <div className="text-[12px] text-[#7A746A]/50 text-center py-1">
-          All {effectiveMax} slots filled
+          All {MAX_SLOTS} slots filled
         </div>
       )}
     </div>

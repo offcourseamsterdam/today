@@ -5,6 +5,7 @@ import { useStore } from '../../store'
 import { findTaskById } from '../../lib/taskLookup'
 import { findMeetingById } from '../../lib/meetingLookup'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
+import { getTodayString } from '../../store/helpers'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { RecurringTemplates } from './RecurringTemplates'
@@ -64,6 +65,12 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
 
   const todayRecurring = getTodayRecurringTasks()
   const notYetAdded = todayRecurring.filter(t => !maintenanceTaskIds.includes(t.id))
+
+  // Recurring tasks due today that haven't been checked off (not in plan, not done)
+  const today = getTodayString()
+  const uncheckedRecurring = todayRecurring.filter(
+    t => t.lastCompletedDate !== today && !maintenanceTaskIds.includes(t.id)
+  )
 
   function handleAutoPopulate() {
     for (const task of notYetAdded) addMaintenanceTask(task.id)
@@ -178,6 +185,31 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
           </div>
         )}
       </div>
+
+      {/* Unchecked recurring tasks — not in plan, not done */}
+      {uncheckedRecurring.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-border/40">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-stone/40 italic">
+              {uncheckedRecurring.length} recurring task{uncheckedRecurring.length !== 1 ? 's' : ''} not yet done
+            </span>
+            <button
+              onClick={handleAutoPopulate}
+              className="text-[11px] text-stone/40 hover:text-stone transition-colors"
+            >
+              + add to plan
+            </button>
+          </div>
+          <div className="mt-1.5 space-y-0.5">
+            {uncheckedRecurring.map(t => (
+              <div key={t.id} className="flex items-center gap-2">
+                <RotateCcw size={10} className="text-stone/25 flex-shrink-0" />
+                <span className="text-[12px] text-stone/40 truncate">{t.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <RecurringTemplates />
     </div>
