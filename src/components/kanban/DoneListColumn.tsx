@@ -17,7 +17,7 @@ type DoneEntry =
     }
   | { kind: 'project'; project: Project }
 
-type DateGroup = 'vandaag' | 'gisteren' | 'deze_week' | 'eerder'
+type DateGroup = 'today' | 'yesterday' | 'this_week' | 'earlier'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -29,20 +29,20 @@ function entryTimestamp(entry: DoneEntry): string {
 
 function getGroup(entry: DoneEntry): DateGroup {
   const days = daysSince(entryTimestamp(entry))
-  if (days === 0) return 'vandaag'
-  if (days === 1) return 'gisteren'
-  if (days <= 7) return 'deze_week'
-  return 'eerder'
+  if (days === 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days <= 7) return 'this_week'
+  return 'earlier'
 }
 
 const GROUP_LABELS: Record<DateGroup, string> = {
-  vandaag: 'Vandaag',
-  gisteren: 'Gisteren',
-  deze_week: 'Deze week',
-  eerder: 'Eerder',
+  today: 'Today',
+  yesterday: 'Yesterday',
+  this_week: 'This week',
+  earlier: 'Earlier',
 }
 
-const GROUP_ORDER: DateGroup[] = ['vandaag', 'gisteren', 'deze_week', 'eerder']
+const GROUP_ORDER: DateGroup[] = ['today', 'yesterday', 'this_week', 'earlier']
 
 // ─── Column ───────────────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ export function DoneListColumn() {
       {totalCount === 0 ? (
         <div className="py-12 text-center">
           <p className="text-[13px] text-stone/30 font-serif italic">
-            Nog niets afgerond.
+            Nothing completed yet.
           </p>
         </div>
       ) : (
@@ -234,7 +234,7 @@ function TaskEntry({ entry, onRestore }: TaskEntryProps) {
         onClick={onRestore}
         className="opacity-0 group-hover:opacity-100 text-[10px] text-stone/40
           hover:text-charcoal transition-all flex-shrink-0 ml-1 whitespace-nowrap"
-        title="Zet terug"
+        title="Restore"
       >
         ↩
       </button>
@@ -279,7 +279,7 @@ function ProjectEntry({ entry, onRestore }: ProjectEntryProps) {
             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100
               text-[10px] text-white/70 hover:text-white bg-black/30 hover:bg-black/50
               rounded px-1.5 py-0.5 transition-all whitespace-nowrap backdrop-blur-sm"
-            title="Zet terug naar In Progress"
+            title="Restore to In Progress"
           >
             ↩
           </button>
@@ -305,7 +305,7 @@ function ProjectEntry({ entry, onRestore }: ProjectEntryProps) {
             {project.title}
           </div>
           <div className="text-[10px] text-stone/35 mt-0.5">
-            project afgerond{taskCount > 0 ? ` · ${taskCount} taken` : ''}
+            project completed{taskCount > 0 ? ` · ${taskCount} tasks` : ''}
           </div>
         </div>
         {/* Restore button when no cover (no overlay available) */}
@@ -314,7 +314,7 @@ function ProjectEntry({ entry, onRestore }: ProjectEntryProps) {
             onClick={onRestore}
             className="opacity-0 group-hover:opacity-100 text-[10px] text-stone/40
               hover:text-charcoal transition-all flex-shrink-0 whitespace-nowrap"
-            title="Zet terug naar In Progress"
+            title="Restore to In Progress"
           >
             ↩
           </button>

@@ -3,16 +3,8 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ProjectCard } from './ProjectCard'
 import { StandaloneTaskCard } from './StandaloneTaskCard'
+import { DropGhost } from '../ui/DropGhost'
 import type { Project, ProjectStatus, Task } from '../../types'
-
-function DropGhost({ height }: { height: number }) {
-  return (
-    <div
-      className="mb-3 rounded-[8px] border-2 border-dashed border-stone/30 transition-all duration-150"
-      style={{ height }}
-    />
-  )
-}
 
 interface KanbanColumnProps {
   id: ProjectStatus
@@ -27,7 +19,7 @@ interface KanbanColumnProps {
   onOrphanAssignProject: (taskId: string, projectId: string) => void
   onOrphanOpenNotes: (task: Task) => void
   allProjects: Project[]
-  dragPreview?: { activeId: string; afterItemId: string | null; height: number }
+  dragPreview?: { activeId: string; afterItemId: string | null; height: number; beforeFirst?: boolean }
 }
 
 export function KanbanColumn({
@@ -45,6 +37,7 @@ export function KanbanColumn({
   // Ghost insertion index within the projects array (for cross-column drop preview)
   const ghostIndex = dragPreview
     ? (() => {
+        if (dragPreview.beforeFirst) return 0
         if (!dragPreview.afterItemId) return projects.length
         const idx = projects.findIndex(p => p.id === dragPreview.afterItemId)
         return idx >= 0 ? idx + 1 : projects.length

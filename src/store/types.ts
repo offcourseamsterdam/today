@@ -21,7 +21,6 @@ export interface VandaagState {
   swapModalProjectId: string | null
   swapModalTargetStatus: 'in_progress' | 'waiting' | null  // destination for the incoming project
   waitingPromptProjectId: string | null  // triggers "Op wie wacht je?" modal
-  resolveWaitingProjectId: string | null  // triggers "Resolve waiting-on" modal
   openMeetingId: string | null  // null = closed, 'new' = create mode, uuid = edit mode
   activeView: ActiveView
   greetedDate: string | null  // YYYY-MM-DD — last date the morning screen was dismissed
@@ -47,9 +46,11 @@ export interface VandaagState {
   deleteProject: (id: string) => void
   moveProject: (id: string, newStatus: ProjectStatus) => boolean
   reorderProjects: (activeId: string, overId: string) => void
+  reorderProjectAfter: (activeId: string, afterId: string) => void
+  reorderProjectToEnd: (activeId: string) => void
+  reorderProjectToStart: (activeId: string) => void
   setSwapModalProjectId: (id: string | null) => void
   setWaitingPromptProjectId: (id: string | null) => void
-  setResolveWaitingProjectId: (id: string | null) => void
   setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => void
 
   // Task actions
@@ -76,6 +77,7 @@ export interface VandaagState {
   updateRecurringTask: (taskId: string, updates: Partial<Omit<Task, 'id'>>) => void
   deleteRecurringTask: (taskId: string) => void
   getTodayRecurringTasks: () => Task[]
+  getTomorrowRecurringTasks: () => Task[]
 
   // Checkbox-task sync
   syncCheckboxTasks: (projectId: string, checkboxTexts: string[]) => void

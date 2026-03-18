@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import type { Task, RecurrenceRule } from '../types'
 import type { StoreSet, StoreGet } from './types'
 import { isDueToday } from '../lib/recurrence'
@@ -117,6 +117,11 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
 
     getTodayRecurringTasks: (): Task[] => {
       return get().recurringTasks.filter(t => t.recurrenceRule && isDueToday(t.recurrenceRule))
+    },
+
+    getTomorrowRecurringTasks: (): Task[] => {
+      const tomorrow = addDays(new Date(), 1)
+      return get().recurringTasks.filter(t => t.recurrenceRule && isDueToday(t.recurrenceRule, tomorrow))
     },
 
     // Checkbox-task sync

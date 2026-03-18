@@ -1,9 +1,10 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { CategoryBadge } from '../ui/CategoryBadge'
-import { daysSince, getWaitingStatus, getWaitingLabel } from '../../lib/utils'
+import { WaitingBadge } from '../ui/WaitingBadge'
+import { daysSince, normalizeWaitingOn } from '../../lib/utils'
 import { CATEGORY_CONFIG } from '../../types'
-import type { Project, WaitingOn } from '../../types'
+import type { Project } from '../../types'
 import { useStore } from '../../store'
 
 const EMPTY_CONTEXTS: never[] = []
@@ -38,12 +39,10 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
   const progressPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
   const categoryConfig = CATEGORY_CONFIG[project.category]
 
-  // Normalise: handles legacy single-object AND new array format
-  const rawWaiting = project.waitingOn as unknown
-  const waitingEntries: WaitingOn[] = !rawWaiting ? [] : Array.isArray(rawWaiting) ? rawWaiting as WaitingOn[] : [rawWaiting as WaitingOn]
+  const waitingEntries = normalizeWaitingOn(project.waitingOn)
 
-  // Klaar items fade
-  const isKlaar = project.status === 'done'
+  // Done items fade
+  const isDone = project.status === 'done'
 
   // Next pending task (first non-done, non-dropped)
   const nextTask = project.tasks.find(t => t.status !== 'done' && t.status !== 'dropped')
@@ -59,9 +58,9 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
       className={`rounded-[8px] mb-3 cursor-grab overflow-hidden
         border transition-all duration-150
         ${isDragging
-          ? 'bg-border-light border-dashed border-border shadow-none opacity-40'
+          ? 'opacity-0 pointer-events-none'
           : 'bg-card border-transparent shadow-card hover:border-border hover:shadow-card-hover'}
-        ${isKlaar && !isDragging ? 'opacity-60' : ''}`}
+        ${isDone && !isDragging ? 'opacity-60' : ''}`}
     >
       {/* Cover image strip */}
       {project.coverImageUrl ? (
@@ -138,7 +137,7 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
         )}
 
         {/* Next task */}
-        {!isKlaar && (
+        {!isDone && (
           nextTask
             ? <div className="text-[11px] text-stone/55 mb-2 leading-snug">{nextTask.title}</div>
             : <div className="text-[11px] text-stone/30 mb-2 italic">Plan next task</div>
@@ -170,30 +169,17 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
         {/* Waiting entries */}
         {waitingEntries.length > 0 && (
           <div className="mt-2 flex flex-col gap-2">
-            {waitingEntries.map((entry, i) => {
-              const days = daysSince(entry.since)
-              const status = getWaitingStatus(days)
-              return (
-                <div key={i}>
-                  <div className="text-[11px] text-stone">{entry.person}</div>
-                  <span
-                    className={`inline-block text-[10px] px-1.5 py-0.5 rounded mt-0.5
-                      ${status === 'red'
-                        ? 'bg-status-red-bg text-status-red-text'
-                        : status === 'amber'
-                          ? 'bg-status-amber-bg text-status-amber-text'
-                          : 'bg-border-light text-stone'}`}
-                  >
-                    {getWaitingLabel(days)}
-                  </span>
-                </div>
-              )
-            })}
+            {waitingEntries.map((entry, i) => (
+              <div key={i}>
+                <div className="text-[11px] text-stone">{entry.person}</div>
+                <WaitingBadge since={entry.since} />
+              </div>
+            ))}
           </div>
         )}
 
         {/* Klaar completion info */}
-        {isKlaar && (
+        {isDone && (
           <div className="text-[11px] text-stone mt-1.5">
             Completed {daysSince(project.updatedAt) === 0
               ? 'today'

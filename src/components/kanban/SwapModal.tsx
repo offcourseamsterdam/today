@@ -48,11 +48,10 @@ export function SwapModal() {
           <X size={18} />
         </button>
 
-        <h2 className="font-serif text-lg text-charcoal mb-2">Welk project pauzeer je?</h2>
+        <h2 className="font-serif text-lg text-charcoal mb-2">Which project do you want to pause?</h2>
         <p className="text-[13px] text-stone mb-5 leading-relaxed">
-          Je hebt al {inProgressLimit} actieve projecten (bezig + wachtend). Om{' '}
-          <span className="font-medium text-charcoal">{incomingProject.title}</span> te starten,
-          moet je er één pauzeren.
+          You already have {inProgressLimit} active projects (in progress + waiting). To start{' '}
+          <span className="font-medium text-charcoal">{incomingProject.title}</span>, you need to pause one.
         </p>
 
         <div className="space-y-2">
@@ -69,12 +68,12 @@ export function SwapModal() {
                 <div className="mt-1 flex items-center gap-2">
                   <CategoryBadge category={project.category} />
                   {project.status === 'waiting' && (
-                    <span className="text-[11px] text-stone/50">· wachtend</span>
+                    <span className="text-[11px] text-stone/50">· waiting for</span>
                   )}
                 </div>
               </div>
               <span className="text-[12px] text-stone opacity-0 group-hover:opacity-100 transition-opacity">
-                Pauzeren
+                Pause
               </span>
             </button>
           ))}
@@ -84,7 +83,7 @@ export function SwapModal() {
           onClick={handleCancel}
           className="w-full mt-4 text-[13px] text-stone hover:text-charcoal py-2 transition-colors"
         >
-          Annuleer
+          Cancel
         </button>
       </div>
     </div>

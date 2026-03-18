@@ -5,5 +5,5 @@ interface PlanningModeProps {
 }
 
 export function PlanningMode({ onExit }: PlanningModeProps) {
-  return <PlanningModal onClose={onExit} />
+  return <PlanningModal onClose={onExit} day="tomorrow" />
 }

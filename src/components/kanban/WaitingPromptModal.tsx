@@ -19,7 +19,6 @@ export function WaitingPromptModal() {
     const trimmed = personInput.trim()
     if (!trimmed) return
     updateProject(waitingPromptProjectId!, {
-      status: 'waiting',
       waitingOn: [{ person: trimmed, since: new Date().toISOString() }],
     })
     setPersonInput('')
@@ -48,7 +47,7 @@ export function WaitingPromptModal() {
           <X size={18} />
         </button>
 
-        <h2 className="font-serif text-lg text-charcoal mb-1">Op wie wacht je?</h2>
+        <h2 className="font-serif text-lg text-charcoal mb-1">Who are you waiting for?</h2>
         <p className="text-[12px] text-stone mb-5 truncate">{project.title}</p>
 
         <input
@@ -56,7 +55,7 @@ export function WaitingPromptModal() {
           value={personInput}
           onChange={e => setPersonInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleConfirm()}
-          placeholder="Naam of bedrijf"
+          placeholder="Name or company"
           autoFocus
           className="w-full px-3 py-2 text-[13px] border border-border rounded-[6px] bg-canvas
             text-charcoal placeholder:text-stone/30
@@ -70,14 +69,14 @@ export function WaitingPromptModal() {
             className="flex-1 py-2 text-[13px] bg-charcoal text-canvas rounded-[6px]
               hover:bg-charcoal/90 transition-colors disabled:opacity-40"
           >
-            Bevestig
+            Confirm
           </button>
           <button
             onClick={handleCancel}
             className="flex-1 py-2 text-[13px] text-stone border border-border rounded-[6px]
               hover:text-charcoal hover:border-stone/30 transition-colors"
           >
-            Annuleer
+            Cancel
           </button>
         </div>
       </div>

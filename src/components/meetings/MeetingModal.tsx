@@ -17,6 +17,7 @@ export function MeetingModal() {
   } = useMeetingModal()
 
   const [title, setTitle] = useState('')
+  const [date, setDate] = useState('')
   const [time, setTime] = useState('09:00')
   const [durationMinutes, setDurationMinutes] = useState(30)
   const [location, setLocation] = useState('')
@@ -30,6 +31,7 @@ export function MeetingModal() {
   useEffect(() => {
     if (isNew) {
       setTitle('')
+      setDate('')
       setTime('09:00')
       setDurationMinutes(30)
       setLocation('')
@@ -40,6 +42,7 @@ export function MeetingModal() {
       setRuleState(EMPTY_RULE_STATE)
     } else if (existingMeeting) {
       setTitle(existingMeeting.title)
+      setDate(existingMeeting.date ?? '')
       setTime(existingMeeting.time)
       setDurationMinutes(existingMeeting.durationMinutes)
       setLocation(existingMeeting.location ?? '')
@@ -71,6 +74,7 @@ export function MeetingModal() {
 
     const meetingData: Omit<Meeting, 'id' | 'createdAt'> = {
       title: title.trim(),
+      date: date || undefined,
       time,
       durationMinutes,
       location: location.trim() || undefined,
@@ -151,8 +155,21 @@ export function MeetingModal() {
             />
           </div>
 
-          {/* Time + Duration row */}
+          {/* Date + Time row */}
           <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
+                Date <span className="normal-case text-stone/30">(optional)</span>
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
+                  text-[13px] text-charcoal
+                  outline-none focus:border-stone/40 transition-colors"
+              />
+            </div>
             <div className="flex-1">
               <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
                 Time
@@ -166,25 +183,27 @@ export function MeetingModal() {
                   outline-none focus:border-stone/40 transition-colors"
               />
             </div>
-            <div className="flex-1">
-              <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
-                Duration
-              </label>
-              <div className="flex gap-1">
-                {DURATION_PRESETS.map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setDurationMinutes(d)}
-                    className={`text-[10px] px-2 py-2 rounded-[4px] border transition-all flex-1
-                      ${durationMinutes === d
-                        ? 'border-charcoal bg-charcoal text-canvas'
-                        : 'border-border text-stone hover:border-stone/40'}`}
-                  >
-                    {d}m
-                  </button>
-                ))}
-              </div>
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
+              Duration
+            </label>
+            <div className="flex gap-1">
+              {DURATION_PRESETS.map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDurationMinutes(d)}
+                  className={`text-[10px] px-2 py-2 rounded-[4px] border transition-all flex-1
+                    ${durationMinutes === d
+                      ? 'border-charcoal bg-charcoal text-canvas'
+                      : 'border-border text-stone hover:border-stone/40'}`}
+                >
+                  {d}m
+                </button>
+              ))}
             </div>
           </div>
 

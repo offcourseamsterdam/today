@@ -3,7 +3,8 @@ import { X, Check } from 'lucide-react'
 import { useStore } from '../../store'
 import { ProjectEditor } from '../editor/ProjectEditor'
 import type { Task, WaitingOn } from '../../types'
-import { daysSince, getWaitingStatus, getWaitingLabel } from '../../lib/utils'
+import { WaitingBadge } from '../ui/WaitingBadge'
+import { WaitingOnForm } from '../ui/WaitingOnForm'
 
 interface OrphanTaskModalProps {
   task: Task
@@ -168,8 +169,6 @@ export function OrphanTaskModal({ task, onClose }: OrphanTaskModalProps) {
                 </div>
                 <div className="space-y-2">
                   {waitingEntries.map((entry, index) => {
-                    const days = daysSince(entry.since)
-                    const status = getWaitingStatus(days)
                     if (editingWaitingIndex === index) {
                       return (
                         <div key={index} className="flex items-center gap-2">
@@ -204,12 +203,7 @@ export function OrphanTaskModal({ task, onClose }: OrphanTaskModalProps) {
                           {entry.person}
                         </button>
                         <div className="flex items-center gap-2">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full
-                            ${status === 'red' ? 'bg-[var(--color-status-red-bg)] text-[var(--color-status-red-text)]'
-                            : status === 'amber' ? 'bg-[var(--color-status-amber-bg)] text-[var(--color-status-amber-text)]'
-                            : 'bg-border-light text-stone'}`}>
-                            {getWaitingLabel(days)}
-                          </span>
+                          <WaitingBadge since={entry.since} shape="rounded-full" />
                           <button onClick={() => handleRemoveWaiting(index)}
                             className="text-stone hover:text-charcoal transition-colors p-0.5">
                             <X size={14} />
@@ -231,30 +225,12 @@ export function OrphanTaskModal({ task, onClose }: OrphanTaskModalProps) {
             )}
             {editingWaiting && (
               <div className="mt-2">
-                <label className="block text-[11px] uppercase tracking-[0.08em] text-stone font-medium mb-2">
-                  Who are you waiting on?
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    value={waitingPerson}
-                    onChange={e => setWaitingPerson(e.target.value)}
-                    placeholder="Name or company"
-                    autoFocus
-                    onKeyDown={e => e.key === 'Enter' && handleAddWaiting()}
-                    className="flex-1 px-3 py-2 rounded-[6px] border border-border bg-card
-                      text-[13px] text-charcoal placeholder:text-stone/40
-                      outline-none focus:border-stone/40 transition-colors"
-                  />
-                  <button onClick={handleAddWaiting} disabled={!waitingPerson.trim()}
-                    className="px-3 py-2 rounded-[6px] bg-charcoal text-canvas text-[12px]
-                      disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
-                    Add
-                  </button>
-                  <button onClick={() => { setEditingWaiting(false); setWaitingPerson('') }}
-                    className="px-2 text-stone hover:text-charcoal transition-colors">
-                    <X size={16} />
-                  </button>
-                </div>
+                <WaitingOnForm
+                  value={waitingPerson}
+                  onChange={setWaitingPerson}
+                  onConfirm={handleAddWaiting}
+                  onCancel={() => { setEditingWaiting(false); setWaitingPerson('') }}
+                />
               </div>
             )}
           </div>

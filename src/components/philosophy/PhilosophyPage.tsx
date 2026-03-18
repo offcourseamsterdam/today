@@ -322,7 +322,7 @@ export function PhilosophyPage({ onBack }: PhilosophyPageProps) {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[13px] text-charcoal">WIP limiet</span>
-                <span className="text-[11px] text-stone/50 ml-2">bezig + wachtend</span>
+                <span className="text-[11px] text-stone/50 ml-2">in progress + waiting for</span>
               </div>
               <input
                 type="number"

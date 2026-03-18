@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
-import { daysSince, getWaitingStatus, getWaitingLabel } from '../../lib/utils'
+import { X, Check } from 'lucide-react'
+import { normalizeWaitingOn } from '../../lib/utils'
+import { WaitingBadge } from '../ui/WaitingBadge'
+import { WaitingOnForm } from '../ui/WaitingOnForm'
 import type { Project, WaitingOn } from '../../types'
 
 interface ProjectModalWaitingProps {
@@ -8,21 +10,13 @@ interface ProjectModalWaitingProps {
   updateProject: (id: string, updates: Partial<Project>) => void
 }
 
-// Normalise whatever is in localStorage (old single-object or new array) to WaitingOn[]
-function toArray(raw: WaitingOn[] | unknown): WaitingOn[] {
-  if (!raw) return []
-  if (Array.isArray(raw)) return raw as WaitingOn[]
-  // Legacy: single object stored before the array migration
-  const obj = raw as WaitingOn
-  if (obj.person && obj.since) return [obj]
-  return []
-}
-
 export function ProjectModalWaiting({ project, updateProject }: ProjectModalWaitingProps) {
   const [editingWaiting, setEditingWaiting] = useState(false)
   const [waitingPerson, setWaitingPerson] = useState('')
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingValue, setEditingValue] = useState('')
 
-  const waitingEntries = toArray(project.waitingOn)
+  const waitingEntries = normalizeWaitingOn(project.waitingOn)
   const isBacklog = project.status === 'backlog'
   const isInProgress = project.status === 'in_progress'
   const isWaiting = project.status === 'waiting'
@@ -52,6 +46,26 @@ export function ProjectModalWaiting({ project, updateProject }: ProjectModalWait
     }
   }
 
+  function handleStartEdit(index: number) {
+    setEditingIndex(index)
+    setEditingValue(waitingEntries[index].person)
+  }
+
+  function handleSaveEdit() {
+    if (editingIndex === null || !editingValue.trim()) return
+    const updated = waitingEntries.map((e, i) =>
+      i === editingIndex ? { ...e, person: editingValue.trim() } : e
+    )
+    updateProject(project.id, { waitingOn: updated })
+    setEditingIndex(null)
+    setEditingValue('')
+  }
+
+  function handleCancelEdit() {
+    setEditingIndex(null)
+    setEditingValue('')
+  }
+
   return (
     <>
       {/* Waiting entries list — visible for 'waiting' and 'backlog' with entries */}
@@ -62,22 +76,47 @@ export function ProjectModalWaiting({ project, updateProject }: ProjectModalWait
           </div>
           <div className="space-y-2">
             {waitingEntries.map((entry, index) => {
-              const waitingDays = daysSince(entry.since)
-              const waitingStatus = getWaitingStatus(waitingDays)
+              if (editingIndex === index) {
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      value={editingValue}
+                      onChange={e => setEditingValue(e.target.value)}
+                      autoFocus
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleSaveEdit()
+                        if (e.key === 'Escape') handleCancelEdit()
+                      }}
+                      className="flex-1 px-2 py-1 rounded-[4px] border border-stone/40 bg-card
+                        text-[13px] text-charcoal outline-none focus:border-stone/60 transition-colors"
+                    />
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={!editingValue.trim()}
+                      className="text-stone hover:text-charcoal transition-colors disabled:opacity-30 p-0.5"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="text-stone hover:text-charcoal transition-colors p-0.5"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )
+              }
+
               return (
                 <div key={index} className="flex items-center justify-between">
-                  <span className="text-[13px] text-charcoal">{entry.person}</span>
+                  <button
+                    onClick={() => handleStartEdit(index)}
+                    className="text-[13px] text-charcoal hover:text-stone transition-colors text-left"
+                  >
+                    {entry.person}
+                  </button>
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full
-                        ${waitingStatus === 'red'
-                          ? 'bg-status-red-bg text-status-red-text'
-                          : waitingStatus === 'amber'
-                            ? 'bg-status-amber-bg text-status-amber-text'
-                            : 'bg-border-light text-stone'}`}
-                    >
-                      {getWaitingLabel(waitingDays)}
-                    </span>
+                    <WaitingBadge since={entry.since} shape="rounded-full" />
                     <button
                       onClick={() => handleRemoveWaiting(index)}
                       className="text-stone hover:text-charcoal transition-colors p-0.5"
@@ -98,7 +137,7 @@ export function ProjectModalWaiting({ project, updateProject }: ProjectModalWait
           onClick={() => setEditingWaiting(true)}
           className="text-[12px] text-stone hover:text-charcoal py-3 border-t border-border w-full text-left transition-colors"
         >
-          Move to Wachten Op...
+          Move to Waiting For...
         </button>
       )}
 
@@ -123,35 +162,12 @@ export function ProjectModalWaiting({ project, updateProject }: ProjectModalWait
       {/* Input form */}
       {editingWaiting && (
         <div className="py-3 border-t border-border">
-          <label className="block text-[11px] uppercase tracking-[0.08em] text-stone font-medium mb-2">
-            Who are you waiting on?
-          </label>
-          <div className="flex gap-2">
-            <input
-              value={waitingPerson}
-              onChange={e => setWaitingPerson(e.target.value)}
-              placeholder="Name or company"
-              autoFocus
-              className="flex-1 px-3 py-2 rounded-[6px] border border-border bg-card
-                text-[13px] text-charcoal placeholder:text-stone/40
-                outline-none focus:border-stone/40 transition-colors"
-              onKeyDown={e => e.key === 'Enter' && handleAddWaiting()}
-            />
-            <button
-              onClick={handleAddWaiting}
-              disabled={!waitingPerson.trim()}
-              className="px-3 py-2 rounded-[6px] bg-charcoal text-canvas text-[12px]
-                disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => { setEditingWaiting(false); setWaitingPerson('') }}
-              className="px-2 text-stone hover:text-charcoal transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
+          <WaitingOnForm
+            value={waitingPerson}
+            onChange={setWaitingPerson}
+            onConfirm={handleAddWaiting}
+            onCancel={() => { setEditingWaiting(false); setWaitingPerson('') }}
+          />
         </div>
       )}
     </>

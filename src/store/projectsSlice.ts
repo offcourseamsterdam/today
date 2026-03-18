@@ -46,30 +46,12 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
       const project = state.projects.find(p => p.id === id)
       if (!project) return false
 
-      if (newStatus === 'in_progress') {
-        // Feature 2: combined WIP check (in_progress + waiting, excluding self)
+      if (newStatus === 'in_progress' || newStatus === 'waiting') {
         const wipCount = state.projects.filter(
           p => (p.status === 'in_progress' || p.status === 'waiting') && p.id !== id
         ).length
         if (wipCount >= state.settings.inProgressLimit) {
-          set({ swapModalProjectId: id, swapModalTargetStatus: 'in_progress' })
-          return false
-        }
-      }
-
-      if (newStatus === 'waiting') {
-        // Feature 2: combined WIP check (in_progress + waiting, excluding self)
-        const wipCount = state.projects.filter(
-          p => (p.status === 'in_progress' || p.status === 'waiting') && p.id !== id
-        ).length
-        if (wipCount >= state.settings.inProgressLimit) {
-          set({ swapModalProjectId: id, swapModalTargetStatus: 'waiting' })
-          return false
-        }
-
-        // Feature 1: no waitingOn entries → show prompt modal
-        if (!project.waitingOn || project.waitingOn.length === 0) {
-          set({ waitingPromptProjectId: id })
+          set({ swapModalProjectId: id, swapModalTargetStatus: newStatus })
           return false
         }
       }
@@ -88,6 +70,11 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
         ),
       }))
 
+      // After landing in waiting with no entries, show the non-blocking "who are you waiting for?" prompt
+      if (newStatus === 'waiting' && (!project.waitingOn || project.waitingOn.length === 0)) {
+        set({ waitingPromptProjectId: id })
+      }
+
       return true
     },
 
@@ -102,9 +89,44 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
       })
     },
 
+    reorderProjectAfter: (activeId: string, afterId: string) => {
+      set(state => {
+        const arr = [...state.projects]
+        const oldIdx = arr.findIndex(p => p.id === activeId)
+        const afterIdx = arr.findIndex(p => p.id === afterId)
+        if (oldIdx === -1 || afterIdx === -1) return state
+        const [item] = arr.splice(oldIdx, 1)
+        // afterIdx shifts left by 1 if we removed from before it
+        const insertAt = oldIdx < afterIdx ? afterIdx : afterIdx + 1
+        arr.splice(insertAt, 0, item)
+        return { projects: arr }
+      })
+    },
+
+    reorderProjectToEnd: (activeId: string) => {
+      set(state => {
+        const arr = [...state.projects]
+        const idx = arr.findIndex(p => p.id === activeId)
+        if (idx === -1) return state
+        const [item] = arr.splice(idx, 1)
+        arr.push(item)
+        return { projects: arr }
+      })
+    },
+
+    reorderProjectToStart: (activeId: string) => {
+      set(state => {
+        const arr = [...state.projects]
+        const idx = arr.findIndex(p => p.id === activeId)
+        if (idx === -1) return state
+        const [item] = arr.splice(idx, 1)
+        arr.unshift(item)
+        return { projects: arr }
+      })
+    },
+
     setSwapModalProjectId: (id: string | null) => set({ swapModalProjectId: id }),
     setWaitingPromptProjectId: (id: string | null) => set({ waitingPromptProjectId: id }),
-    setResolveWaitingProjectId: (id: string | null) => set({ resolveWaitingProjectId: id }),
 
     setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => {
       set(state => ({

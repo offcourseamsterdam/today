@@ -157,7 +157,7 @@ export interface Settings {
 export const KANBAN_COLUMNS = [
   { id: 'backlog' as ProjectStatus, title: 'Backlog', limit: null },
   { id: 'in_progress' as ProjectStatus, title: 'In Progress', limit: null },
-  { id: 'waiting' as ProjectStatus, title: 'Wachten Op', limit: null },
+  { id: 'waiting' as ProjectStatus, title: 'Waiting For', limit: null },
 ] as const
 
 // Category display config

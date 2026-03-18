@@ -3,16 +3,8 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ProjectCard } from './ProjectCard'
 import { StandaloneTaskCard } from './StandaloneTaskCard'
+import { DropGhost } from '../ui/DropGhost'
 import type { Project, Task } from '../../types'
-
-function DropGhost({ height }: { height: number }) {
-  return (
-    <div
-      className="mb-3 rounded-[8px] border-2 border-dashed border-stone/30 transition-all duration-150"
-      style={{ height }}
-    />
-  )
-}
 
 interface BacklogSectionProps {
   sectionId: 'not_yet' | 'maybe'

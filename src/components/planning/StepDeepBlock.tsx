@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { format } from 'date-fns'
-import { Calendar } from 'lucide-react'
+import { Calendar, Clock, X } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import type { AssignedCalendarEvent } from '../../types'
@@ -11,6 +12,8 @@ interface StepDeepBlockProps {
   onProjectChange: (id: string) => void
   onIntentionChange: (i: string) => void
   calendarDeepEvent: AssignedCalendarEvent | null
+  deepMeetingId?: string
+  onSetDeepMeeting: (id: string | undefined) => void
 }
 
 function formatTimeRange(start: string, end: string): string {
@@ -24,10 +27,23 @@ export function StepDeepBlock({
   onProjectChange,
   onIntentionChange,
   calendarDeepEvent,
+  deepMeetingId,
+  onSetDeepMeeting,
 }: StepDeepBlockProps) {
-  const inProgressProjects = useStore(s =>
-    s.projects.filter(p => p.status === 'in_progress'),
-  )
+  const projects = useStore(s => s.projects)
+  const inProgressProjects = projects.filter(p => p.status === 'in_progress')
+  const allMeetings = useStore(s => s.meetings)
+  const recurringMeetings = useStore(s => s.recurringMeetings)
+  const [showMeetingPicker, setShowMeetingPicker] = useState(false)
+
+  const allMeetingsList = [...allMeetings, ...recurringMeetings]
+    .sort((a, b) => a.time.localeCompare(b.time))
+
+  const selectedMeeting = deepMeetingId
+    ? allMeetingsList.find(m => m.id === deepMeetingId)
+    : null
+
+  const availableMeetings = allMeetingsList.filter(m => m.id !== deepMeetingId)
 
   return (
     <div className="space-y-4">
@@ -53,9 +69,34 @@ export function StepDeepBlock({
             This meeting takes your deep focus block.
           </div>
         </div>
-      ) : (
+      ) : selectedMeeting ? (
+        /* Selected meeting replaces project */
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-[#7A746A]/60 mb-3">
+          <div className="text-[11px] uppercase tracking-wider text-[#7A746A]/60 mb-2">
+            Your deep focus block
+          </div>
+          <div className="rounded-[8px] border border-[#2A2724]/20 bg-[#FAF9F7] p-3 flex items-center gap-3 group">
+            <Clock size={14} className="text-[#7A746A] flex-shrink-0" />
+            <span className="text-[11px] text-[#7A746A]/60 font-mono flex-shrink-0">
+              {selectedMeeting.time}
+            </span>
+            <span className="text-[13px] font-medium text-[#2A2724] flex-1 truncate">
+              {selectedMeeting.title}
+            </span>
+            <span className="text-[10px] text-[#7A746A]/50 flex-shrink-0">
+              {selectedMeeting.durationMinutes}m
+            </span>
+            <button
+              onClick={() => onSetDeepMeeting(undefined)}
+              className="text-[#7A746A]/30 hover:text-[#7A746A] transition-colors ml-1"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="text-[11px] uppercase tracking-wider text-[#7A746A]/60">
             Which project gets your best energy?
           </div>
           {inProgressProjects.length === 0 ? (
@@ -106,6 +147,46 @@ export function StepDeepBlock({
                   </button>
                 )
               })}
+            </div>
+          )}
+
+          {/* Meeting picker — alternative to project */}
+          {allMeetingsList.length > 0 && (
+            <div className="pt-1">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex-1 h-px bg-[#E8E4DD]" />
+                <span className="text-[10px] text-[#7A746A]/40 uppercase tracking-wider">or</span>
+                <div className="flex-1 h-px bg-[#E8E4DD]" />
+              </div>
+              <button
+                onClick={() => setShowMeetingPicker(!showMeetingPicker)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-[6px]
+                  border border-dashed border-[#E8E4DD] text-[12px] text-[#7A746A]/60
+                  hover:border-[#7A746A]/30 hover:text-[#7A746A] transition-all"
+              >
+                <span>Use a meeting as deep block</span>
+                <span className="text-[10px]">{showMeetingPicker ? '▲' : '▼'}</span>
+              </button>
+              {showMeetingPicker && (
+                <div className="mt-1 rounded-[6px] border border-[#E8E4DD] bg-white overflow-hidden">
+                  {availableMeetings.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => { onSetDeepMeeting(m.id); setShowMeetingPicker(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#FAF9F7] transition-colors text-left border-b border-[#E8E4DD] last:border-0"
+                    >
+                      <Clock size={12} className="text-[#7A746A]/50 flex-shrink-0" />
+                      <span className="text-[11px] text-[#7A746A]/60 font-mono flex-shrink-0 w-10">
+                        {m.time}
+                      </span>
+                      <span className="text-[13px] text-[#2A2724] flex-1 truncate">{m.title}</span>
+                      <span className="text-[10px] text-[#7A746A]/50 flex-shrink-0">
+                        {m.durationMinutes}m
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

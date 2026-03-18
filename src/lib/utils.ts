@@ -1,4 +1,5 @@
 import { differenceInDays, format } from 'date-fns'
+import type { WaitingOn } from '../types'
 
 export function daysSince(dateString: string): number {
   return differenceInDays(new Date(), new Date(dateString))
@@ -18,4 +19,12 @@ export function getWaitingLabel(dayCount: number): string {
   if (dayCount >= 14) return `${dayCount} days — time to act`
   if (dayCount >= 7) return `${dayCount} days — follow up?`
   return `${dayCount} days`
+}
+
+export function normalizeWaitingOn(raw: unknown): WaitingOn[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw as WaitingOn[]
+  const obj = raw as WaitingOn
+  if (obj.person && obj.since) return [obj]
+  return []
 }

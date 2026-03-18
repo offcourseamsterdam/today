@@ -13,6 +13,7 @@ interface StepMaintenanceProps {
   meetingIds: string[]
   onAddMeeting: (id: string) => void
   onRemoveMeeting: (id: string) => void
+  day?: 'today' | 'tomorrow'
 }
 
 function formatTimeRange(start: string, end: string): string {
@@ -27,11 +28,13 @@ export function StepMaintenance({
   meetingIds,
   onAddMeeting,
   onRemoveMeeting,
+  day = 'tomorrow',
 }: StepMaintenanceProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const recurringTasks = useStore(s => s.recurringTasks)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
+  const getTomorrowRecurringTasks = useStore(s => s.getTomorrowRecurringTasks)
   const addOrphanTask = useStore(s => s.addOrphanTask)
   const allMeetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
@@ -40,9 +43,11 @@ export function StepMaintenance({
   const [showMeetingPicker, setShowMeetingPicker] = useState(false)
 
   const todayRecurring = getTodayRecurringTasks()
-  const notYetAdded = todayRecurring.filter(t => !taskIds.includes(t.id))
+  // When planning tomorrow, also include tomorrow's recurring tasks as suggestions
+  const planDayRecurring = day === 'tomorrow' ? getTomorrowRecurringTasks() : todayRecurring
+  const notYetAdded = planDayRecurring.filter(t => !taskIds.includes(t.id))
 
-  // Recurring tasks due today that weren't completed
+  // Recurring tasks due today that weren't completed (shown as overdue regardless of day)
   const today = getTodayString()
   const overdueRecurring = todayRecurring.filter(t => t.lastCompletedDate !== today)
   const overdueNotAdded = overdueRecurring.filter(t => !taskIds.includes(t.id))
@@ -126,7 +131,7 @@ export function StepMaintenance({
               hover:border-[#7A746A]/30 hover:text-[#2A2724] transition-all"
           >
             <RotateCcw size={11} />
-            Add {notYetAdded.length} recurring
+            Add {notYetAdded.length} {day === 'tomorrow' ? "tomorrow's" : "today's"} recurring
           </button>
         )}
       </div>

@@ -22,7 +22,21 @@
       "Bash(gh auth status)",
       "Bash(git --version)",
       "Bash(git init)",
-      "Bash(git add -A)"
+      "Bash(git add -A)",
+      "Bash(vercel --version)",
+      "Bash(vercel whoami:*)",
+      "Bash(find /Users/beer -maxdepth 3 -name package.json -not -path */node_modules/*)",
+      "Bash(sudo npm:*)",
+      "Bash(npx vercel:*)",
+      "Bash(grep -n \"activeView === ''planning''\" \"/Users/beer/Vandaag App/src/App.tsx\")",
+      "Bash(grep -n \"recordDayWorked\\\\|showToast\" \"/Users/beer/Vandaag App/src/store\"/*.ts)",
+      "Bash(sed -i '' 's/Welk project pauzeer je?/Which project do you want to pause?/g' src/components/kanban/SwapModal.tsx)",
+      "Bash(sed -i '' 's/Je hebt al {inProgressLimit} actieve projecten \\(bezig + wachtend\\). Om/You already have {inProgressLimit} active projects \\(in progress + waiting\\). To/g' src/components/kanban/SwapModal.tsx)",
+      "Bash(sed -i '' 's/ te starten,\\\\n.*moet je er één pauzeren./ to start, you need to pause one./g' src/components/kanban/SwapModal.tsx)",
+      "Bash(sed -i '' 's/· wachtend/· waiting for/g' src/components/kanban/SwapModal.tsx)",
+      "Bash(sed -i '' 's/Pauzeren/Pause/g' src/components/kanban/SwapModal.tsx)",
+      "Bash(sed -i '' 's/Annuleer/Cancel/g' src/components/kanban/SwapModal.tsx)",
+      "Bash(find '/Users/beer/Vandaag App/src/components' -name \"*.tsx\" -exec wc -l {} +)"
     ]
   }
 }

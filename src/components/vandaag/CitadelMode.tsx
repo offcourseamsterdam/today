@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react'
-import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react'
+import { Play, Pause, RotateCcw, ArrowLeft, NotebookPen, X } from 'lucide-react'
 import { useStore } from '../../store'
 import { usePomodoro } from '../../hooks/usePomodoro'
 import { TIER_DURATIONS } from '../../lib/calendar'
-import type { PlanTier } from '../../types'
+import type { PlanTier, Project } from '../../types'
+import { ProjectEditor } from '../editor/ProjectEditor'
 
 interface CitadelModeProps {
   tier: PlanTier
@@ -11,12 +12,21 @@ interface CitadelModeProps {
   taskTitle: string
   projectTitle?: string
   intention?: string
+  projectId?: string
   onExit: () => void
 }
 
-export function CitadelMode({ tier, taskId, taskTitle, projectTitle, intention, onExit }: CitadelModeProps) {
+export function CitadelMode({ tier, taskId, taskTitle, projectTitle, intention, projectId, onExit }: CitadelModeProps) {
   const addOrphanTask = useStore(s => s.addOrphanTask)
   const logPomodoroSession = useStore(s => s.logPomodoroSession)
+  const projects = useStore(s => s.projects)
+  const updateProject = useStore(s => s.updateProject)
+
+  const project: Project | undefined = projectId
+    ? projects.find(p => p.id === projectId)
+    : undefined
+
+  const [notesOpen, setNotesOpen] = useState(false)
 
   const { workMinutes, breakMinutes, targetSessions } = TIER_DURATIONS[tier]
 
@@ -165,20 +175,36 @@ export function CitadelMode({ tier, taskId, taskTitle, projectTitle, intention, 
 
       {/* Scratchpad — deep and short tiers only */}
       {showScratchpad && (
-        <div className="w-full max-w-[400px] px-6">
-          <form onSubmit={handleCapture} className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={thought}
-              onChange={e => setThought(e.target.value)}
-              placeholder="Intrusive thought? Capture it here and let it go..."
-              className="w-full bg-citadel-text/5 border border-citadel-text/10
-                rounded-[8px] px-4 py-3 text-[13px] text-citadel-text/70
-                placeholder:text-citadel-text/20 outline-none
-                focus:border-citadel-accent/30 transition-colors"
-            />
-          </form>
+        <div className="w-full max-w-[520px] px-6">
+          <div className="flex items-center gap-3">
+            <form onSubmit={handleCapture} className="relative flex-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={thought}
+                onChange={e => setThought(e.target.value)}
+                placeholder="Intrusive thought? Capture it here and let it go..."
+                className="w-full bg-citadel-text/5 border border-citadel-text/10
+                  rounded-[8px] px-4 py-3 text-[13px] text-citadel-text/70
+                  placeholder:text-citadel-text/20 outline-none
+                  focus:border-citadel-accent/30 transition-colors"
+              />
+            </form>
+
+            {project && (
+              <button
+                onClick={() => setNotesOpen(o => !o)}
+                className={`flex items-center gap-1.5 px-3 py-[11px] rounded-[8px] border text-[12px] transition-all whitespace-nowrap
+                  ${notesOpen
+                    ? 'border-citadel-text/20 bg-citadel-text/10 text-citadel-text/70'
+                    : 'border-citadel-text/10 text-citadel-text/30 hover:text-citadel-text/60 hover:border-citadel-text/20'
+                  }`}
+              >
+                <NotebookPen size={14} />
+                <span>Notes</span>
+              </button>
+            )}
+          </div>
 
           {captured.length > 0 && (
             <div className="mt-3 space-y-1">
@@ -191,6 +217,41 @@ export function CitadelMode({ tier, taskId, taskTitle, projectTitle, intention, 
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Notes bottom sheet */}
+      {project && (
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-10 bg-[#1C1A17] border-t border-citadel-text/10
+            transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
+            ${notesOpen ? 'translate-y-0' : 'translate-y-full'}`}
+          style={{ height: '55vh' }}
+        >
+          {/* Sheet header */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-citadel-text/10">
+            <span className="text-[11px] uppercase tracking-[0.08em] text-citadel-text/40 font-medium">
+              Project Notes
+            </span>
+            <button
+              onClick={() => setNotesOpen(false)}
+              className="text-citadel-text/30 hover:text-citadel-text/60 transition-colors p-1"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Editor — only mount when open */}
+          <div className="h-[calc(55vh-44px)] overflow-y-auto">
+            {notesOpen && (
+              <ProjectEditor
+                key={project.id}
+                initialContent={project.bodyContent}
+                onChange={content => updateProject(project.id, { bodyContent: content })}
+                theme="dark"
+              />
+            )}
+          </div>
         </div>
       )}
     </div>

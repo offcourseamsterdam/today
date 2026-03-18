@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import {
   DndContext,
   DragOverlay,
+  pointerWithin,
   closestCorners,
   KeyboardSensor,
   PointerSensor,
@@ -10,6 +11,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
+  type CollisionDetection,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from '../../store'
@@ -18,6 +20,7 @@ import { BacklogColumn } from './BacklogColumn'
 import { ProjectCard } from './ProjectCard'
 import { StandaloneTaskCard } from './StandaloneTaskCard'
 import { SwapModal } from './SwapModal'
+import { WaitingPromptModal } from './WaitingPromptModal'
 import { ProjectModal } from './ProjectModal'
 import { AddProjectModal } from './AddProjectModal'
 import { AddTaskModal } from './AddTaskModal'
@@ -33,6 +36,13 @@ interface KanbanBoardProps {
   onExternalAddTaskClose?: () => void
   externalAddProject?: boolean
   onExternalAddProjectClose?: () => void
+}
+
+// Custom collision detection: pointerWithin (accurate for columns) → closestCorners fallback
+const collisionStrategy: CollisionDetection = (args) => {
+  const within = pointerWithin(args)
+  if (within.length > 0) return within
+  return closestCorners(args)
 }
 
 // Derive which kanban column an orphan task belongs to
@@ -54,6 +64,9 @@ export function KanbanBoard({
   const orphanTasks = useStore(s => s.orphanTasks)
   const moveProject = useStore(s => s.moveProject)
   const reorderProjects = useStore(s => s.reorderProjects)
+  const reorderProjectAfter = useStore(s => s.reorderProjectAfter)
+  const reorderProjectToEnd = useStore(s => s.reorderProjectToEnd)
+  const reorderProjectToStart = useStore(s => s.reorderProjectToStart)
   const setProjectBacklogSection = useStore(s => s.setProjectBacklogSection)
   const swapModalProjectId = useStore(s => s.swapModalProjectId)
   const inProgressLimit = useStore(s => s.settings.inProgressLimit)
@@ -70,6 +83,7 @@ export function KanbanBoard({
     targetCol: ProjectStatus
     afterItemId: string | null
     height: number
+    beforeFirst?: boolean
   } | null>(null)
   const [dragHeight, setDragHeight] = useState(80)
   const [backlogDragPreview, setBacklogDragPreview] = useState<{
@@ -162,12 +176,22 @@ export function KanbanBoard({
 
     if (!targetCol) { setDragPreview(null); setBacklogDragPreview(null); return }
 
+    // Determine if we should insert before the first card (hovering in upper half of column)
+    const isColumnZone = !!overColumn
+    let beforeFirst = false
+    if (isColumnZone && over) {
+      const activeY = active.rect.current.translated?.top ?? 0
+      const overRect = over.rect
+      beforeFirst = activeY < overRect.top + overRect.height / 2
+    }
+
     setBacklogDragPreview(null)
     setDragPreview({
       activeId,
       targetCol,
       afterItemId: (overProject?.id ?? overOrphan?.id) ?? null,
       height: dragHeight,
+      beforeFirst,
     })
   }
 
@@ -216,14 +240,25 @@ export function KanbanBoard({
     // --- Project drag ---
     if (overId === 'backlog-not_yet' || overId === 'backlog-maybe') {
       const section = overId === 'backlog-not_yet' ? 'not_yet' : 'maybe'
-      moveProject(activeId, 'backlog')
+      const moved = moveProject(activeId, 'backlog')
+      if (moved) reorderProjectToEnd(activeId)
       setProjectBacklogSection(activeId, section)
       return
     }
 
     const targetColumn = KANBAN_COLUMNS.find(col => col.id === overId)
     if (targetColumn) {
-      moveProject(activeId, targetColumn.id)
+      const moved = moveProject(activeId, targetColumn.id)
+      if (moved) {
+        // Use pointer Y to decide top vs bottom of column
+        const activeY = active.rect.current.translated?.top ?? 0
+        const overRect = over.rect
+        if (overRect && activeY < overRect.top + overRect.height / 2) {
+          reorderProjectToStart(activeId)
+        } else {
+          reorderProjectToEnd(activeId)
+        }
+      }
       return
     }
 
@@ -234,7 +269,10 @@ export function KanbanBoard({
     if (!overProject) {
       // overId might be an orphan task card in the target column — use its column
       const overOrphan = orphanTasks.find(t => t.id === overId)
-      if (overOrphan) moveProject(activeId, getOrphanColumn(overOrphan))
+      if (overOrphan) {
+        const moved = moveProject(activeId, getOrphanColumn(overOrphan))
+        if (moved) reorderProjectToEnd(activeId)
+      }
       return
     }
 
@@ -247,7 +285,8 @@ export function KanbanBoard({
         }
       }
     } else {
-      moveProject(activeId, overProject.status)
+      const moved = moveProject(activeId, overProject.status)
+      if (moved) reorderProjectAfter(activeId, overId)
       if (overProject.status === 'backlog') {
         setProjectBacklogSection(activeId, overProject.backlogSection ?? 'not_yet')
       }
@@ -327,7 +366,7 @@ export function KanbanBoard({
         {/* Kanban columns */}
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionStrategy}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -354,7 +393,7 @@ export function KanbanBoard({
                   onProjectClick={handleProjectClick}
                   dragPreview={
                     dragPreview?.targetCol === col.id
-                      ? { activeId: dragPreview.activeId, afterItemId: dragPreview.afterItemId, height: dragPreview.height }
+                      ? { activeId: dragPreview.activeId, afterItemId: dragPreview.afterItemId, height: dragPreview.height, beforeFirst: dragPreview.beforeFirst }
                       : undefined
                   }
                   {...orphanHandlers}
@@ -389,6 +428,7 @@ export function KanbanBoard({
 
       {/* Modals */}
       {swapModalProjectId && <SwapModal />}
+      <WaitingPromptModal />
 
       <ProjectModal
         project={freshSelectedProject}

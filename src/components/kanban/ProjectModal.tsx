@@ -227,11 +227,11 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             />
           </div>
 
-          {/* Project afronden toggle */}
+          {/* Complete project toggle */}
           <div className="flex items-center justify-between py-3 border-t border-border">
             <div>
-              <span className="text-[13px] text-charcoal">Project afronden</span>
-              <span className="text-[11px] text-stone ml-2">Verplaatst naar de Done List</span>
+              <span className="text-[13px] text-charcoal">Complete project</span>
+              <span className="text-[11px] text-stone ml-2">Moved to Done</span>
             </div>
             <ToggleSwitch
               active={project.status === 'done'}
