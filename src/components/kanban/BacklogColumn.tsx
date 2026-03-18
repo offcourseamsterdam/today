@@ -132,7 +132,7 @@ export function BacklogColumn({
         <div className="h-px bg-border/50" />
         <BacklogSection
           sectionId="maybe"
-          title="Maybe"
+          title="Maybe / Someday"
           projects={maybeProjects}
           onProjectClick={onProjectClick}
           dragPreview={backlogDragPreview?.section === 'maybe' ? backlogDragPreview : undefined}
