@@ -53,6 +53,7 @@ export interface Task {
   isUncomfortable: boolean
   fromEditor?: boolean  // true = created/managed by notes editor checkboxes
   bodyContent?: string  // BlockNote JSON — rich text notes for standalone tasks
+  kanbanColumn?: ProjectStatus  // which kanban column this orphan task appears in
   pomodoroSessions?: number
   totalMinutesWorked?: number
   createdAt: string

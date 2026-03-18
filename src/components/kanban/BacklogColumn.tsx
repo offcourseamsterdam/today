@@ -1,0 +1,113 @@
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { ProjectCard } from './ProjectCard'
+import { StandaloneTaskCard } from './StandaloneTaskCard'
+import type { Project, Task } from '../../types'
+
+interface BacklogSectionProps {
+  sectionId: 'not_yet' | 'maybe'
+  title: string
+  projects: Project[]
+  onProjectClick: (project: Project) => void
+}
+
+function BacklogSection({ sectionId, title, projects, onProjectClick }: BacklogSectionProps) {
+  const droppableId = `backlog-${sectionId}`
+  const { setNodeRef, isOver } = useDroppable({ id: droppableId })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[60px] rounded-[6px] transition-colors duration-150 -mx-1 px-1 py-1
+        ${isOver ? 'bg-border-light' : ''}`}
+    >
+      <div className="text-[10px] uppercase tracking-[0.06em] text-stone/40 font-medium mb-2 px-1">
+        {title}
+      </div>
+      <SortableContext items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
+        {projects.map(project => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            onClick={() => onProjectClick(project)}
+          />
+        ))}
+      </SortableContext>
+      {projects.length === 0 && (
+        <div className="text-center text-stone/25 text-[12px] py-4 italic">
+          Drop here
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface BacklogColumnProps {
+  projects: Project[]
+  orphanTasks: Task[]
+  onProjectClick: (project: Project) => void
+  onOrphanComplete: (taskId: string) => void
+  onOrphanDelete: (taskId: string) => void
+  onOrphanAssignProject: (taskId: string, projectId: string) => void
+  onOrphanOpenNotes: (task: Task) => void
+  allProjects: Project[]
+}
+
+export function BacklogColumn({
+  projects, orphanTasks, onProjectClick,
+  onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, allProjects,
+}: BacklogColumnProps) {
+  const notYetProjects = projects.filter(p => (p.backlogSection ?? 'not_yet') === 'not_yet')
+  const maybeProjects = projects.filter(p => p.backlogSection === 'maybe')
+
+  return (
+    <div className="bg-border-light/60 rounded-[10px] p-4 min-h-[300px]">
+      {/* Column header */}
+      <div className="flex justify-between items-center mb-4 pb-3 border-b border-border">
+        <span className="text-[13px] font-semibold text-stone tracking-[0.01em]">Backlog</span>
+        <span className="text-[11px] px-2 py-0.5 rounded-full bg-border text-stone">
+          {projects.length}
+        </span>
+      </div>
+
+      {/* Orphan tasks at top */}
+      {orphanTasks.length > 0 && (
+        <>
+          <SortableContext items={orphanTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="mb-2">
+              {orphanTasks.map(task => (
+                <StandaloneTaskCard
+                  key={task.id}
+                  task={task}
+                  projects={allProjects}
+                  onComplete={() => onOrphanComplete(task.id)}
+                  onDelete={() => onOrphanDelete(task.id)}
+                  onAssignProject={projectId => onOrphanAssignProject(task.id, projectId)}
+                  onOpenNotes={() => onOrphanOpenNotes(task)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+          <div className="h-px bg-border/40 mb-3" />
+        </>
+      )}
+
+      {/* Sections */}
+      <div className="space-y-3">
+        <BacklogSection
+          sectionId="not_yet"
+          title="Not yet"
+          projects={notYetProjects}
+          onProjectClick={onProjectClick}
+        />
+        <div className="h-px bg-border/50" />
+        <BacklogSection
+          sectionId="maybe"
+          title="Maybe"
+          projects={maybeProjects}
+          onProjectClick={onProjectClick}
+        />
+      </div>
+    </div>
+  )
+}
