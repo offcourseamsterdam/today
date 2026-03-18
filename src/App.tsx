@@ -8,6 +8,7 @@ import { Toast } from './components/ui/Toast'
 import { VandaagView } from './components/vandaag/VandaagView'
 import { PlanningMode } from './components/vandaag/PlanningMode'
 import { PlanningModal } from './components/planning/PlanningModal'
+import { AddRecurringTaskModal } from './components/kanban/AddRecurringTaskModal'
 import { SmartFab } from './components/ui/SmartFab'
 import { MeetingsDrawer } from './components/meetings/MeetingsDrawer'
 import { CitadelMode } from './components/vandaag/CitadelMode'
@@ -45,6 +46,7 @@ function App() {
   const [showPlanTodayModal, setShowPlanTodayModal] = useState(false)
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [showAddProjectModal, setShowAddProjectModal] = useState(false)
+  const [showAddRecurringModal, setShowAddRecurringModal] = useState(false)
 
   // Track today's date string — updates if the tab is kept open past midnight
   const [todayStr, setTodayStr] = useState(() => format(new Date(), 'yyyy-MM-dd'))
@@ -92,6 +94,7 @@ function App() {
         taskTitle={citadelCtx.taskTitle}
         projectTitle={citadelCtx.projectTitle}
         intention={citadelCtx.intention}
+        projectId={citadelCtx.projectId}
         onExit={() => setCitadelCtx({ active: false })}
       />
     )
@@ -161,6 +164,7 @@ function App() {
         onOpenMeetings={() => setShowMeetingsDrawer(true)}
         onAddTask={() => setShowAddTaskModal(true)}
         onAddProject={() => setShowAddProjectModal(true)}
+        onAddRecurringTask={() => setShowAddRecurringModal(true)}
         onPlanToday={() => setShowPlanTodayModal(true)}
         onPlanTomorrow={() => setActiveView('planning')}
         onMyRules={() => setActiveView('philosophy')}
@@ -168,6 +172,9 @@ function App() {
         onSignOut={signOut}
         isSignedIn={!!user}
       />
+      {showAddRecurringModal && (
+        <AddRecurringTaskModal onClose={() => setShowAddRecurringModal(false)} />
+      )}
       <MeetingsDrawer open={showMeetingsDrawer} onClose={() => setShowMeetingsDrawer(false)} />
       {showPlanTodayModal && (
         <PlanningModal day="today" onClose={() => setShowPlanTodayModal(false)} />

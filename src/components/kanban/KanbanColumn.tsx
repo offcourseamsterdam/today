@@ -17,11 +17,13 @@ interface KanbanColumnProps {
   onOrphanAssignProject: (taskId: string, projectId: string) => void
   onOrphanOpenNotes: (task: Task) => void
   allProjects: Project[]
+  dragPreview?: { activeId: string; afterItemId: string | null }
 }
 
 export function KanbanColumn({
   id, title, projects, orphanTasks, limit, combinedCount, onProjectClick,
   onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, allProjects,
+  dragPreview,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id })
 
@@ -29,6 +31,18 @@ export function KanbanColumn({
   const atLimit = limit !== null && displayCount >= limit
 
   const allIds = [...orphanTasks.map(t => t.id), ...projects.map(p => p.id)]
+
+  // Build sortable items with drag preview insertion
+  const sortableIds = dragPreview
+    ? (() => {
+        const base = allIds.filter(id => id !== dragPreview.activeId)
+        if (!dragPreview.afterItemId) return [...base, dragPreview.activeId]
+        const idx = base.indexOf(dragPreview.afterItemId)
+        return idx >= 0
+          ? [...base.slice(0, idx + 1), dragPreview.activeId, ...base.slice(idx + 1)]
+          : [...base, dragPreview.activeId]
+      })()
+    : allIds
 
   return (
     <div
@@ -49,7 +63,7 @@ export function KanbanColumn({
         </span>
       </div>
 
-      <SortableContext items={allIds} strategy={verticalListSortingStrategy}>
+      <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
         {/* Orphan tasks at top */}
         {orphanTasks.map(task => (
           <StandaloneTaskCard
@@ -74,6 +88,11 @@ export function KanbanColumn({
             onClick={() => onProjectClick(project)}
           />
         ))}
+
+        {/* Ghost placeholder for incoming drag */}
+        {dragPreview && projects.length === 0 && orphanTasks.length === 0 && (
+          <div className="mb-3 rounded-[8px] border-2 border-dashed border-border h-20 opacity-60" />
+        )}
       </SortableContext>
 
       {projects.length === 0 && orphanTasks.length === 0 && (

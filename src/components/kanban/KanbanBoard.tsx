@@ -9,6 +9,7 @@ import {
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
+  type DragOverEvent,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from '../../store'
@@ -64,6 +65,11 @@ export function KanbanBoard({
 
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeOrphanTask, setActiveOrphanTask] = useState<Task | null>(null)
+  const [dragPreview, setDragPreview] = useState<{
+    activeId: string
+    targetCol: ProjectStatus
+    afterItemId: string | null
+  } | null>(null)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [selectedOrphanTask, setSelectedOrphanTask] = useState<Task | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -102,8 +108,46 @@ export function KanbanBoard({
     if (project) setActiveProject(project)
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over) { setDragPreview(null); return }
+    const activeId = active.id as string
+    const overId = over.id as string
+    if (activeId === overId) return
+
+    // Skip backlog sections — handled separately
+    if (overId === 'backlog-not_yet' || overId === 'backlog-maybe' || overId === 'backlog') {
+      setDragPreview(null)
+      return
+    }
+
+    // Determine which column the over target belongs to
+    const overColumn = KANBAN_COLUMNS.find(col => col.id === overId)
+    const overProject = projects.find(p => p.id === overId)
+    const overOrphan = orphanTasks.find(t => t.id === overId)
+
+    let targetCol: ProjectStatus | null = null
+    if (overColumn && overColumn.id !== 'backlog') {
+      targetCol = overColumn.id
+    } else if (overProject && overProject.status !== 'backlog') {
+      targetCol = overProject.status
+    } else if (overOrphan) {
+      const col = getOrphanColumn(overOrphan)
+      if (col !== 'backlog') targetCol = col
+    }
+
+    if (!targetCol) { setDragPreview(null); return }
+
+    setDragPreview({
+      activeId,
+      targetCol,
+      afterItemId: (overProject?.id ?? overOrphan?.id) ?? null,
+    })
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const wasOrphan = !!activeOrphanTask
+    setDragPreview(null)
     setActiveProject(null)
     setActiveOrphanTask(null)
 
@@ -251,6 +295,7 @@ export function KanbanBoard({
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <div className="grid grid-cols-4 gap-4">
@@ -272,6 +317,11 @@ export function KanbanBoard({
                   projects={getProjectsByStatus(col.id)}
                   orphanTasks={getOrphansByColumn(col.id)}
                   onProjectClick={handleProjectClick}
+                  dragPreview={
+                    dragPreview?.targetCol === col.id
+                      ? { activeId: dragPreview.activeId, afterItemId: dragPreview.afterItemId }
+                      : undefined
+                  }
                   {...orphanHandlers}
                 />
               )

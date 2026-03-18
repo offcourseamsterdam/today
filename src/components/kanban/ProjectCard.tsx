@@ -27,7 +27,6 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : undefined,
   }
 
   const contexts = useStore(s => s.settings.contexts ?? EMPTY_CONTEXTS)
@@ -57,11 +56,12 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
     <div
       {...wrapperProps}
       onClick={onClick}
-      className={`bg-card rounded-[8px] mb-3 shadow-card cursor-grab overflow-hidden
-        border border-transparent transition-all duration-150
-        hover:border-border hover:shadow-card-hover
-        ${isKlaar ? 'opacity-60' : ''}
-        ${isDragging ? 'shadow-card-hover ring-2 ring-stone/20' : ''}`}
+      className={`rounded-[8px] mb-3 cursor-grab overflow-hidden
+        border transition-all duration-150
+        ${isDragging
+          ? 'bg-border-light border-dashed border-border shadow-none opacity-40'
+          : 'bg-card border-transparent shadow-card hover:border-border hover:shadow-card-hover'}
+        ${isKlaar && !isDragging ? 'opacity-60' : ''}`}
     >
       {/* Cover image strip */}
       {project.coverImageUrl ? (
@@ -168,7 +168,7 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
         )}
 
         {/* Waiting entries */}
-        {project.status === 'waiting' && waitingEntries.length > 0 && (
+        {waitingEntries.length > 0 && (
           <div className="mt-2 flex flex-col gap-2">
             {waitingEntries.map((entry, i) => {
               const days = daysSince(entry.since)

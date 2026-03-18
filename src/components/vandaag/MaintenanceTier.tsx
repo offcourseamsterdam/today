@@ -8,7 +8,6 @@ import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { getTodayString } from '../../store/helpers'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
-import { RecurringTemplates } from './RecurringTemplates'
 
 interface MaintenanceTierProps {
   onEnterCitadel?: (ctx: { tier: 'maintenance'; taskId: string; taskTitle: string }) => void
@@ -211,7 +210,6 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
         </div>
       )}
 
-      <RecurringTemplates />
     </div>
   )
 }
