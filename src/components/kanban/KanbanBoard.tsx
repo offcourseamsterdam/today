@@ -201,8 +201,15 @@ export function KanbanBoard({
     }
 
     const draggedProject = projects.find(p => p.id === activeId)
+    if (!draggedProject) return
+
     const overProject = projects.find(p => p.id === overId)
-    if (!draggedProject || !overProject) return
+    if (!overProject) {
+      // overId might be an orphan task card in the target column — use its column
+      const overOrphan = orphanTasks.find(t => t.id === overId)
+      if (overOrphan) moveProject(activeId, getOrphanColumn(overOrphan))
+      return
+    }
 
     if (draggedProject.status === overProject.status) {
       reorderProjects(activeId, overId)
