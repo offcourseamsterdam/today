@@ -5,10 +5,12 @@ import { ProjectCard } from './ProjectCard'
 import { StandaloneTaskCard } from './StandaloneTaskCard'
 import type { Project, ProjectStatus, Task } from '../../types'
 
-function DropGhost() {
+function DropGhost({ height }: { height: number }) {
   return (
-    <div className="mb-3 h-[72px] rounded-[8px] border-2 border-dashed border-stone/25
-      bg-stone/5 transition-all duration-150" />
+    <div
+      className="mb-3 rounded-[8px] border-2 border-dashed border-stone/30 transition-all duration-150"
+      style={{ height }}
+    />
   )
 }
 
@@ -25,7 +27,7 @@ interface KanbanColumnProps {
   onOrphanAssignProject: (taskId: string, projectId: string) => void
   onOrphanOpenNotes: (task: Task) => void
   allProjects: Project[]
-  dragPreview?: { activeId: string; afterItemId: string | null }
+  dragPreview?: { activeId: string; afterItemId: string | null; height: number }
 }
 
 export function KanbanColumn({
@@ -90,7 +92,7 @@ export function KanbanColumn({
         {ghostIndex !== null
           ? projects.map((project, i) => (
               <React.Fragment key={project.id}>
-                {i === ghostIndex && <DropGhost />}
+                {i === ghostIndex && <DropGhost height={dragPreview!.height} />}
                 <ProjectCard
                   project={project}
                   onClick={() => onProjectClick(project)}
@@ -106,7 +108,7 @@ export function KanbanColumn({
             ))
         }
         {/* Ghost at end when index is past last project */}
-        {ghostIndex !== null && ghostIndex >= projects.length && <DropGhost />}
+        {ghostIndex !== null && ghostIndex >= projects.length && <DropGhost height={dragPreview!.height} />}
       </SortableContext>
 
       {projects.length === 0 && orphanTasks.length === 0 && !dragPreview && (

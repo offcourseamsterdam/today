@@ -69,7 +69,9 @@ export function KanbanBoard({
     activeId: string
     targetCol: ProjectStatus
     afterItemId: string | null
+    height: number
   } | null>(null)
+  const [dragHeight, setDragHeight] = useState(80)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [selectedOrphanTask, setSelectedOrphanTask] = useState<Task | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -99,6 +101,8 @@ export function KanbanBoard({
 
   function handleDragStart(event: DragStartEvent) {
     const id = event.active.id as string
+    const h = event.active.rect.current.initial?.height ?? 80
+    setDragHeight(h)
     const orphan = orphanTasks.find(t => t.id === id)
     if (orphan) {
       setActiveOrphanTask(orphan)
@@ -142,6 +146,7 @@ export function KanbanBoard({
       activeId,
       targetCol,
       afterItemId: (overProject?.id ?? overOrphan?.id) ?? null,
+      height: dragHeight,
     })
   }
 
@@ -326,7 +331,7 @@ export function KanbanBoard({
                   onProjectClick={handleProjectClick}
                   dragPreview={
                     dragPreview?.targetCol === col.id
-                      ? { activeId: dragPreview.activeId, afterItemId: dragPreview.afterItemId }
+                      ? { activeId: dragPreview.activeId, afterItemId: dragPreview.afterItemId, height: dragPreview.height }
                       : undefined
                   }
                   {...orphanHandlers}
