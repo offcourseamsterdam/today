@@ -27,6 +27,8 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
       shortProjects: state.dailyPlan.shortProjects ?? [],
       maintenanceProjects: state.dailyPlan.maintenanceProjects ?? [],
       meetings: state.dailyPlan.meetings ?? [],
+      shortMeetingIds: state.dailyPlan.shortMeetingIds ?? [],
+      maintenanceMeetingIds: state.dailyPlan.maintenanceMeetingIds ?? [],
     }
   }
   return {
@@ -37,6 +39,8 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
     maintenanceTasks: [],
     maintenanceProjects: [],
     meetings: [],
+    shortMeetingIds: [],
+    maintenanceMeetingIds: [],
     isComplete: false,
   }
 }
@@ -49,6 +53,8 @@ export function ensureTomorrowPlan(state: VandaagState): DailyPlan {
       shortProjects: state.tomorrowPlan.shortProjects ?? [],
       maintenanceProjects: state.tomorrowPlan.maintenanceProjects ?? [],
       meetings: state.tomorrowPlan.meetings ?? [],
+      shortMeetingIds: state.tomorrowPlan.shortMeetingIds ?? [],
+      maintenanceMeetingIds: state.tomorrowPlan.maintenanceMeetingIds ?? [],
     }
   }
   return {
@@ -59,6 +65,8 @@ export function ensureTomorrowPlan(state: VandaagState): DailyPlan {
     maintenanceTasks: [],
     maintenanceProjects: [],
     meetings: [],
+    shortMeetingIds: [],
+    maintenanceMeetingIds: [],
     isComplete: false,
   }
 }
@@ -76,6 +84,18 @@ export function makePlanActions(
     },
     clearDeepBlock: () => {
       setPlan({ ...ensurePlan(get()), deepBlock: { projectId: '' } })
+    },
+    completeDeepBlock: (projectTitle: string) => {
+      const plan = ensurePlan(get())
+      setPlan({
+        ...plan,
+        deepBlock: {
+          ...plan.deepBlock,
+          projectId: '',
+          completedProjectTitle: projectTitle,
+          completedAt: new Date().toISOString(),
+        },
+      })
     },
     addShortTask: (taskId: string) => {
       const plan = ensurePlan(get())
@@ -121,6 +141,30 @@ export function makePlanActions(
     removeMeeting: (meetingId: string) => {
       const plan = ensurePlan(get())
       setPlan({ ...plan, meetings: plan.meetings.filter(id => id !== meetingId) })
+    },
+    // Tier-aware meeting assignment
+    setDeepMeeting: (meetingId: string | undefined) => {
+      setPlan({ ...ensurePlan(get()), deepMeetingId: meetingId })
+    },
+    addShortMeeting: (meetingId: string) => {
+      const plan = ensurePlan(get())
+      const ids = plan.shortMeetingIds ?? []
+      if (ids.includes(meetingId)) return
+      setPlan({ ...plan, shortMeetingIds: [...ids, meetingId] })
+    },
+    removeShortMeeting: (meetingId: string) => {
+      const plan = ensurePlan(get())
+      setPlan({ ...plan, shortMeetingIds: (plan.shortMeetingIds ?? []).filter(id => id !== meetingId) })
+    },
+    addMaintenanceMeeting: (meetingId: string) => {
+      const plan = ensurePlan(get())
+      const ids = plan.maintenanceMeetingIds ?? []
+      if (ids.includes(meetingId)) return
+      setPlan({ ...plan, maintenanceMeetingIds: [...ids, meetingId] })
+    },
+    removeMaintenanceMeeting: (meetingId: string) => {
+      const plan = ensurePlan(get())
+      setPlan({ ...plan, maintenanceMeetingIds: (plan.maintenanceMeetingIds ?? []).filter(id => id !== meetingId) })
     },
   }
 }

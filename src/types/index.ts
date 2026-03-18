@@ -27,6 +27,7 @@ export interface Project {
   title: string
   category: Category
   status: ProjectStatus
+  backlogSection?: 'not_yet' | 'maybe'  // only relevant when status === 'backlog'
   contextIds?: string[]
   coverImageUrl?: string
   coverImageTitle?: string
@@ -51,6 +52,7 @@ export interface Task {
   recurrenceRule?: RecurrenceRule
   isUncomfortable: boolean
   fromEditor?: boolean  // true = created/managed by notes editor checkboxes
+  bodyContent?: string  // BlockNote JSON — rich text notes for standalone tasks
   pomodoroSessions?: number
   totalMinutesWorked?: number
   createdAt: string
@@ -61,6 +63,7 @@ export interface Task {
 export interface Meeting {
   id: string
   title: string
+  date?: string              // YYYY-MM-DD — if set, only appears on that day
   time: string               // "HH:mm" 24h format
   durationMinutes: number    // 15, 30, 45, 60, 90, etc.
   location?: string          // physical address or video link
@@ -79,12 +82,17 @@ export interface DailyPlan {
     projectId: string
     intention?: string
     calendarEventId?: string
+    completedProjectTitle?: string  // set when user clicks Done
+    completedAt?: string            // ISO timestamp of completion
   }
   shortTasks: string[] // Task IDs (up to ~3)
   shortProjects: string[] // Project IDs added to short tasks tier
   maintenanceTasks: string[] // Task IDs (from recurring + manual)
   maintenanceProjects: string[] // Project IDs added to maintenance tier
-  meetings: string[] // Meeting IDs scheduled for this day
+  meetings: string[] // Meeting IDs (legacy, kept for backward compat)
+  deepMeetingId?: string           // meeting assigned to the deep block
+  shortMeetingIds?: string[]       // meetings assigned to short three
+  maintenanceMeetingIds?: string[] // meetings assigned to maintenance
   calendarEvents?: AssignedCalendarEvent[]
   pomodoroLog?: PomodoroLogEntry[]
   isComplete: boolean

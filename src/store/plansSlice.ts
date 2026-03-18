@@ -20,6 +20,7 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     setDailyPlan: (plan: DailyPlan) => set({ dailyPlan: plan }),
     setDeepBlock: todayActions.setDeepBlock,
     clearDeepBlock: todayActions.clearDeepBlock,
+    completeDeepBlock: todayActions.completeDeepBlock,
     addShortTask: todayActions.addShortTask,
     removeShortTask: todayActions.removeShortTask,
     addMaintenanceTask: todayActions.addMaintenanceTask,
@@ -30,6 +31,11 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     removeMaintenanceProject: todayActions.removeMaintenanceProject,
     addMeetingToPlan: todayActions.addMeeting,
     removeMeetingFromPlan: todayActions.removeMeeting,
+    setDeepMeeting: todayActions.setDeepMeeting,
+    addShortMeeting: todayActions.addShortMeeting,
+    removeShortMeeting: todayActions.removeShortMeeting,
+    addMaintenanceMeeting: todayActions.addMaintenanceMeeting,
+    removeMaintenanceMeeting: todayActions.removeMaintenanceMeeting,
 
     addQuickMaintenanceTask: (title: string): string => {
       const id = uuid()
@@ -91,6 +97,11 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     removeTomorrowMaintenanceProject: tomorrowActions.removeMaintenanceProject,
     addTomorrowMeeting: tomorrowActions.addMeeting,
     removeTomorrowMeeting: tomorrowActions.removeMeeting,
+    setTomorrowDeepMeeting: tomorrowActions.setDeepMeeting,
+    addTomorrowShortMeeting: tomorrowActions.addShortMeeting,
+    removeTomorrowShortMeeting: tomorrowActions.removeShortMeeting,
+    addTomorrowMaintenanceMeeting: tomorrowActions.addMaintenanceMeeting,
+    removeTomorrowMaintenanceMeeting: tomorrowActions.removeMaintenanceMeeting,
 
     lockInTomorrow: () => {
       const state = get()

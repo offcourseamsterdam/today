@@ -50,6 +50,7 @@ export interface VandaagState {
   setSwapModalProjectId: (id: string | null) => void
   setWaitingPromptProjectId: (id: string | null) => void
   setResolveWaitingProjectId: (id: string | null) => void
+  setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => void
 
   // Task actions
   addTask: (title: string, projectId?: string) => string
@@ -86,6 +87,7 @@ export interface VandaagState {
   setDailyPlan: (plan: DailyPlan) => void
   setDeepBlock: (projectId: string, intention?: string) => void
   clearDeepBlock: () => void
+  completeDeepBlock: (projectTitle: string) => void
   addShortTask: (taskId: string) => void
   removeShortTask: (taskId: string) => void
   addMaintenanceTask: (taskId: string) => void
@@ -96,6 +98,16 @@ export interface VandaagState {
   removeMaintenanceProject: (projectId: string) => void
   addMeetingToPlan: (meetingId: string) => void
   removeMeetingFromPlan: (meetingId: string) => void
+  setDeepMeeting: (meetingId: string | undefined) => void
+  addShortMeeting: (meetingId: string) => void
+  removeShortMeeting: (meetingId: string) => void
+  addMaintenanceMeeting: (meetingId: string) => void
+  removeMaintenanceMeeting: (meetingId: string) => void
+  setTomorrowDeepMeeting: (meetingId: string | undefined) => void
+  addTomorrowShortMeeting: (meetingId: string) => void
+  removeTomorrowShortMeeting: (meetingId: string) => void
+  addTomorrowMaintenanceMeeting: (meetingId: string) => void
+  removeTomorrowMaintenanceMeeting: (meetingId: string) => void
   addQuickMaintenanceTask: (title: string) => string
   completeDailyPlan: () => void
   getTodayPlan: () => DailyPlan | null
