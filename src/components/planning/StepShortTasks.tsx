@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { X, Calendar } from 'lucide-react'
+import { X, Calendar, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import type { AssignedCalendarEvent } from '../../types'
 import { getAvailableTasks } from '../../lib/availableTasks'
 import { findTaskById } from '../../lib/taskLookup'
 import { TaskPickerList } from '../ui/TaskPickerList'
+import { getTodayString } from '../../store/helpers'
 
 interface StepShortTasksProps {
   taskIds: string[]
   onTaskIdsChange: (ids: string[]) => void
   calendarShortEvents: AssignedCalendarEvent[]
+  meetingIds: string[]
+  onAddMeeting: (id: string) => void
+  onRemoveMeeting: (id: string) => void
 }
 
 const MAX_SLOTS = 3
@@ -24,26 +28,40 @@ export function StepShortTasks({
   taskIds,
   onTaskIdsChange,
   calendarShortEvents,
+  meetingIds,
+  onAddMeeting,
+  onRemoveMeeting,
 }: StepShortTasksProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const recurringTasks = useStore(s => s.recurringTasks)
   const addOrphanTask = useStore(s => s.addOrphanTask)
+  const allMeetings = useStore(s => s.meetings)
+  const recurringMeetings = useStore(s => s.recurringMeetings)
+  const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
 
   const [showPicker, setShowPicker] = useState(false)
+  const [showMeetingPicker, setShowMeetingPicker] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
 
-  const usedSlots = calendarShortEvents.length + taskIds.length
-  const remainingSlots = MAX_SLOTS - usedSlots
+  // Expand limit if there are overdue recurring tasks
+  const today = getTodayString()
+  const overdueCount = getTodayRecurringTasks().filter(t => t.lastCompletedDate !== today).length
+  const effectiveMax = overdueCount > 0 ? MAX_SLOTS + overdueCount : MAX_SLOTS
+
+  const usedSlots = calendarShortEvents.length + taskIds.length + meetingIds.length
+  const remainingSlots = effectiveMax - usedSlots
 
   const availableTasks = getAvailableTasks(projects, orphanTasks, taskIds)
+
+  const allMeetingsList = [...allMeetings, ...recurringMeetings]
+    .sort((a, b) => a.time.localeCompare(b.time))
+  const availableMeetings = allMeetingsList.filter(m => !meetingIds.includes(m.id))
 
   function handleSelect(id: string) {
     if (remainingSlots <= 0) return
     onTaskIdsChange([...taskIds, id])
-    if (taskIds.length + 1 >= remainingSlots) {
-      setShowPicker(false)
-    }
+    if (taskIds.length + 1 >= remainingSlots) setShowPicker(false)
   }
 
   function handleRemove(id: string) {
@@ -58,14 +76,25 @@ export function StepShortTasks({
     setQuickAdd('')
   }
 
+  function handleAddMeeting(id: string) {
+    if (remainingSlots <= 0) return
+    onAddMeeting(id)
+    setShowMeetingPicker(false)
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-[11px] uppercase tracking-wider text-[#7A746A]/60">
           Short tasks
         </div>
-        <div className="text-[11px] text-[#7A746A]/60">
-          {usedSlots}/{MAX_SLOTS} slots
+        <div className="flex items-center gap-1.5 text-[11px] text-[#7A746A]/60">
+          {usedSlots}/{effectiveMax} slots
+          {overdueCount > 0 && (
+            <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5">
+              +{overdueCount} overdue
+            </span>
+          )}
         </div>
       </div>
 
@@ -87,6 +116,31 @@ export function StepShortTasks({
           </span>
         </div>
       ))}
+
+      {/* Selected meetings */}
+      {meetingIds.map(id => {
+        const meeting = allMeetingsList.find(m => m.id === id)
+        if (!meeting) return null
+        return (
+          <div
+            key={id}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] border border-[#E8E4DD] bg-[#FAF9F7]"
+          >
+            <Clock size={13} className="text-[#7A746A] flex-shrink-0" />
+            <span className="text-[11px] text-[#7A746A]/60 font-mono flex-shrink-0 w-10">
+              {meeting.time}
+            </span>
+            <span className="text-[13px] text-[#2A2724] flex-1 truncate">{meeting.title}</span>
+            <span className="text-[10px] text-[#7A746A]/50 flex-shrink-0">{meeting.durationMinutes}m</span>
+            <button
+              onClick={() => onRemoveMeeting(id)}
+              className="text-[#7A746A]/30 hover:text-[#7A746A] transition-colors"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )
+      })}
 
       {/* Selected tasks */}
       {taskIds.map(taskId => {
@@ -140,6 +194,36 @@ export function StepShortTasks({
             </div>
           )}
 
+          {availableMeetings.length > 0 && (
+            <>
+              <button
+                onClick={() => setShowMeetingPicker(!showMeetingPicker)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-[6px]
+                  border border-dashed border-[#E8E4DD] text-[12px] text-[#7A746A]/60
+                  hover:border-[#7A746A]/30 hover:text-[#7A746A] transition-all"
+              >
+                <span>Add a meeting</span>
+                <span className="text-[10px]">{showMeetingPicker ? '▲' : '▼'}</span>
+              </button>
+              {showMeetingPicker && (
+                <div className="rounded-[6px] border border-[#E8E4DD] bg-white overflow-hidden">
+                  {availableMeetings.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => handleAddMeeting(m.id)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#FAF9F7] transition-colors text-left border-b border-[#E8E4DD] last:border-0"
+                    >
+                      <Clock size={12} className="text-[#7A746A]/50 flex-shrink-0" />
+                      <span className="text-[11px] text-[#7A746A]/60 font-mono flex-shrink-0 w-10">{m.time}</span>
+                      <span className="text-[13px] text-[#2A2724] flex-1 truncate">{m.title}</span>
+                      <span className="text-[10px] text-[#7A746A]/50 flex-shrink-0">{m.durationMinutes}m</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
           <form onSubmit={handleQuickAdd} className="flex items-center gap-2">
             <input
               type="text"
@@ -165,7 +249,7 @@ export function StepShortTasks({
 
       {remainingSlots === 0 && (
         <div className="text-[12px] text-[#7A746A]/50 text-center py-1">
-          All {MAX_SLOTS} slots filled
+          All {effectiveMax} slots filled
         </div>
       )}
     </div>
