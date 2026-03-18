@@ -196,7 +196,7 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
 
           <div className="grid grid-cols-3 gap-4">
             {blockOrder.map((block, i) => (
-              <div key={block} className="relative group/tier">
+              <div key={block} className="relative group/tier h-full [&>*]:h-full">
                 {/* Swap arrows — visible on hover */}
                 <div className="absolute top-2 right-2 z-10 flex gap-0.5
                   opacity-0 group-hover/tier:opacity-100 transition-opacity">
