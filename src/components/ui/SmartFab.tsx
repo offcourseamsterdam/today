@@ -6,7 +6,7 @@ interface SmartFabProps {
   onOpenMeetings: () => void
   onAddTask: () => void
   onAddProject: () => void
-  onAddRecurringTask: () => void
+  onOpenRecurringTasks: () => void
   onPlanToday: () => void
   onPlanTomorrow: () => void
   onMyRules: () => void
@@ -19,7 +19,7 @@ export function SmartFab({
   onOpenMeetings,
   onAddTask,
   onAddProject,
-  onAddRecurringTask,
+  onOpenRecurringTasks,
   onPlanToday,
   onPlanTomorrow,
   onMyRules,
@@ -63,7 +63,7 @@ export function SmartFab({
   const actions = [
     { icon: <Calendar size={14} />, label: 'Meetings', action: onOpenMeetings },
     { icon: <CheckSquare size={14} />, label: 'New task', action: onAddTask },
-    { icon: <RotateCcw size={14} />, label: 'New recurring task', action: onAddRecurringTask },
+    { icon: <RotateCcw size={14} />, label: 'Recurring tasks', action: onOpenRecurringTasks },
     { icon: <FolderPlus size={14} />, label: 'New project', action: onAddProject },
     { icon: <BookOpen size={14} />, label: 'My rules', action: onMyRules },
     isSignedIn
