@@ -1,13 +1,10 @@
-import { useState, useMemo } from 'react'
-import { Plus, Check, ChevronDown, Clock, Play, X } from 'lucide-react'
+import { useMemo } from 'react'
+import { Check, Clock, Play, X } from 'lucide-react'
 import { useStore } from '../../store'
-import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
 import { findMeetingById } from '../../lib/meetingLookup'
-import { getAvailableTasks } from '../../lib/availableTasks'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { useTaskToggle } from '../../hooks/useTaskToggle'
-import { TaskPickerList } from '../ui/TaskPickerList'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { TaskItem } from '../ui/TaskItem'
 
@@ -19,25 +16,18 @@ interface ShortTasksProps {
 export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
-  const addOrphanTask = useStore(s => s.addOrphanTask)
   const moveOrphanTaskToProject = useStore(s => s.moveOrphanTaskToProject)
   const setOpenProjectId = useStore(s => s.setOpenProjectId)
   const allMeetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const {
-    shortTaskIds, addShortTask, removeShortTask,
-    shortProjectIds, addShortProject, removeShortProject,
+    shortTaskIds, removeShortTask,
+    shortProjectIds, removeShortProject,
     shortMeetingIds, removeShortMeeting,
   } = useTodayPlan()
   const showToast = useStore(s => s.showToast)
   const toggleTask = useTaskToggle(showToast)
 
-  const [showPicker, setShowPicker] = useState(false)
-  const [quickAdd, setQuickAdd] = useState('')
-
-  const availableTasks = getAvailableTasks(projects, orphanTasks, shortTaskIds)
-  const inProgressProjects = projects.filter(p => p.status === 'in_progress')
-  const availableProjects = inProgressProjects.filter(p => !shortProjectIds.includes(p.id))
 
   // Resolve short meeting IDs to objects, sorted by time
   const sortedShortMeetings = useMemo(() => {
@@ -47,16 +37,7 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
       .sort((a, b) => a.time.localeCompare(b.time))
   }, [shortMeetingIds, allMeetings, recurringMeetings])
 
-  function handleQuickAdd(e: React.FormEvent) {
-    e.preventDefault()
-    if (!quickAdd.trim()) return
-    const id = addOrphanTask(quickAdd.trim())
-    addShortTask(id)
-    setQuickAdd('')
-  }
-
   const slotsUsed = shortTaskIds.length + shortProjectIds.length + sortedShortMeetings.length
-  const slotsFull = slotsUsed >= 3
 
   return (
     <div className="bg-card rounded-[10px] p-5 shadow-card border border-border/50">
@@ -158,94 +139,13 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
           )
         })}
 
-        {shortProjectIds.length === 0 && slotsUsed === 0 && !showPicker && (
+        {shortProjectIds.length === 0 && slotsUsed === 0 && (
           <div className="text-[13px] text-stone/30 py-3 text-center italic">
             Especially the ones you've been putting off
           </div>
         )}
       </div>
 
-      {/* Add buttons */}
-      {!slotsFull && (
-        <>
-          <button
-            onClick={() => setShowPicker(!showPicker)}
-            className="w-full flex items-center justify-between px-3 py-2 mt-2 rounded-[6px]
-              border border-dashed border-stone/15 text-[12px] text-stone/40
-              hover:border-stone/25 hover:text-stone/60 transition-all"
-          >
-            <span>Add from projects</span>
-            <ChevronDown size={12} className={`transition-transform ${showPicker ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showPicker && (
-            <div className="mt-2 max-h-[260px] overflow-y-auto animate-slide-up">
-              {/* Projects section */}
-              {availableProjects.length > 0 && (
-                <div className="mb-1">
-                  <div className="px-1 py-1 text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium">
-                    Projects
-                  </div>
-                  {availableProjects.map(p => {
-                    const config = CATEGORY_CONFIG[p.category]
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => { addShortProject(p.id); setShowPicker(false) }}
-                        className="w-full flex items-center gap-2.5 px-2 py-2 rounded-[6px]
-                          text-left hover:bg-canvas transition-colors"
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: config.color }}
-                        />
-                        <span className="text-[12px] text-charcoal truncate">{p.title}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Tasks section */}
-              {availableTasks.length > 0 && (
-                <div>
-                  {availableProjects.length > 0 && (
-                    <div className="px-1 py-1 text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium border-t border-border/30 mt-1 pt-2">
-                      Tasks
-                    </div>
-                  )}
-                  <div className="space-y-0.5">
-                    <TaskPickerList
-                      tasks={availableTasks}
-                      projects={projects}
-                      onSelect={(id) => { addShortTask(id); if (shortTaskIds.length >= 2) setShowPicker(false) }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {availableProjects.length === 0 && availableTasks.length === 0 && (
-                <div className="text-[12px] text-stone/40 py-3 text-center italic">
-                  No projects or tasks available
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Quick add orphan task */}
-          <form onSubmit={handleQuickAdd} className="flex items-center gap-2 mt-2">
-            <Plus size={13} className="text-stone/25 flex-shrink-0" />
-            <input
-              type="text"
-              value={quickAdd}
-              onChange={e => setQuickAdd(e.target.value)}
-              placeholder="Or add a quick task..."
-              className="flex-1 text-[12px] text-charcoal placeholder:text-stone/25
-                bg-transparent border-none outline-none py-1"
-            />
-          </form>
-        </>
-      )}
     </div>
   )
 }

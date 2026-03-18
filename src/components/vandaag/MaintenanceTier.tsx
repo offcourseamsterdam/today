@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { format } from 'date-fns'
-import { Plus, X, RotateCcw, ChevronDown, Play } from 'lucide-react'
+import { X, RotateCcw, Play, Clock } from 'lucide-react'
 import { useStore } from '../../store'
-import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
+import { findMeetingById } from '../../lib/meetingLookup'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
@@ -11,27 +11,33 @@ import { RecurringTemplates } from './RecurringTemplates'
 
 interface MaintenanceTierProps {
   onEnterCitadel?: (ctx: { tier: 'maintenance'; taskId: string; taskTitle: string }) => void
+  onOpenMeetings?: () => void
 }
 
-export function MaintenanceTier({ onEnterCitadel }: MaintenanceTierProps) {
+export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceTierProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const recurringTasks = useStore(s => s.recurringTasks)
-  const addQuickMaintenanceTask = useStore(s => s.addQuickMaintenanceTask)
+  const allMeetings = useStore(s => s.meetings)
+  const recurringMeetings = useStore(s => s.recurringMeetings)
   const updateOrphanTask = useStore(s => s.updateOrphanTask)
   const updateRecurringTask = useStore(s => s.updateRecurringTask)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
   const {
     maintenanceTaskIds, addMaintenanceTask, removeMaintenanceTask,
-    maintenanceProjectIds, addMaintenanceProject, removeMaintenanceProject,
+    maintenanceProjectIds, removeMaintenanceProject,
+    maintenanceMeetingIds, removeMaintenanceMeeting,
   } = useTodayPlan()
 
-  const [quickAdd, setQuickAdd] = useState('')
-  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set())
-  const [showProjectPicker, setShowProjectPicker] = useState(false)
+  // Resolve maintenance meeting IDs to objects, sorted by time
+  const sortedMaintMeetings = useMemo(() => {
+    return maintenanceMeetingIds
+      .map(id => findMeetingById(id, allMeetings, recurringMeetings))
+      .filter((m): m is NonNullable<typeof m> => m !== null)
+      .sort((a, b) => a.time.localeCompare(b.time))
+  }, [maintenanceMeetingIds, allMeetings, recurringMeetings])
 
-  const inProgressProjects = projects.filter(p => p.status === 'in_progress')
-  const availableProjects = inProgressProjects.filter(p => !maintenanceProjectIds.includes(p.id))
+  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set())
 
   function handleToggle(taskId: string) {
     const wasCompleted = completedToday.has(taskId)
@@ -54,13 +60,6 @@ export function MaintenanceTier({ onEnterCitadel }: MaintenanceTierProps) {
         lastCompletedDate: wasCompleted ? undefined : format(new Date(), 'yyyy-MM-dd'),
       })
     }
-  }
-
-  function handleQuickAdd(e: React.FormEvent) {
-    e.preventDefault()
-    if (!quickAdd.trim()) return
-    addQuickMaintenanceTask(quickAdd.trim())
-    setQuickAdd('')
   }
 
   const todayRecurring = getTodayRecurringTasks()
@@ -99,6 +98,26 @@ export function MaintenanceTier({ onEnterCitadel }: MaintenanceTierProps) {
 
       {/* Today's tasks */}
       <div className="min-h-[40px] flex-1">
+        {/* Meeting cards */}
+        {sortedMaintMeetings.map(meeting => (
+          <div
+            key={meeting.id}
+            className="flex items-center gap-3 py-2 group cursor-pointer hover:bg-canvas rounded-[6px] px-1 -mx-1 transition-colors"
+            onClick={onOpenMeetings}
+          >
+            <Clock size={13} className="text-stone/40 flex-shrink-0" />
+            <span className="text-[11px] text-stone/50 font-mono flex-shrink-0">{meeting.time}</span>
+            <span className="text-[13px] text-charcoal flex-1 truncate">{meeting.title}</span>
+            <span className="text-[11px] text-stone/40 flex-shrink-0">{meeting.durationMinutes}m</span>
+            <button
+              onClick={e => { e.stopPropagation(); removeMaintenanceMeeting(meeting.id) }}
+              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        ))}
+
         {/* Selected projects */}
         {maintenanceProjectIds.map(projectId => {
           const project = projects.find(p => p.id === projectId)
@@ -159,58 +178,6 @@ export function MaintenanceTier({ onEnterCitadel }: MaintenanceTierProps) {
           </div>
         )}
       </div>
-
-      {/* Add project picker */}
-      <button
-        onClick={() => setShowProjectPicker(!showProjectPicker)}
-        className="w-full flex items-center justify-between px-3 py-2 mt-2 rounded-[6px]
-          border border-dashed border-stone/15 text-[12px] text-stone/40
-          hover:border-stone/25 hover:text-stone/60 transition-all"
-      >
-        <span>Add project</span>
-        <ChevronDown size={12} className={`transition-transform ${showProjectPicker ? 'rotate-180' : ''}`} />
-      </button>
-
-      {showProjectPicker && (
-        <div className="mt-2 max-h-[180px] overflow-y-auto animate-slide-up">
-          {availableProjects.length === 0 ? (
-            <div className="text-[12px] text-stone/40 py-3 text-center italic">
-              No projects available
-            </div>
-          ) : (
-            availableProjects.map(p => {
-              const config = CATEGORY_CONFIG[p.category]
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => { addMaintenanceProject(p.id); setShowProjectPicker(false) }}
-                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-[6px]
-                    text-left hover:bg-canvas transition-colors"
-                >
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: config.color }}
-                  />
-                  <span className="text-[12px] text-charcoal truncate">{p.title}</span>
-                </button>
-              )
-            })
-          )}
-        </div>
-      )}
-
-      {/* Quick add */}
-      <form onSubmit={handleQuickAdd} className="flex items-center gap-2 mt-2 mb-4">
-        <Plus size={13} className="text-stone/25 flex-shrink-0" />
-        <input
-          type="text"
-          value={quickAdd}
-          onChange={e => setQuickAdd(e.target.value)}
-          placeholder="Add maintenance task..."
-          className="flex-1 text-[12px] text-charcoal placeholder:text-stone/25
-            bg-transparent border-none outline-none py-1"
-        />
-      </form>
 
       <RecurringTemplates />
     </div>
