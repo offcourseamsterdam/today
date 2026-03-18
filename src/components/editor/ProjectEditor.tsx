@@ -9,9 +9,10 @@ interface ProjectEditorProps {
   initialContent: string
   onChange: (content: string) => void
   onCheckboxChange?: (checkboxTexts: string[]) => void
+  theme?: 'light' | 'dark'
 }
 
-export function ProjectEditor({ initialContent, onChange, onCheckboxChange }: ProjectEditorProps) {
+export function ProjectEditor({ initialContent, onChange, onCheckboxChange, theme = 'light' }: ProjectEditorProps) {
   const parsedContent = useMemo(() => {
     if (!initialContent) return undefined
     try {
@@ -55,7 +56,7 @@ export function ProjectEditor({ initialContent, onChange, onCheckboxChange }: Pr
     <div className="vandaag-editor">
       <BlockNoteView
         editor={editor}
-        theme="light"
+        theme={theme}
       />
     </div>
   )
