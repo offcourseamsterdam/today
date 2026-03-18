@@ -18,14 +18,23 @@ export function useTodayPlan() {
   const removeMaintenanceProject = useStore(s => s.removeMaintenanceProject)
   const setDeepBlock = useStore(s => s.setDeepBlock)
   const clearDeepBlock = useStore(s => s.clearDeepBlock)
+  const completeDeepBlock = useStore(s => s.completeDeepBlock)
   const addMeetingToPlan = useStore(s => s.addMeetingToPlan)
   const removeMeetingFromPlan = useStore(s => s.removeMeetingFromPlan)
+  const setDeepMeeting = useStore(s => s.setDeepMeeting)
+  const addShortMeeting = useStore(s => s.addShortMeeting)
+  const removeShortMeeting = useStore(s => s.removeShortMeeting)
+  const addMaintenanceMeeting = useStore(s => s.addMaintenanceMeeting)
+  const removeMaintenanceMeeting = useStore(s => s.removeMaintenanceMeeting)
 
   const shortTaskIds = useMemo(() => dailyPlan?.shortTasks ?? [], [dailyPlan])
   const maintenanceTaskIds = useMemo(() => dailyPlan?.maintenanceTasks ?? [], [dailyPlan])
   const shortProjectIds = useMemo(() => dailyPlan?.shortProjects ?? [], [dailyPlan])
   const maintenanceProjectIds = useMemo(() => dailyPlan?.maintenanceProjects ?? [], [dailyPlan])
   const meetingIds = useMemo(() => dailyPlan?.meetings ?? [], [dailyPlan])
+  const deepMeetingId = dailyPlan?.deepMeetingId
+  const shortMeetingIds = useMemo(() => dailyPlan?.shortMeetingIds ?? [], [dailyPlan])
+  const maintenanceMeetingIds = useMemo(() => dailyPlan?.maintenanceMeetingIds ?? [], [dailyPlan])
 
   return {
     dailyPlan,
@@ -34,6 +43,9 @@ export function useTodayPlan() {
     shortProjectIds,
     maintenanceProjectIds,
     meetingIds,
+    deepMeetingId,
+    shortMeetingIds,
+    maintenanceMeetingIds,
     addShortTask,
     removeShortTask,
     addMaintenanceTask,
@@ -44,7 +56,13 @@ export function useTodayPlan() {
     removeMaintenanceProject,
     setDeepBlock,
     clearDeepBlock,
+    completeDeepBlock,
     addMeetingToPlan,
     removeMeetingFromPlan,
+    setDeepMeeting,
+    addShortMeeting,
+    removeShortMeeting,
+    addMaintenanceMeeting,
+    removeMaintenanceMeeting,
   }
 }
