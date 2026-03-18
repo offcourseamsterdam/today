@@ -47,12 +47,6 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
       if (!project) return false
 
       if (newStatus === 'in_progress') {
-        // Feature 4: moving from waiting → in_progress with waitingOn entries → show resolve modal
-        if (project.status === 'waiting' && project.waitingOn && project.waitingOn.length > 0) {
-          set({ resolveWaitingProjectId: id })
-          return false
-        }
-
         // Feature 2: combined WIP check (in_progress + waiting, excluding self)
         const wipCount = state.projects.filter(
           p => (p.status === 'in_progress' || p.status === 'waiting') && p.id !== id
@@ -87,8 +81,8 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
                 ...p,
                 status: newStatus,
                 updatedAt: new Date().toISOString(),
-                // Clear waitingOn only when moving to backlog or done
-                waitingOn: (newStatus === 'backlog' || newStatus === 'done') ? undefined : p.waitingOn,
+                // Clear waitingOn only when moving to done; preserve for all other columns
+                waitingOn: newStatus === 'done' ? undefined : p.waitingOn,
               }
             : p
         ),
@@ -111,6 +105,14 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
     setSwapModalProjectId: (id: string | null) => set({ swapModalProjectId: id }),
     setWaitingPromptProjectId: (id: string | null) => set({ waitingPromptProjectId: id }),
     setResolveWaitingProjectId: (id: string | null) => set({ resolveWaitingProjectId: id }),
+
+    setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => {
+      set(state => ({
+        projects: state.projects.map(p =>
+          p.id === id ? { ...p, backlogSection: section } : p
+        ),
+      }))
+    },
 
     getMissionCriticalStats: () => {
       const { projects, orphanTasks } = get()

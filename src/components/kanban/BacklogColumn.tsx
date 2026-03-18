@@ -1,19 +1,38 @@
+import React from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ProjectCard } from './ProjectCard'
 import { StandaloneTaskCard } from './StandaloneTaskCard'
 import type { Project, Task } from '../../types'
 
+function DropGhost({ height }: { height: number }) {
+  return (
+    <div
+      className="mb-3 rounded-[8px] border-2 border-dashed border-stone/30 transition-all duration-150"
+      style={{ height }}
+    />
+  )
+}
+
 interface BacklogSectionProps {
   sectionId: 'not_yet' | 'maybe'
   title: string
   projects: Project[]
   onProjectClick: (project: Project) => void
+  dragPreview?: { afterItemId: string | null; height: number }
 }
 
-function BacklogSection({ sectionId, title, projects, onProjectClick }: BacklogSectionProps) {
+function BacklogSection({ sectionId, title, projects, onProjectClick, dragPreview }: BacklogSectionProps) {
   const droppableId = `backlog-${sectionId}`
   const { setNodeRef, isOver } = useDroppable({ id: droppableId })
+
+  const ghostIndex = dragPreview
+    ? (() => {
+        if (!dragPreview.afterItemId) return projects.length
+        const idx = projects.findIndex(p => p.id === dragPreview.afterItemId)
+        return idx >= 0 ? idx + 1 : projects.length
+      })()
+    : null
 
   return (
     <div
@@ -25,15 +44,22 @@ function BacklogSection({ sectionId, title, projects, onProjectClick }: BacklogS
         {title}
       </div>
       <SortableContext items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
-        {projects.map(project => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            onClick={() => onProjectClick(project)}
-          />
-        ))}
+        {ghostIndex !== null
+          ? projects.map((project, i) => (
+              <React.Fragment key={project.id}>
+                {i === ghostIndex && <DropGhost height={dragPreview!.height} />}
+                <ProjectCard project={project} onClick={() => onProjectClick(project)} />
+              </React.Fragment>
+            ))
+          : projects.map(project => (
+              <ProjectCard key={project.id} project={project} onClick={() => onProjectClick(project)} />
+            ))
+        }
+        {ghostIndex !== null && ghostIndex >= projects.length && (
+          <DropGhost height={dragPreview!.height} />
+        )}
       </SortableContext>
-      {projects.length === 0 && (
+      {projects.length === 0 && !dragPreview && (
         <div className="text-center text-stone/25 text-[12px] py-4 italic">
           Drop here
         </div>
@@ -51,11 +77,13 @@ interface BacklogColumnProps {
   onOrphanAssignProject: (taskId: string, projectId: string) => void
   onOrphanOpenNotes: (task: Task) => void
   allProjects: Project[]
+  backlogDragPreview?: { section: 'not_yet' | 'maybe'; afterItemId: string | null; height: number }
 }
 
 export function BacklogColumn({
   projects, orphanTasks, onProjectClick,
   onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, allProjects,
+  backlogDragPreview,
 }: BacklogColumnProps) {
   const notYetProjects = projects.filter(p => (p.backlogSection ?? 'not_yet') === 'not_yet')
   const maybeProjects = projects.filter(p => p.backlogSection === 'maybe')
@@ -99,6 +127,7 @@ export function BacklogColumn({
           title="Not yet"
           projects={notYetProjects}
           onProjectClick={onProjectClick}
+          dragPreview={backlogDragPreview?.section === 'not_yet' ? backlogDragPreview : undefined}
         />
         <div className="h-px bg-border/50" />
         <BacklogSection
@@ -106,6 +135,7 @@ export function BacklogColumn({
           title="Maybe"
           projects={maybeProjects}
           onProjectClick={onProjectClick}
+          dragPreview={backlogDragPreview?.section === 'maybe' ? backlogDragPreview : undefined}
         />
       </div>
     </div>

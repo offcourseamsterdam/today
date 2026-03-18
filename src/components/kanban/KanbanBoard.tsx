@@ -72,6 +72,11 @@ export function KanbanBoard({
     height: number
   } | null>(null)
   const [dragHeight, setDragHeight] = useState(80)
+  const [backlogDragPreview, setBacklogDragPreview] = useState<{
+    section: 'not_yet' | 'maybe'
+    afterItemId: string | null
+    height: number
+  } | null>(null)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [selectedOrphanTask, setSelectedOrphanTask] = useState<Task | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -114,14 +119,18 @@ export function KanbanBoard({
 
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event
-    if (!over) { setDragPreview(null); return }
+    if (!over) { setDragPreview(null); setBacklogDragPreview(null); return }
     const activeId = active.id as string
     const overId = over.id as string
     if (activeId === overId) return
 
-    // Skip backlog sections — handled separately
+    // Backlog section handling — show ghost inside the correct section
     if (overId === 'backlog-not_yet' || overId === 'backlog-maybe' || overId === 'backlog') {
       setDragPreview(null)
+      if (!activeOrphanTask) {
+        const section = overId === 'backlog-maybe' ? 'maybe' : 'not_yet'
+        setBacklogDragPreview({ section, afterItemId: null, height: dragHeight })
+      }
       return
     }
 
@@ -129,6 +138,17 @@ export function KanbanBoard({
     const overColumn = KANBAN_COLUMNS.find(col => col.id === overId)
     const overProject = projects.find(p => p.id === overId)
     const overOrphan = orphanTasks.find(t => t.id === overId)
+
+    // Project card in backlog — show ghost in its section
+    if (overProject && overProject.status === 'backlog' && !activeOrphanTask) {
+      setDragPreview(null)
+      setBacklogDragPreview({
+        section: overProject.backlogSection ?? 'not_yet',
+        afterItemId: overId,
+        height: dragHeight,
+      })
+      return
+    }
 
     let targetCol: ProjectStatus | null = null
     if (overColumn && overColumn.id !== 'backlog') {
@@ -140,8 +160,9 @@ export function KanbanBoard({
       if (col !== 'backlog') targetCol = col
     }
 
-    if (!targetCol) { setDragPreview(null); return }
+    if (!targetCol) { setDragPreview(null); setBacklogDragPreview(null); return }
 
+    setBacklogDragPreview(null)
     setDragPreview({
       activeId,
       targetCol,
@@ -153,6 +174,7 @@ export function KanbanBoard({
   function handleDragEnd(event: DragEndEvent) {
     const wasOrphan = !!activeOrphanTask
     setDragPreview(null)
+    setBacklogDragPreview(null)
     setActiveProject(null)
     setActiveOrphanTask(null)
 
@@ -315,6 +337,7 @@ export function KanbanBoard({
               projects={getProjectsByStatus('backlog')}
               orphanTasks={getOrphansByColumn('backlog')}
               onProjectClick={handleProjectClick}
+              backlogDragPreview={backlogDragPreview ?? undefined}
               {...orphanHandlers}
             />
             {KANBAN_COLUMNS.filter(col => col.id !== 'backlog').map(col => {

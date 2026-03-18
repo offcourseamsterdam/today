@@ -3,6 +3,7 @@ import { FolderOpen } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Task, Project } from '../../types'
+import { daysSince, getWaitingStatus, getWaitingLabel } from '../../lib/utils'
 
 interface StandaloneTaskCardProps {
   task: Task
@@ -53,7 +54,7 @@ export function StandaloneTaskCard({
       style={style}
       {...attributes}
       {...listeners}
-      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[8px] bg-card
+      className={`flex items-start gap-2.5 px-3.5 py-2.5 rounded-[8px] bg-card
         border border-border/50 shadow-card group transition-all hover:border-stone/20
         hover:shadow-card-hover relative mb-2 cursor-grab active:cursor-grabbing
         ${isDragging ? 'opacity-40' : ''}`}
@@ -65,13 +66,34 @@ export function StandaloneTaskCard({
           flex items-center justify-center transition-all duration-150
           border-stone/25 hover:border-stone/50"
       />
-      <span
-        className={`text-[13px] text-charcoal flex-1 ${onOpenNotes ? 'cursor-pointer hover:text-stone transition-colors' : ''}`}
-        onPointerDown={e => e.stopPropagation()}
-        onClick={onOpenNotes}
-      >
-        {task.title}
-      </span>
+      <div className="flex-1 min-w-0">
+        <span
+          className={`text-[13px] text-charcoal ${onOpenNotes ? 'cursor-pointer hover:text-stone transition-colors' : ''}`}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={onOpenNotes}
+        >
+          {task.title}
+        </span>
+        {task.waitingOn && task.waitingOn.length > 0 && (
+          <div className="mt-1 flex flex-col gap-0.5">
+            {task.waitingOn.map((entry, i) => {
+              const days = daysSince(entry.since)
+              const status = getWaitingStatus(days)
+              return (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-stone truncate">{entry.person}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0
+                    ${status === 'red' ? 'bg-[var(--color-status-red-bg)] text-[var(--color-status-red-text)]'
+                    : status === 'amber' ? 'bg-[var(--color-status-amber-bg)] text-[var(--color-status-amber-text)]'
+                    : 'bg-border-light text-stone'}`}>
+                    {getWaitingLabel(days)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Assign to project */}
       <div ref={pickerRef} className="relative">
