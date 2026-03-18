@@ -29,6 +29,7 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
       meetings: state.dailyPlan.meetings ?? [],
       shortMeetingIds: state.dailyPlan.shortMeetingIds ?? [],
       maintenanceMeetingIds: state.dailyPlan.maintenanceMeetingIds ?? [],
+      blockOrder: state.dailyPlan.blockOrder ?? ['deep', 'short', 'maintenance'],
     }
   }
   return {
@@ -165,6 +166,9 @@ export function makePlanActions(
     removeMaintenanceMeeting: (meetingId: string) => {
       const plan = ensurePlan(get())
       setPlan({ ...plan, maintenanceMeetingIds: (plan.maintenanceMeetingIds ?? []).filter(id => id !== meetingId) })
+    },
+    setBlockOrder: (order: Array<'deep' | 'short' | 'maintenance'>) => {
+      setPlan({ ...ensurePlan(get()), blockOrder: order })
     },
   }
 }

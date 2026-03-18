@@ -21,6 +21,7 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     setDeepBlock: todayActions.setDeepBlock,
     clearDeepBlock: todayActions.clearDeepBlock,
     completeDeepBlock: todayActions.completeDeepBlock,
+    setBlockOrder: todayActions.setBlockOrder,
     addShortTask: todayActions.addShortTask,
     removeShortTask: todayActions.removeShortTask,
     addMaintenanceTask: todayActions.addMaintenanceTask,

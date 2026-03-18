@@ -109,6 +109,7 @@ export interface VandaagState {
   addTomorrowMaintenanceMeeting: (meetingId: string) => void
   removeTomorrowMaintenanceMeeting: (meetingId: string) => void
   addQuickMaintenanceTask: (title: string) => string
+  setBlockOrder: (order: Array<'deep' | 'short' | 'maintenance'>) => void
   completeDailyPlan: () => void
   getTodayPlan: () => DailyPlan | null
   isDayComplete: () => boolean

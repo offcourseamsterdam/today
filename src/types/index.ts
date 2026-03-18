@@ -95,6 +95,7 @@ export interface DailyPlan {
   maintenanceMeetingIds?: string[] // meetings assigned to maintenance
   calendarEvents?: AssignedCalendarEvent[]
   pomodoroLog?: PomodoroLogEntry[]
+  blockOrder?: Array<'deep' | 'short' | 'maintenance'>
   isComplete: boolean
   completedAt?: string
 }
