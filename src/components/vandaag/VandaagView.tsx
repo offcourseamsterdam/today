@@ -13,6 +13,7 @@ interface CitadelContext {
   taskId: string
   taskTitle: string
   projectTitle?: string
+  projectId?: string
 }
 
 interface VandaagViewProps {
@@ -21,9 +22,10 @@ interface VandaagViewProps {
   collapsed: boolean
   onToggleCollapse: () => void
   onPeekTomorrow: () => void
+  onOpenMeetings: () => void
 }
 
-export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleCollapse, onPeekTomorrow }: VandaagViewProps) {
+export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleCollapse, onPeekTomorrow, onOpenMeetings }: VandaagViewProps) {
   const dailyPlan = useStore(s => s.dailyPlan)
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
   const projects = useStore(s => s.projects)
@@ -174,12 +176,14 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
       {!collapsed && (
         <>
           <div className="grid grid-cols-3 gap-4">
-            <DeepBlock onEnterCitadel={() => onEnterCitadel()} />
+            <DeepBlock onEnterCitadel={() => onEnterCitadel()} onOpenMeetings={onOpenMeetings} />
             <ShortTasks
               onEnterCitadel={ctx => onEnterCitadel(ctx)}
+              onOpenMeetings={onOpenMeetings}
             />
             <MaintenanceTier
               onEnterCitadel={ctx => onEnterCitadel(ctx)}
+              onOpenMeetings={onOpenMeetings}
             />
           </div>
 

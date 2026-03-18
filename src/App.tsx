@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { Sun, Moon, BookOpen, Cloud, CloudOff, Loader2, LogOut, CloudAlert } from 'lucide-react'
+import { Cloud, CloudOff, Loader2, CloudAlert } from 'lucide-react'
 import { EnsoLogo } from './components/ui/EnsoLogo'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { ProjectModal } from './components/kanban/ProjectModal'
 import { Toast } from './components/ui/Toast'
 import { VandaagView } from './components/vandaag/VandaagView'
 import { PlanningMode } from './components/vandaag/PlanningMode'
+import { PlanningModal } from './components/planning/PlanningModal'
+import { SmartFab } from './components/ui/SmartFab'
+import { MeetingsDrawer } from './components/meetings/MeetingsDrawer'
 import { CitadelMode } from './components/vandaag/CitadelMode'
 import { EnoughScreen } from './components/vandaag/EnoughScreen'
 import { NewDayScreen } from './components/vandaag/NewDayScreen'
@@ -19,7 +22,7 @@ import type { PlanTier } from './types'
 
 type CitadelContext =
   | { active: false }
-  | { active: true; tier: PlanTier; taskId: string; taskTitle: string; projectTitle?: string; intention?: string }
+  | { active: true; tier: PlanTier; taskId: string; taskTitle: string; projectTitle?: string; intention?: string; projectId?: string }
 
 function App() {
   const activeView = useStore(s => s.activeView)
@@ -36,7 +39,12 @@ function App() {
   const [citadelCtx, setCitadelCtx] = useState<CitadelContext>({ active: false })
   const [showEnough, setShowEnough] = useState(false)
   const [vandaagCollapsed, setVandaagCollapsed] = useState(false)
+  const [kanbanCollapsed, setKanbanCollapsed] = useState(false)
   const [showTomorrowPeek, setShowTomorrowPeek] = useState(false)
+  const [showMeetingsDrawer, setShowMeetingsDrawer] = useState(false)
+  const [showPlanTodayModal, setShowPlanTodayModal] = useState(false)
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false)
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false)
 
   // Track today's date string — updates if the tab is kept open past midnight
   const [todayStr, setTodayStr] = useState(() => format(new Date(), 'yyyy-MM-dd'))
@@ -121,59 +129,10 @@ function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Sync indicator */}
-          {!authLoading && (
-            <SyncIndicator status={syncStatus} isLoggedIn={!!user} onSignIn={signIn} signInError={signInError} />
-          )}
-
-          {/* View toggle */}
-          <div className="flex rounded-[6px] border border-border bg-card overflow-hidden">
-            <button
-              onClick={() => setActiveView('vandaag')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-[12px] transition-all
-                ${activeView === 'vandaag'
-                  ? 'bg-charcoal text-canvas'
-                  : 'text-stone hover:text-charcoal'}`}
-            >
-              <Sun size={13} />
-              Today
-            </button>
-            <button
-              onClick={() => setActiveView('planning')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-[12px] transition-all
-                ${activeView === 'planning'
-                  ? 'bg-charcoal text-canvas'
-                  : 'text-stone hover:text-charcoal'}`}
-            >
-              <Moon size={13} />
-              Plan
-            </button>
-          </div>
-
-          <button
-            onClick={() => setActiveView('philosophy')}
-            className={`flex items-center gap-1.5 text-[13px] px-4 py-2 border rounded-[6px] transition-all duration-150
-              ${activeView === 'philosophy'
-                ? 'bg-charcoal text-canvas border-charcoal'
-                : 'border-border bg-card text-stone hover:border-stone/30 hover:bg-canvas'}`}
-          >
-            <BookOpen size={13} />
-            My rules
-          </button>
-
-          {/* Logout — only shown when logged in */}
-          {user && (
-            <button
-              onClick={signOut}
-              title={`Signed in as ${user.displayName ?? user.email}`}
-              className="flex items-center gap-1.5 px-3 py-2 text-[12px] text-stone/50
-                hover:text-stone transition-colors rounded-[6px] hover:bg-border-light"
-            >
-              <LogOut size={13} />
-            </button>
-          )}
-        </div>
+        {/* Sync indicator — minimal dot only */}
+        {!authLoading && (
+          <SyncIndicator status={syncStatus} isLoggedIn={!!user} onSignIn={signIn} signInError={signInError} />
+        )}
       </header>
 
       {/* Tomorrow peek — slide-in drawer from the right */}
@@ -197,6 +156,23 @@ function App() {
         </div>
       </>
 
+      {/* Smart FAB */}
+      <SmartFab
+        onOpenMeetings={() => setShowMeetingsDrawer(true)}
+        onAddTask={() => setShowAddTaskModal(true)}
+        onAddProject={() => setShowAddProjectModal(true)}
+        onPlanToday={() => setShowPlanTodayModal(true)}
+        onPlanTomorrow={() => setActiveView('planning')}
+        onMyRules={() => setActiveView('philosophy')}
+        onSignIn={signIn}
+        onSignOut={signOut}
+        isSignedIn={!!user}
+      />
+      <MeetingsDrawer open={showMeetingsDrawer} onClose={() => setShowMeetingsDrawer(false)} />
+      {showPlanTodayModal && (
+        <PlanningModal day="today" onClose={() => setShowPlanTodayModal(false)} />
+      )}
+
       {/* Project modal — openable from any view */}
       {openProject && (
         <ProjectModal project={openProject} onClose={() => setOpenProjectId(null)} />
@@ -214,6 +190,7 @@ function App() {
         ) : (
           <>
             <VandaagView
+              onOpenMeetings={() => setShowMeetingsDrawer(true)}
               onEnterCitadel={(ctx) => {
                 if (ctx) {
                   setCitadelCtx({ active: true, ...ctx })
@@ -236,7 +213,14 @@ function App() {
               onToggleCollapse={() => setVandaagCollapsed(v => !v)}
               onPeekTomorrow={() => setShowTomorrowPeek(true)}
             />
-            <KanbanBoard />
+            <KanbanBoard
+              collapsed={kanbanCollapsed}
+              onToggleCollapse={() => setKanbanCollapsed(v => !v)}
+              externalAddTask={showAddTaskModal}
+              onExternalAddTaskClose={() => setShowAddTaskModal(false)}
+              externalAddProject={showAddProjectModal}
+              onExternalAddProjectClose={() => setShowAddProjectModal(false)}
+            />
           </>
         )}
       </main>
