@@ -1,35 +1,33 @@
 import { useState, useMemo } from 'react'
-import { Plus, Check, ChevronDown, Clock, Play } from 'lucide-react'
+import { Plus, Check, ChevronDown, Clock, Play, X } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
-import { resolveMeetingIds } from '../../lib/meetingLookup'
+import { findMeetingById } from '../../lib/meetingLookup'
 import { getAvailableTasks } from '../../lib/availableTasks'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { useTaskToggle } from '../../hooks/useTaskToggle'
 import { TaskPickerList } from '../ui/TaskPickerList'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { TaskItem } from '../ui/TaskItem'
-import { MeetingItem } from '../meetings/MeetingItem'
-import { AllMeetingsPanel } from '../meetings/AllMeetingsPanel'
 
 interface ShortTasksProps {
-  onEnterCitadel?: (ctx: { tier: 'short'; taskId: string; taskTitle: string; projectTitle?: string }) => void
+  onEnterCitadel?: (ctx: { tier: 'short'; taskId: string; taskTitle: string; projectTitle?: string; projectId?: string }) => void
+  onOpenMeetings?: () => void
 }
 
-export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
+export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
   const addOrphanTask = useStore(s => s.addOrphanTask)
   const moveOrphanTaskToProject = useStore(s => s.moveOrphanTaskToProject)
   const setOpenProjectId = useStore(s => s.setOpenProjectId)
-  const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
   const allMeetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const {
     shortTaskIds, addShortTask, removeShortTask,
     shortProjectIds, addShortProject, removeShortProject,
-    meetingIds, removeMeetingFromPlan,
+    shortMeetingIds, removeShortMeeting,
   } = useTodayPlan()
   const showToast = useStore(s => s.showToast)
   const toggleTask = useTaskToggle(showToast)
@@ -41,11 +39,13 @@ export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
   const inProgressProjects = projects.filter(p => p.status === 'in_progress')
   const availableProjects = inProgressProjects.filter(p => !shortProjectIds.includes(p.id))
 
-  // Resolve and sort meetings by time
-  const sortedMeetings = useMemo(() => {
-    return resolveMeetingIds(meetingIds, allMeetings, recurringMeetings)
+  // Resolve short meeting IDs to objects, sorted by time
+  const sortedShortMeetings = useMemo(() => {
+    return shortMeetingIds
+      .map(id => findMeetingById(id, allMeetings, recurringMeetings))
+      .filter((m): m is NonNullable<typeof m> => m !== null)
       .sort((a, b) => a.time.localeCompare(b.time))
-  }, [meetingIds, allMeetings, recurringMeetings])
+  }, [shortMeetingIds, allMeetings, recurringMeetings])
 
   function handleQuickAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -55,7 +55,7 @@ export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
     setQuickAdd('')
   }
 
-  const slotsUsed = shortTaskIds.length
+  const slotsUsed = shortTaskIds.length + shortProjectIds.length + sortedShortMeetings.length
   const slotsFull = slotsUsed >= 3
 
   return (
@@ -66,29 +66,40 @@ export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
           <span className="text-[11px] uppercase tracking-[0.08em] text-stone font-medium">
             Short three
           </span>
-          <span className="text-[11px] text-stone/50">{slotsUsed}/3 tasks</span>
-          {sortedMeetings.length > 0 && (
-            <span className="text-[11px] text-stone/50 flex items-center gap-1">
-              <Clock size={10} /> {sortedMeetings.length}
-            </span>
-          )}
+          <span className="text-[11px] text-stone/50">{slotsUsed}/3</span>
         </div>
       </div>
 
       {/* Content list */}
       <div className="min-h-[60px]">
-        {/* Meetings (sorted by time, shown first) */}
-        {sortedMeetings.map(meeting => (
-          <MeetingItem
+        {/* Meeting cards from plan assignment */}
+        {sortedShortMeetings.map(meeting => (
+          <div
             key={meeting.id}
-            meeting={meeting}
-            onRemove={() => removeMeetingFromPlan(meeting.id)}
-            onEdit={() => setOpenMeetingId(meeting.id)}
-          />
+            className="flex items-center gap-3 py-2 group cursor-pointer hover:bg-canvas/50 -mx-1 px-1 rounded-[4px] transition-colors"
+            onClick={onOpenMeetings}
+          >
+            <Clock size={13} className="text-cat-marketing flex-shrink-0" />
+            <span className="text-[10px] font-medium text-cat-marketing bg-cat-marketing/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              {meeting.time}
+            </span>
+            <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">
+              {meeting.title}
+            </span>
+            <span className="text-[10px] text-stone/40 flex-shrink-0">
+              {meeting.durationMinutes}m
+            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); removeShortMeeting(meeting.id) }}
+              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all flex-shrink-0"
+            >
+              <X size={13} />
+            </button>
+          </div>
         ))}
 
         {/* Divider between meetings and projects/tasks */}
-        {sortedMeetings.length > 0 && (shortProjectIds.length > 0 || shortTaskIds.length > 0) && (
+        {sortedShortMeetings.length > 0 && (shortProjectIds.length > 0 || shortTaskIds.length > 0) && (
           <div className="border-t border-border/30 my-1" />
         )}
 
@@ -127,12 +138,16 @@ export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
               />
               {onEnterCitadel && (
                 <button
-                  onClick={() => onEnterCitadel({
-                    tier: 'short',
-                    taskId,
-                    taskTitle: found.task.title,
-                    projectTitle: found.projectTitle,
-                  })}
+                  onClick={() => {
+                    const projectId = projects.find(p => p.tasks.some(t => t.id === taskId))?.id
+                    onEnterCitadel({
+                      tier: 'short',
+                      taskId,
+                      taskTitle: found.task.title,
+                      projectTitle: found.projectTitle,
+                      projectId,
+                    })
+                  }}
                   title="Start focus session"
                   className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-stone transition-all flex-shrink-0"
                 >
@@ -143,7 +158,7 @@ export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
           )
         })}
 
-        {shortProjectIds.length === 0 && slotsUsed === 0 && sortedMeetings.length === 0 && !showPicker && (
+        {shortProjectIds.length === 0 && slotsUsed === 0 && !showPicker && (
           <div className="text-[13px] text-stone/30 py-3 text-center italic">
             Especially the ones you've been putting off
           </div>
@@ -231,20 +246,6 @@ export function ShortTasks({ onEnterCitadel }: ShortTasksProps) {
           </form>
         </>
       )}
-
-      {/* Add meeting button */}
-      <button
-        onClick={() => setOpenMeetingId('new')}
-        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 mt-2 rounded-[6px]
-          border border-dashed border-stone/15 text-[12px] text-stone/40
-          hover:border-stone/25 hover:text-stone/60 transition-all"
-      >
-        <Clock size={11} />
-        <span>Add meeting</span>
-      </button>
-
-      {/* All meetings panel */}
-      <AllMeetingsPanel />
     </div>
   )
 }

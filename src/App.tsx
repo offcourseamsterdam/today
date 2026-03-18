@@ -205,6 +205,7 @@ function App() {
                     taskTitle: project?.title ?? 'Deep Work',
                     projectTitle: project?.title,
                     intention: dailyPlan?.deepBlock.intention,
+                    projectId,
                   })
                 }
               }}
