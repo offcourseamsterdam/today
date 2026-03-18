@@ -1,8 +1,16 @@
+import React from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ProjectCard } from './ProjectCard'
 import { StandaloneTaskCard } from './StandaloneTaskCard'
 import type { Project, ProjectStatus, Task } from '../../types'
+
+function DropGhost() {
+  return (
+    <div className="mb-3 h-[72px] rounded-[8px] border-2 border-dashed border-stone/25
+      bg-stone/5 transition-all duration-150" />
+  )
+}
 
 interface KanbanColumnProps {
   id: ProjectStatus
@@ -32,17 +40,14 @@ export function KanbanColumn({
 
   const allIds = [...orphanTasks.map(t => t.id), ...projects.map(p => p.id)]
 
-  // Build sortable items with drag preview insertion
-  const sortableIds = dragPreview
+  // Ghost insertion index within the projects array (for cross-column drop preview)
+  const ghostIndex = dragPreview
     ? (() => {
-        const base = allIds.filter(id => id !== dragPreview.activeId)
-        if (!dragPreview.afterItemId) return [...base, dragPreview.activeId]
-        const idx = base.indexOf(dragPreview.afterItemId)
-        return idx >= 0
-          ? [...base.slice(0, idx + 1), dragPreview.activeId, ...base.slice(idx + 1)]
-          : [...base, dragPreview.activeId]
+        if (!dragPreview.afterItemId) return projects.length
+        const idx = projects.findIndex(p => p.id === dragPreview.afterItemId)
+        return idx >= 0 ? idx + 1 : projects.length
       })()
-    : allIds
+    : null
 
   return (
     <div
@@ -63,7 +68,7 @@ export function KanbanColumn({
         </span>
       </div>
 
-      <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+      <SortableContext items={allIds} strategy={verticalListSortingStrategy}>
         {/* Orphan tasks at top */}
         {orphanTasks.map(task => (
           <StandaloneTaskCard
@@ -81,21 +86,30 @@ export function KanbanColumn({
           <div className="h-px bg-border/40 mb-2" />
         )}
 
-        {projects.map(project => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            onClick={() => onProjectClick(project)}
-          />
-        ))}
-
-        {/* Ghost placeholder for incoming drag */}
-        {dragPreview && projects.length === 0 && orphanTasks.length === 0 && (
-          <div className="mb-3 rounded-[8px] border-2 border-dashed border-border h-20 opacity-60" />
-        )}
+        {/* Projects with ghost placeholder inserted at ghostIndex */}
+        {ghostIndex !== null
+          ? projects.map((project, i) => (
+              <React.Fragment key={project.id}>
+                {i === ghostIndex && <DropGhost />}
+                <ProjectCard
+                  project={project}
+                  onClick={() => onProjectClick(project)}
+                />
+              </React.Fragment>
+            ))
+          : projects.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onClick={() => onProjectClick(project)}
+              />
+            ))
+        }
+        {/* Ghost at end when index is past last project */}
+        {ghostIndex !== null && ghostIndex >= projects.length && <DropGhost />}
       </SortableContext>
 
-      {projects.length === 0 && orphanTasks.length === 0 && (
+      {projects.length === 0 && orphanTasks.length === 0 && !dragPreview && (
         <div className="text-center text-stone/40 text-[13px] py-8">
           {id === 'backlog' && 'Drop projects here'}
           {id === 'in_progress' && 'Drag projects to start'}
