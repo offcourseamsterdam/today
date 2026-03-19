@@ -29,6 +29,8 @@ import { KANBAN_COLUMNS, type Project, type ProjectStatus, type Task } from '../
 import { OrphanTaskModal } from './OrphanTaskModal'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
+const EMPTY_CONTEXTS: never[] = []
+
 interface KanbanBoardProps {
   collapsed?: boolean
   onToggleCollapse?: () => void
@@ -74,7 +76,7 @@ export function KanbanBoard({
   const updateOrphanTask = useStore(s => s.updateOrphanTask)
   const deleteOrphanTask = useStore(s => s.deleteOrphanTask)
   const moveOrphanTaskToProject = useStore(s => s.moveOrphanTaskToProject)
-  const contexts = useStore(s => s.settings.contexts ?? [])
+  const contexts = useStore(s => s.settings.contexts) ?? EMPTY_CONTEXTS
 
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeOrphanTask, setActiveOrphanTask] = useState<Task | null>(null)

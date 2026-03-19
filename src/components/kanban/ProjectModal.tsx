@@ -3,6 +3,8 @@ import { useStore } from '../../store'
 import { CategoryBadge } from '../ui/CategoryBadge'
 import { ProjectEditor } from '../editor/ProjectEditor'
 import { CATEGORY_CONFIG, type Category, type Project } from '../../types'
+
+const EMPTY_CONTEXTS: never[] = []
 import { ProjectModalCover } from './ProjectModalCover'
 import { ProjectModalTasks } from './ProjectModalTasks'
 import { ProjectModalWaiting } from './ProjectModalWaiting'
@@ -20,7 +22,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
   const updateProject = useStore(s => s.updateProject)
   const deleteProject = useStore(s => s.deleteProject)
   const syncCheckboxTasks = useStore(s => s.syncCheckboxTasks)
-  const contexts = useStore(s => s.settings.contexts ?? [])
+  const contexts = useStore(s => s.settings.contexts) ?? EMPTY_CONTEXTS
 
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
