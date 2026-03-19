@@ -19,11 +19,6 @@ import { PhilosophyPage } from './components/philosophy/PhilosophyPage'
 import { useStore } from './store'
 import { useAuth } from './hooks/useAuth'
 import { useFirestoreSync } from './hooks/useFirestoreSync'
-import type { PlanTier } from './types'
-
-type CitadelContext =
-  | { active: false }
-  | { active: true; tier: PlanTier; taskId: string; taskTitle: string; projectTitle?: string; intention?: string; projectId?: string }
 
 function App() {
   const activeView = useStore(s => s.activeView)
@@ -37,7 +32,12 @@ function App() {
   const greetedDate = useStore(s => s.greetedDate)
   const setGreetedDate = useStore(s => s.setGreetedDate)
   const dailyPlan = useStore(s => s.dailyPlan)
-  const [citadelCtx, setCitadelCtx] = useState<CitadelContext>({ active: false })
+  const focusSession = useStore(s => s.focusSession)
+  const showCitadel = useStore(s => s.showCitadel)
+  const tickFocusSession = useStore(s => s.tickFocusSession)
+  const hideCitadelOverlay = useStore(s => s.hideCitadelOverlay)
+  const endFocusSession = useStore(s => s.endFocusSession)
+  const startFocusSession = useStore(s => s.startFocusSession)
   const [showEnough, setShowEnough] = useState(false)
   const [vandaagCollapsed, setVandaagCollapsed] = useState(false)
   const [kanbanCollapsed, setKanbanCollapsed] = useState(false)
@@ -66,6 +66,13 @@ function App() {
     loadTomorrowPlanIfReady()
   }, [loadTomorrowPlanIfReady])
 
+  // Global focus session tick — runs while any session is active
+  useEffect(() => {
+    if (!focusSession?.isRunning) return
+    const id = setInterval(() => tickFocusSession(), 1000)
+    return () => clearInterval(id)
+  }, [focusSession?.isRunning, tickFocusSession])
+
   const showNewDay = greetedDate !== todayStr
 
   const today = new Date()
@@ -86,16 +93,11 @@ function App() {
   }
 
   // Citadel Mode — full-screen dark focus overlay
-  if (citadelCtx.active) {
+  if (showCitadel && focusSession) {
     return (
       <CitadelMode
-        tier={citadelCtx.tier}
-        taskId={citadelCtx.taskId}
-        taskTitle={citadelCtx.taskTitle}
-        projectTitle={citadelCtx.projectTitle}
-        intention={citadelCtx.intention}
-        projectId={citadelCtx.projectId}
-        onExit={() => setCitadelCtx({ active: false })}
+        onExit={hideCitadelOverlay}
+        onEndSession={endFocusSession}
       />
     )
   }
@@ -198,13 +200,12 @@ function App() {
               onOpenMeetings={() => setShowMeetingsDrawer(true)}
               onEnterCitadel={(ctx) => {
                 if (ctx) {
-                  setCitadelCtx({ active: true, ...ctx })
+                  startFocusSession(ctx)
                 } else {
                   // Deep block entry — derive context from store
                   const projectId = dailyPlan?.deepBlock.projectId ?? ''
                   const project = projects.find(p => p.id === projectId)
-                  setCitadelCtx({
-                    active: true,
+                  startFocusSession({
                     tier: 'deep',
                     taskId: projectId,
                     taskTitle: project?.title ?? 'Deep Work',

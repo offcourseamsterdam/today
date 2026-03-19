@@ -1,50 +1,49 @@
 import { useState, useRef } from 'react'
 import { Play, Pause, RotateCcw, ArrowLeft, NotebookPen, X } from 'lucide-react'
 import { useStore } from '../../store'
-import { usePomodoro } from '../../hooks/usePomodoro'
-import { TIER_DURATIONS } from '../../lib/calendar'
-import type { PlanTier, Project } from '../../types'
+import type { Project } from '../../types'
 import { ProjectEditor } from '../editor/ProjectEditor'
 
 interface CitadelModeProps {
-  tier: PlanTier
-  taskId: string
-  taskTitle: string
-  projectTitle?: string
-  intention?: string
-  projectId?: string
-  onExit: () => void
+  onExit: () => void        // hide overlay, timer continues
+  onEndSession: () => void  // fully stop and clear session
 }
 
-export function CitadelMode({ tier, taskId, taskTitle, projectTitle, intention, projectId, onExit }: CitadelModeProps) {
-  const addOrphanTask = useStore(s => s.addOrphanTask)
-  const logPomodoroSession = useStore(s => s.logPomodoroSession)
+export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
+  const focusSession = useStore(s => s.focusSession)!
+  const pauseFocusSession = useStore(s => s.pauseFocusSession)
+  const resumeFocusSession = useStore(s => s.resumeFocusSession)
+  const resetFocusSession = useStore(s => s.resetFocusSession)
   const projects = useStore(s => s.projects)
   const updateProject = useStore(s => s.updateProject)
+  const addOrphanTask = useStore(s => s.addOrphanTask)
+
+  const { tier, taskTitle, projectTitle, intention, projectId,
+          workMinutes, breakMinutes, targetSessions, isRunning, isBreak,
+          sessionsCompleted, secondsLeft } = focusSession
 
   const project: Project | undefined = projectId
     ? projects.find(p => p.id === projectId)
     : undefined
 
+  const totalSeconds = isBreak ? breakMinutes * 60 : workMinutes * 60
+  const progress = totalSeconds > 0 ? 1 - secondsLeft / totalSeconds : 0
+  const minutes = Math.floor(secondsLeft / 60)
+  const seconds = secondsLeft % 60
+
   const [notesOpen, setNotesOpen] = useState(false)
 
-  const { workMinutes, breakMinutes, targetSessions } = TIER_DURATIONS[tier]
+  function handlePlayPause() {
+    if (isRunning) {
+      pauseFocusSession()
+    } else {
+      resumeFocusSession()
+    }
+  }
 
-  const {
-    isRunning,
-    isBreak,
-    sessionsCompleted,
-    progress,
-    minutes,
-    seconds,
-    toggle: handlePlayPause,
-    reset: handleReset,
-  } = usePomodoro({
-    workMinutes,
-    breakMinutes,
-    autoStart: true,
-    onSessionComplete: () => logPomodoroSession(taskId, tier, workMinutes),
-  })
+  function handleReset() {
+    resetFocusSession()
+  }
 
   // Scratchpad — only shown for deep/short tiers
   const [thought, setThought] = useState('')
@@ -170,6 +169,13 @@ export function CitadelMode({ tier, taskId, taskTitle, projectTitle, intention, 
             text-citadel-text/20 hover:text-citadel-text/40 hover:bg-citadel-text/5 transition-all"
         >
           <RotateCcw size={18} />
+        </button>
+        <button
+          onClick={onEndSession}
+          className="text-[11px] text-citadel-text/20 hover:text-citadel-text/40
+            transition-colors px-3 py-2"
+        >
+          End session
         </button>
       </div>
 
