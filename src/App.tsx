@@ -28,7 +28,7 @@ function App() {
   const projects = useStore(s => s.projects)
   const openProject = openProjectId ? (projects.find(p => p.id === openProjectId) ?? null) : null
   const completeDailyPlan = useStore(s => s.completeDailyPlan)
-  const loadTomorrowPlanIfReady = useStore(s => s.loadTomorrowPlanIfReady)
+  const refreshDailyPlan = useStore(s => s.refreshDailyPlan)
   const greetedDate = useStore(s => s.greetedDate)
   const setGreetedDate = useStore(s => s.setGreetedDate)
   const dailyPlan = useStore(s => s.dailyPlan)
@@ -61,10 +61,10 @@ function App() {
   const { user, loading: authLoading, signInError, signIn, signOut } = useAuth()
   const syncStatus = useFirestoreSync(user)
 
-  // Auto-load tomorrow's plan when it becomes today
+  // Refresh daily plan on mount and whenever todayStr changes (midnight rollover)
   useEffect(() => {
-    loadTomorrowPlanIfReady()
-  }, [loadTomorrowPlanIfReady])
+    refreshDailyPlan()
+  }, [todayStr, refreshDailyPlan])
 
   // Global focus session tick — runs while any session is active
   useEffect(() => {

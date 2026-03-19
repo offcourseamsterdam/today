@@ -66,6 +66,8 @@ export function SmartFab({
   }
 
   const actions = [
+    { icon: <Calendar size={14} />, label: 'Plan today', action: onPlanToday },
+    { icon: <Calendar size={14} />, label: 'Plan tomorrow', action: onPlanTomorrow },
     { icon: <Calendar size={14} />, label: 'Meetings', action: onOpenMeetings },
     { icon: <CheckSquare size={14} />, label: 'New task', action: onAddTask },
     { icon: <RotateCcw size={14} />, label: 'Recurring tasks', action: onOpenRecurringTasks },

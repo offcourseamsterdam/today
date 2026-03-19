@@ -3,6 +3,7 @@ import { format, addDays } from 'date-fns'
 import { X } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useStore } from '../../store'
+import { getTodayString, getTomorrowString } from '../../store/helpers'
 import { useTomorrowPlan } from '../../hooks/useTomorrowPlan'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import type { AssignedCalendarEvent } from '../../types'
@@ -70,15 +71,18 @@ export function PlanningModal({ onClose, day = 'tomorrow' }: PlanningModalProps)
 
   // Pre-populate from existing plan on mount
   useEffect(() => {
-    if (activePlan) {
-      setDeepProjectId(activePlan.deepBlock.projectId || '')
-      setIntention(activePlan.deepBlock.intention || '')
-      setShortTaskIds([...existingShortIds])
-      setMainTaskIds([...existingMainIds])
-      setDeepMeetingId(activePlan.deepMeetingId)
-      setShortMeetingIds([...(activePlan.shortMeetingIds ?? [])])
-      setMaintenanceMeetingIds([...(activePlan.maintenanceMeetingIds ?? [])])
-    }
+    if (!activePlan) return
+    // Don't pre-populate from stale plans
+    const expectedDate = isToday ? getTodayString() : getTomorrowString()
+    if (activePlan.date !== expectedDate) return
+
+    setDeepProjectId(activePlan.deepBlock.projectId || '')
+    setIntention(activePlan.deepBlock.intention || '')
+    setShortTaskIds([...existingShortIds])
+    setMainTaskIds([...existingMainIds])
+    setDeepMeetingId(activePlan.deepMeetingId)
+    setShortMeetingIds([...(activePlan.shortMeetingIds ?? [])])
+    setMaintenanceMeetingIds([...(activePlan.maintenanceMeetingIds ?? [])])
   // Only run on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
