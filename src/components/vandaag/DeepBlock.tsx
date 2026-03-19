@@ -6,6 +6,9 @@ import { CATEGORY_CONFIG } from '../../types'
 import { findMeetingById } from '../../lib/meetingLookup'
 import { getTodayQuote } from '../../lib/quotes'
 import { getFocusTimeLabel } from '../../lib/focusTime'
+import type { PomodoroLogEntry } from '../../types'
+
+const EMPTY_LOG: PomodoroLogEntry[] = []
 
 interface DeepBlockProps {
   onEnterCitadel: () => void
@@ -312,7 +315,7 @@ function DeepBlockComplete({ projectTitle }: { projectTitle: string }) {
 
 function FocusTimeButton({ projectId, onStartFocus }: { projectId: string; onStartFocus: () => void }) {
   const focusSession = useStore(s => s.focusSession)
-  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog ?? [])
+  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog) ?? EMPTY_LOG
 
   const info = getFocusTimeLabel(projectId, 'deep', focusSession, pomodoroLog)
 

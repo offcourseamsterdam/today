@@ -9,6 +9,9 @@ import { getTodayString } from '../../store/helpers'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { getFocusTimeLabel } from '../../lib/focusTime'
+import type { PomodoroLogEntry } from '../../types'
+
+const EMPTY_LOG: PomodoroLogEntry[] = []
 
 interface MaintenanceTierProps {
   onEnterCitadel?: (ctx: { tier: 'maintenance'; taskId: string; taskTitle: string }) => void
@@ -25,7 +28,7 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
   const updateRecurringTask = useStore(s => s.updateRecurringTask)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
   const focusSession = useStore(s => s.focusSession)
-  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog ?? [])
+  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog) ?? EMPTY_LOG
   const {
     maintenanceTaskIds, addMaintenanceTask, removeMaintenanceTask,
     maintenanceProjectIds, removeMaintenanceProject,

@@ -8,6 +8,9 @@ import { useTaskToggle } from '../../hooks/useTaskToggle'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { TaskItem } from '../ui/TaskItem'
 import { getFocusTimeLabel } from '../../lib/focusTime'
+import type { PomodoroLogEntry } from '../../types'
+
+const EMPTY_LOG: PomodoroLogEntry[] = []
 
 interface ShortTasksProps {
   onEnterCitadel?: (ctx: { tier: 'short'; taskId: string; taskTitle: string; projectTitle?: string; projectId?: string }) => void
@@ -29,7 +32,7 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
   const showToast = useStore(s => s.showToast)
   const toggleTask = useTaskToggle(showToast)
   const focusSession = useStore(s => s.focusSession)
-  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog ?? [])
+  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog) ?? EMPTY_LOG
 
 
   // Resolve short meeting IDs to objects, sorted by time
