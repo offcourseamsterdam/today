@@ -130,6 +130,24 @@ export interface PomodoroLogEntry {
   totalMinutesWorked: number
 }
 
+export interface FocusSession {
+  tier: PlanTier
+  taskId: string
+  taskTitle: string
+  projectTitle?: string
+  intention?: string
+  projectId?: string
+  startedAt: string
+  lastTickAt: string
+  secondsLeft: number
+  isRunning: boolean
+  isBreak: boolean
+  sessionsCompleted: number
+  workMinutes: number
+  breakMinutes: number
+  targetSessions: number
+}
+
 export interface LifeWeeks {
   birthDate: string
   weeksLived: number

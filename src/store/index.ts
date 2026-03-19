@@ -9,6 +9,7 @@ import { makeDailyPlanActions } from './plansSlice'
 import { makeSettingsActions } from './settingsSlice'
 import { makeMeetingActions } from './meetingsSlice'
 import { makeCalendarActions } from './calendarSlice'
+import { makeFocusActions } from './focusSlice'
 
 export const useStore = create<VandaagState>()(
   persist(
@@ -32,6 +33,8 @@ export const useStore = create<VandaagState>()(
       activeView: 'vandaag',
       greetedDate: null,
       artworkLoadingIds: [],
+      focusSession: null,
+      showCitadel: false,
       calendarEvents: [],
       calendarLoading: false,
       calendarError: null,
@@ -46,6 +49,7 @@ export const useStore = create<VandaagState>()(
       ...makeMeetingActions(set, get),
       ...makeSettingsActions(set, get),
       ...makeCalendarActions(set, get),
+      ...makeFocusActions(set, get),
 
       // Selectors
       getProjectsByStatus: (status) => get().projects.filter(p => p.status === status),
@@ -73,6 +77,7 @@ export const useStore = create<VandaagState>()(
         tomorrowPlan: state.tomorrowPlan,
         personalRules: state.personalRules,
         greetedDate: state.greetedDate,
+        focusSession: state.focusSession,
       }),
     }
   )
