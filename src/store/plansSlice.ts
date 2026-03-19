@@ -149,5 +149,29 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
       }
       return false
     },
+
+    refreshDailyPlan: () => {
+      const state = get()
+      const today = getTodayString()
+
+      // Try to promote tomorrow's plan first
+      if (state.tomorrowPlan && state.tomorrowPlan.date === today) {
+        set({
+          dailyPlan: { ...state.tomorrowPlan, isComplete: false, completedAt: undefined },
+          tomorrowPlan: null,
+        })
+        return
+      }
+
+      // Clear stale tomorrow plan
+      if (state.tomorrowPlan && state.tomorrowPlan.date < today) {
+        set({ tomorrowPlan: null })
+      }
+
+      // Clear stale daily plan (from yesterday or older)
+      if (state.dailyPlan && state.dailyPlan.date !== today) {
+        set({ dailyPlan: null })
+      }
+    },
   }
 }

@@ -6,6 +6,7 @@ import { CATEGORY_CONFIG } from '../../types'
 import { findMeetingById } from '../../lib/meetingLookup'
 import { getTodayQuote } from '../../lib/quotes'
 import { getFocusTimeLabel } from '../../lib/focusTime'
+import { getTodayString } from '../../store/helpers'
 import type { PomodoroLogEntry } from '../../types'
 
 const EMPTY_LOG: PomodoroLogEntry[] = []
@@ -17,7 +18,8 @@ interface DeepBlockProps {
 
 export function DeepBlock({ onEnterCitadel, onOpenMeetings }: DeepBlockProps) {
   const projects = useStore(s => s.projects)
-  const dailyPlan = useStore(s => s.dailyPlan)
+  const rawPlan = useStore(s => s.dailyPlan)
+  const dailyPlan = rawPlan?.date === getTodayString() ? rawPlan : null
   const allMeetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const setDeepBlock = useStore(s => s.setDeepBlock)

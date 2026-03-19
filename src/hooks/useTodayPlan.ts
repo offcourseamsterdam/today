@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useStore } from '../store'
+import { getTodayString } from '../store/helpers'
 
 /**
  * Bundles all daily-plan state + actions into one hook.
@@ -7,7 +8,9 @@ import { useStore } from '../store'
  * ShortTasks, VandaagView, CitadelMode, NewDayScreen, and EnoughScreen.
  */
 export function useTodayPlan() {
-  const dailyPlan = useStore(s => s.dailyPlan)
+  const rawPlan = useStore(s => s.dailyPlan)
+  const isStale = rawPlan != null && rawPlan.date !== getTodayString()
+  const dailyPlan = isStale ? null : rawPlan
   const addShortTask = useStore(s => s.addShortTask)
   const removeShortTask = useStore(s => s.removeShortTask)
   const addMaintenanceTask = useStore(s => s.addMaintenanceTask)

@@ -146,6 +146,7 @@ export interface VandaagState {
   lockInTomorrow: () => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean
+  refreshDailyPlan: () => void
 
   // Calendar actions
   fetchCalendarEvents: (accessToken: string, date: string) => Promise<void>
