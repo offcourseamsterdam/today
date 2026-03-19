@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Check, Clock, Play, X } from 'lucide-react'
+import { Check, Clock, X } from 'lucide-react'
 import { useStore } from '../../store'
 import { findTaskById } from '../../lib/taskLookup'
 import { findMeetingById } from '../../lib/meetingLookup'
@@ -7,6 +7,7 @@ import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { useTaskToggle } from '../../hooks/useTaskToggle'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
 import { TaskItem } from '../ui/TaskItem'
+import { getFocusTimeLabel } from '../../lib/focusTime'
 
 interface ShortTasksProps {
   onEnterCitadel?: (ctx: { tier: 'short'; taskId: string; taskTitle: string; projectTitle?: string; projectId?: string }) => void
@@ -27,6 +28,8 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
   } = useTodayPlan()
   const showToast = useStore(s => s.showToast)
   const toggleTask = useTaskToggle(showToast)
+  const focusSession = useStore(s => s.focusSession)
+  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog ?? [])
 
 
   // Resolve short meeting IDs to objects, sorted by time
@@ -117,24 +120,33 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
                 onAssignProject={(projectId) => moveOrphanTaskToProject(taskId, projectId)}
                 onOpenProject={setOpenProjectId}
               />
-              {onEnterCitadel && (
-                <button
-                  onClick={() => {
-                    const projectId = projects.find(p => p.tasks.some(t => t.id === taskId))?.id
-                    onEnterCitadel({
-                      tier: 'short',
-                      taskId,
-                      taskTitle: found.task.title,
-                      projectTitle: found.projectTitle,
-                      projectId,
-                    })
-                  }}
-                  title="Start focus session"
-                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-stone transition-all flex-shrink-0"
-                >
-                  <Play size={13} />
-                </button>
-              )}
+              {onEnterCitadel && (() => {
+                const info = getFocusTimeLabel(taskId, 'short', focusSession, pomodoroLog)
+                return (
+                  <button
+                    onClick={() => {
+                      const projectId = projects.find(p => p.tasks.some(t => t.id === taskId))?.id
+                      onEnterCitadel({
+                        tier: 'short',
+                        taskId,
+                        taskTitle: found.task.title,
+                        projectTitle: found.projectTitle,
+                        projectId,
+                      })
+                    }}
+                    title="Start focus session"
+                    className={`text-[10px] whitespace-nowrap transition-all flex-shrink-0 ${
+                      info.isComplete
+                        ? 'text-cat-marketing/60'
+                        : info.isActive
+                          ? 'text-cat-marketing font-medium'
+                          : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone'
+                    }`}
+                  >
+                    {info.label}
+                  </button>
+                )
+              })()}
             </div>
           )
         })}

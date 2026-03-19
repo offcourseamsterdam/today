@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { format } from 'date-fns'
-import { X, RotateCcw, Play, Clock } from 'lucide-react'
+import { X, RotateCcw, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import { findTaskById } from '../../lib/taskLookup'
 import { findMeetingById } from '../../lib/meetingLookup'
@@ -8,6 +8,7 @@ import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { getTodayString } from '../../store/helpers'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
 import { ProjectTaskPreview } from '../ui/ProjectTaskPreview'
+import { getFocusTimeLabel } from '../../lib/focusTime'
 
 interface MaintenanceTierProps {
   onEnterCitadel?: (ctx: { tier: 'maintenance'; taskId: string; taskTitle: string }) => void
@@ -23,6 +24,8 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
   const updateOrphanTask = useStore(s => s.updateOrphanTask)
   const updateRecurringTask = useStore(s => s.updateRecurringTask)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
+  const focusSession = useStore(s => s.focusSession)
+  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog ?? [])
   const {
     maintenanceTaskIds, addMaintenanceTask, removeMaintenanceTask,
     maintenanceProjectIds, removeMaintenanceProject,
@@ -160,15 +163,24 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
                 {task.title}
               </span>
               {task.isRecurring && <RotateCcw size={10} className="text-stone/25 flex-shrink-0" />}
-              {onEnterCitadel && (
-                <button
-                  onClick={() => onEnterCitadel({ tier: 'maintenance', taskId, taskTitle: task.title })}
-                  title="Start focus session"
-                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-stone transition-all"
-                >
-                  <Play size={13} />
-                </button>
-              )}
+              {onEnterCitadel && (() => {
+                const info = getFocusTimeLabel(taskId, 'maintenance', focusSession, pomodoroLog)
+                return (
+                  <button
+                    onClick={() => onEnterCitadel({ tier: 'maintenance', taskId, taskTitle: task.title })}
+                    title="Start focus session"
+                    className={`text-[10px] whitespace-nowrap transition-all flex-shrink-0 ${
+                      info.isComplete
+                        ? 'text-cat-marketing/60'
+                        : info.isActive
+                          ? 'text-cat-marketing font-medium'
+                          : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone'
+                    }`}
+                  >
+                    {info.label}
+                  </button>
+                )
+              })()}
               <button
                 onClick={() => removeMaintenanceTask(taskId)}
                 className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all"

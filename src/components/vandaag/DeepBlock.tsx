@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { ChevronDown, X, Target, Check, Clock, Play } from 'lucide-react'
+import { ChevronDown, X, Target, Check, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import { CategoryBadge } from '../ui/CategoryBadge'
-import { usePomodoro } from '../../hooks/usePomodoro'
 import { CATEGORY_CONFIG } from '../../types'
 import { findMeetingById } from '../../lib/meetingLookup'
 import { getTodayQuote } from '../../lib/quotes'
+import { getFocusTimeLabel } from '../../lib/focusTime'
 
 interface DeepBlockProps {
   onEnterCitadel: () => void
@@ -162,9 +162,9 @@ export function DeepBlock({ onEnterCitadel, onOpenMeetings }: DeepBlockProps) {
             </button>
           )}
 
-          {/* Compact session dots */}
+          {/* Focus time */}
           <div className="pt-3 border-t border-border/50">
-            <MiniPomodoro onStartFocus={onEnterCitadel} />
+            <FocusTimeButton projectId={selectedProject.id} onStartFocus={onEnterCitadel} />
           </div>
 
           {/* Task preview */}
@@ -310,43 +310,24 @@ function DeepBlockComplete({ projectTitle }: { projectTitle: string }) {
   )
 }
 
-const TOTAL_SESSIONS = 3
+function FocusTimeButton({ projectId, onStartFocus }: { projectId: string; onStartFocus: () => void }) {
+  const focusSession = useStore(s => s.focusSession)
+  const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog ?? [])
 
-function MiniPomodoro({ onStartFocus }: { onStartFocus: () => void }) {
-  const pomodoroMinutes = useStore(s => s.settings.pomodoroMinutes)
-  const breakMinutes = useStore(s => s.settings.breakMinutes)
-  const { sessionsCompleted, isRunning } = usePomodoro({ workMinutes: pomodoroMinutes, breakMinutes })
+  const info = getFocusTimeLabel(projectId, 'deep', focusSession, pomodoroLog)
 
   return (
-    <div className="flex items-center gap-3">
-      {/* Session dots */}
-      <div className="flex items-center gap-1.5">
-        {Array.from({ length: TOTAL_SESSIONS }).map((_, i) => (
-          <span
-            key={i}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              i < sessionsCompleted
-                ? 'bg-cat-marketing'
-                : isRunning && i === sessionsCompleted
-                ? 'bg-cat-marketing/40 animate-pulse'
-                : 'bg-border'
-            }`}
-          />
-        ))}
-      </div>
-
-      {isRunning ? (
-        <span className="text-[11px] text-stone/50 italic">In session…</span>
-      ) : (
-        <button
-          onClick={onStartFocus}
-          className="flex items-center gap-1.5 text-[11px] text-stone/60
-            hover:text-charcoal transition-colors group"
-        >
-          <Play size={11} className="group-hover:text-cat-marketing transition-colors" />
-          Start focus
-        </button>
-      )}
-    </div>
+    <button
+      onClick={onStartFocus}
+      className={`text-[11px] transition-colors ${
+        info.isComplete
+          ? 'text-cat-marketing/60 cursor-default'
+          : info.isActive
+            ? 'text-cat-marketing font-medium'
+            : 'text-stone/60 hover:text-charcoal'
+      }`}
+    >
+      {info.label}
+    </button>
   )
 }
