@@ -4,7 +4,7 @@ import { findTaskById } from '../lib/taskLookup'
 
 /**
  * Returns a stable `toggleTask(taskId)` callback that handles the
- * find-then-dispatch pattern shared by ShortTasks, MaintenanceTier, and PomodoroTimer:
+ * find-then-dispatch pattern shared by ShortTasks and MaintenanceTier:
  * locate the task (project task, orphan, or recurring), then toggle its done state.
  *
  * @param onProjectDone - optional callback fired when a project task is toggled to done,

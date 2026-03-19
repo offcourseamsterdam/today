@@ -29,6 +29,8 @@ export function SmartFab({
 }: SmartFabProps) {
   const dailyPlan = useStore(s => s.dailyPlan)
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
+  const focusSession = useStore(s => s.focusSession)
+  const showCitadelOverlay = useStore(s => s.showCitadelOverlay)
   const [open, setOpen] = useState(false)
   const [hour, setHour] = useState(() => new Date().getHours())
 
@@ -44,14 +46,17 @@ export function SmartFab({
   const isTomorrowPlanned = !!(tomorrowPlan?.isComplete)
   const isAfterThree = hour >= 15
 
-  const label = !isPlanned
-    ? 'Plan today'
-    : isPlanned && isAfterThree && !isTomorrowPlanned
-    ? 'Plan tomorrow?'
+  const focusLabel = focusSession
+    ? `${focusSession.projectTitle || focusSession.taskTitle} · Back to focus`
     : null
 
+  const label = focusLabel
+    ?? (!isPlanned ? 'Plan today' : isAfterThree && !isTomorrowPlanned ? 'Plan tomorrow?' : null)
+
   function handlePrimaryClick() {
-    if (label === 'Plan today') {
+    if (focusLabel) {
+      showCitadelOverlay()
+    } else if (label === 'Plan today') {
       onPlanToday()
     } else if (label === 'Plan tomorrow?') {
       onPlanTomorrow()
@@ -108,11 +113,14 @@ export function SmartFab({
           {label && !open && (
             <button
               onClick={handlePrimaryClick}
-              className="flex items-center gap-2 pl-4 pr-3 py-3 rounded-l-full
+              className={`flex items-center gap-2 pl-4 pr-3 py-3 rounded-l-full
                 bg-charcoal text-canvas text-[12px] font-medium
                 shadow-lg hover:bg-charcoal/80 transition-all duration-200
-                animate-pulse-label"
+                ${focusLabel ? 'animate-pulse-focus' : 'animate-pulse-label'}`}
             >
+              {focusLabel && (
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-focus-dot shrink-0" />
+              )}
               {label}
             </button>
           )}
@@ -149,6 +157,16 @@ export function SmartFab({
         }
         .animate-pulse-label {
           animation: pulse-label 3s ease-in-out infinite;
+        }
+        .animate-pulse-focus {
+          animation: pulse-label 2s ease-in-out infinite;
+        }
+        @keyframes focus-dot {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.4; }
+        }
+        .animate-focus-dot {
+          animation: focus-dot 1.5s ease-in-out infinite;
         }
       `}</style>
     </>
