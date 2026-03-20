@@ -5,7 +5,7 @@
 
 ## Overview
 
-Add automatic audio recording to live meeting sessions. When a session ends, the recording is transcribed (OpenAI Whisper) and processed (Claude) to produce structured meeting notes: summary, action items with assignees, and decisions. Results are stored alongside the meeting and displayed in the MeetingsDrawer. Manual post-meeting notes (actions, takeaways) remain independent.
+Add automatic audio recording to live meeting sessions. When a session ends, the recording is transcribed (OpenAI Whisper) and processed (OpenAI GPT-4o) to produce structured meeting notes: summary, action items with assignees, and decisions. Results are stored alongside the meeting and displayed in the MeetingsDrawer. Manual post-meeting notes (actions, takeaways) remain independent. Single provider (OpenAI) for both transcription and intelligence.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ Browser                         Vercel Serverless
 │ (webm/opus 24k) │──chunks──▶ │   transcribe      │──▶ OpenAI Whisper
 │                  │            │                   │
 │ useRecording     │            │ POST /api/        │
-│ hook             │──transcript│   meeting-notes   │──▶ Claude API
+│ hook             │──transcript│   meeting-notes   │──▶ OpenAI GPT-4o
 │                  │◀──result───│                   │
 └──────────────────┘            └──────────────────┘
 ```
@@ -118,12 +118,12 @@ processingMeetingId: string | null  // shows spinner in drawer while processing
 ### `POST /api/meeting-notes`
 
 - **Input:** `{ transcript: string, agendaItems: string[], language: string }`
-- **Process:** calls Claude API with structured prompt, requests JSON output
+- **Process:** calls OpenAI GPT-4o with structured prompt, requests JSON output
 - **Output:** `{ summary: string, actionItems: ActionItem[], decisions: string[] }`
-- **Env var:** `ANTHROPIC_API_KEY`
+- **Env var:** `OPENAI_API_KEY` (same key as transcribe)
 - **Timeout:** 30s
 
-**Claude prompt structure:**
+**GPT-4o prompt structure:**
 ```
 You are analyzing a meeting transcript. The agenda was: [items].
 Output language: [Dutch/English/match transcript].
@@ -135,8 +135,7 @@ Return JSON:
 ```
 
 **Server-side dependencies (api/ only):**
-- `openai` npm package
-- `@anthropic-ai/sdk` npm package
+- `openai` npm package (for both Whisper and GPT-4o)
 
 ## Hook: `useRecording`
 
@@ -193,5 +192,5 @@ Per meeting row, below manual Actions/Takeaways:
 | `src/components/meetings/MeetingsDrawer.tsx` | Add AI Notes section, processing spinner |
 | `api/transcribe.ts` | CREATE — Vercel serverless, Whisper proxy |
 | `api/meeting-notes.ts` | CREATE — Vercel serverless, Claude proxy |
-| `.env.example` | Add `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
+| `.env.example` | Add `OPENAI_API_KEY` |
 | `vercel.json` | Add function config (maxDuration) if needed |
