@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand'
-import type { Project, Task, Meeting, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession } from '../types'
+import type { Project, Task, Meeting, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession } from '../types'
 
 export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
 
@@ -29,6 +29,9 @@ export interface VandaagState {
   // Focus session state
   focusSession: FocusSession | null
   showCitadel: boolean
+
+  // Meeting session state
+  meetingSession: MeetingSession | null
 
   // Focus session actions
   startFocusSession: (params: { tier: PlanTier; taskId: string; taskTitle: string; projectTitle?: string; intention?: string; projectId?: string }) => void
@@ -85,6 +88,14 @@ export interface VandaagState {
   deleteRecurringMeeting: (id: string) => void
   getTodayRecurringMeetings: () => Meeting[]
   setOpenMeetingId: (id: string | null) => void
+
+  // Meeting session actions
+  startMeetingSession: (meetingId: string) => void
+  endMeetingSession: () => void
+  pauseMeetingSession: () => void
+  resumeMeetingSession: () => void
+  advanceMeetingItem: () => void
+  tickMeetingSession: () => void
 
   // Recurring tasks
   addRecurringTask: (title: string, rule: RecurrenceRule, projectId?: string) => string
