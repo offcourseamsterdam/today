@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { X, Plus, ChevronDown, RotateCcw, Calendar } from 'lucide-react'
 import { useStore } from '../../store'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
+import { LiveMeetingPanel } from './LiveMeetingPanel'
 import { describeRule } from '../../lib/recurrence'
 import type { Meeting } from '../../types'
 
@@ -61,17 +62,17 @@ function MeetingRow({
   onDelete,
 }: MeetingRowProps) {
   const [expanded, setExpanded] = useState(false)
-  const [agenda, setAgenda] = useState(meeting.agenda ?? '')
   const [actions, setActions] = useState(meeting.actions ?? '')
   const [takeaways, setTakeaways] = useState(meeting.takeaways ?? '')
   const updateMeeting = useStore(s => s.updateMeeting)
   const updateRecurringMeeting = useStore(s => s.updateRecurringMeeting)
+  const startMeetingSession = useStore(s => s.startMeetingSession)
 
   const isDeep = deepMeetingId === meeting.id
   const isShort = shortMeetingIds.includes(meeting.id)
   const isMaint = maintenanceMeetingIds.includes(meeting.id)
 
-  function saveField(field: 'agenda' | 'actions' | 'takeaways', value: string) {
+  function saveField(field: 'actions' | 'takeaways', value: string) {
     const updateFn = meeting.isRecurring ? updateRecurringMeeting : updateMeeting
     updateFn(meeting.id, { [field]: value.trim() || undefined })
   }
@@ -128,22 +129,32 @@ function MeetingRow({
             </div>
           </div>
 
-          {/* Agenda */}
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
-              Agenda
+          {/* Agenda items */}
+          {(meeting.agendaItems?.length ?? 0) > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-2">
+                Agenda
+              </div>
+              <div className="space-y-1">
+                {meeting.agendaItems!.map(item => (
+                  <div key={item.id} className="flex items-center gap-2 text-[12px] text-charcoal/80">
+                    <span className="w-1 h-1 rounded-full bg-stone/30 flex-shrink-0" />
+                    <span className="flex-1">{item.title}</span>
+                    {item.durationMinutes != null && (
+                      <span className="text-[10px] text-stone/30">{item.durationMinutes}m</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => startMeetingSession(meeting.id)}
+                className="mt-2 text-[11px] text-stone/50 hover:text-charcoal transition-colors"
+              >
+                ▶ Start meeting
+              </button>
             </div>
-            <textarea
-              value={agenda}
-              onChange={e => setAgenda(e.target.value)}
-              onBlur={e => saveField('agenda', e.target.value)}
-              placeholder="What needs to be discussed..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
-                text-[12px] text-charcoal placeholder:text-stone/25 resize-none
-                outline-none focus:border-stone/40 transition-colors"
-            />
-          </div>
+          )}
 
           {/* Actions & Takeaways */}
           <div>
@@ -281,6 +292,7 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
+          <LiveMeetingPanel />
           {/* One-off meetings */}
           {sortedMeetings.length === 0 && sortedRecurring.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
