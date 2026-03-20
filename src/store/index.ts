@@ -37,11 +37,22 @@ export const useStore = create<VandaagState>()(
       focusSession: null,
       showCitadel: false,
       meetingSession: null,
+      processingMeetingId: null,
       calendarEvents: [],
       calendarLoading: false,
       calendarError: null,
 
       setOpenProjectId: (id) => set({ openProjectId: id }),
+      setProcessingMeetingId: (id) => set({ processingMeetingId: id }),
+      saveMeetingNotes: (meetingId, notes) => {
+        const { meetings, recurringMeetings } = get()
+        const inMeetings = meetings.some(m => m.id === meetingId)
+        if (inMeetings) {
+          set({ meetings: meetings.map(m => m.id === meetingId ? { ...m, meetingNotes: notes } : m) })
+        } else {
+          set({ recurringMeetings: recurringMeetings.map(m => m.id === meetingId ? { ...m, meetingNotes: notes } : m) })
+        }
+      },
 
       // Slices
       ...makeNavigationActions(set, get),
