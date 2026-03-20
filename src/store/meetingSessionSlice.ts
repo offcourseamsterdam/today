@@ -1,4 +1,3 @@
-import type { MeetingSession } from '../types'
 import type { StoreSet, StoreGet } from './types'
 
 export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
