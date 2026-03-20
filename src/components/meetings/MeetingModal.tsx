@@ -30,6 +30,7 @@ export function MeetingModal() {
   const [takeaways, setTakeaways] = useState('')
   const [isRecurring, setIsRecurring] = useState(false)
   const [ruleState, setRuleState] = useState<RecurrenceFormState>(EMPTY_RULE_STATE)
+  const [language, setLanguage] = useState<'auto' | 'nl' | 'en'>('auto')
 
   // Reset form when modal opens
   useEffect(() => {
@@ -44,6 +45,7 @@ export function MeetingModal() {
       setTakeaways('')
       setIsRecurring(false)
       setRuleState(EMPTY_RULE_STATE)
+      setLanguage('auto')
     } else if (existingMeeting) {
       setTitle(existingMeeting.title)
       setDate(existingMeeting.date ?? '')
@@ -53,6 +55,7 @@ export function MeetingModal() {
       setAgendaItems(existingMeeting.agendaItems ?? [])
       setActions(existingMeeting.actions ?? '')
       setTakeaways(existingMeeting.takeaways ?? '')
+      setLanguage(existingMeeting.language ?? 'auto')
       setIsRecurring(existingMeeting.isRecurring)
       if (existingMeeting.recurrenceRule) {
         const r = existingMeeting.recurrenceRule
@@ -87,6 +90,7 @@ export function MeetingModal() {
       takeaways: takeaways.trim() || undefined,
       isRecurring,
       recurrenceRule: isRecurring ? buildRule(ruleState) : undefined,
+      language: language !== 'auto' ? language : undefined,
     }
 
     if (isNew) {
@@ -186,6 +190,28 @@ export function MeetingModal() {
                   text-[13px] text-charcoal
                   outline-none focus:border-stone/40 transition-colors"
               />
+            </div>
+          </div>
+
+          {/* Recording language */}
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
+              Recording language
+            </label>
+            <div className="flex gap-1">
+              {([['auto', 'Auto'], ['nl', 'Nederlands'], ['en', 'English']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setLanguage(val)}
+                  className={`text-[10px] px-3 py-2 rounded-[4px] border transition-all flex-1
+                    ${language === val
+                      ? 'border-charcoal bg-charcoal text-canvas'
+                      : 'border-border text-stone hover:border-stone/40'}`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
