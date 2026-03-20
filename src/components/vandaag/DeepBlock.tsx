@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { ChevronDown, X, Target, Check, Clock } from 'lucide-react'
+import { X, Target, Check, Clock } from 'lucide-react'
 import { useStore } from '../../store'
 import { CategoryBadge } from '../ui/CategoryBadge'
-import { CATEGORY_CONFIG } from '../../types'
 import { findMeetingById } from '../../lib/meetingLookup'
 import { getTodayQuote } from '../../lib/quotes'
 import { getFocusTimeLabel } from '../../lib/focusTime'
@@ -26,15 +25,12 @@ export function DeepBlock({ onEnterCitadel, onOpenMeetings }: DeepBlockProps) {
   const clearDeepBlock = useStore(s => s.clearDeepBlock)
   const completeDeepBlock = useStore(s => s.completeDeepBlock)
   const setDeepMeeting = useStore(s => s.setDeepMeeting)
-  const recordDayWorked = useStore(s => s.recordDayWorked)
   const setOpenProjectId = useStore(s => s.setOpenProjectId)
   const showToast = useStore(s => s.showToast)
 
-  const [showPicker, setShowPicker] = useState(false)
   const [intention, setIntention] = useState(dailyPlan?.deepBlock.intention || '')
   const [editingIntention, setEditingIntention] = useState(false)
 
-  const inProgressProjects = projects.filter(p => p.status === 'in_progress')
   const selectedProjectId = dailyPlan?.deepBlock.projectId || ''
   const selectedProject = projects.find(p => p.id === selectedProjectId)
 
@@ -45,12 +41,6 @@ export function DeepBlock({ onEnterCitadel, onOpenMeetings }: DeepBlockProps) {
 
   const completedProjectTitle = dailyPlan?.deepBlock.completedProjectTitle
   const isDoneToday = !!(completedProjectTitle && dailyPlan?.deepBlock.completedAt)
-
-  function handleSelectProject(projectId: string) {
-    setDeepBlock(projectId, intention || undefined)
-    recordDayWorked(projectId)
-    setShowPicker(false)
-  }
 
   function handleClear() {
     clearDeepBlock()
@@ -200,62 +190,23 @@ export function DeepBlock({ onEnterCitadel, onOpenMeetings }: DeepBlockProps) {
           )}
         </div>
       ) : (
-        <div>
-          {/* Project picker */}
-          <button
-            onClick={() => setShowPicker(!showPicker)}
-            className="w-full flex items-center justify-between px-3 py-3 rounded-[6px]
-              border border-dashed border-stone/20 text-[13px] text-stone/50
-              hover:border-stone/30 hover:text-stone transition-all"
-          >
-            <span>Pick your deep work project</span>
-            <ChevronDown size={14} className={`transition-transform ${showPicker ? 'rotate-180' : ''}`} />
-          </button>
+        <EmptyDeepBlock />
+      )}
+    </div>
+  )
+}
 
-          {showPicker && (
-            <div className="mt-2 space-y-1.5 animate-slide-up">
-              {inProgressProjects.length === 0 ? (
-                <div className="text-[13px] text-stone/40 py-4 text-center">
-                  No projects in progress. Move a project to In Progress first.
-                </div>
-              ) : (
-                inProgressProjects.map(project => {
-                  const config = CATEGORY_CONFIG[project.category]
-                  return (
-                    <button
-                      key={project.id}
-                      onClick={() => handleSelectProject(project.id)}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-[6px]
-                        border border-border bg-canvas hover:border-stone/30 hover:shadow-card
-                        transition-all duration-150 text-left group"
-                    >
-                      {project.coverImageUrl && (
-                        <div className="w-8 h-8 rounded-[4px] overflow-hidden flex-shrink-0">
-                          <img src={project.coverImageUrl} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-medium text-charcoal truncate">{project.title}</div>
-                        <div className="text-[10px] mt-0.5" style={{ color: config.color }}>
-                          {config.label}
-                          {project.trackProgress && project.daysWorked > 0 && (
-                            <span className="text-stone/50 ml-2">{project.daysWorked} days</span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })
-              )}
-            </div>
-          )}
-
-          {!showPicker && (
-            <div className="mt-3 text-[12px] text-stone/40 italic text-center">
-              Your best energy. Your most important project.
-            </div>
-          )}
-        </div>
+function EmptyDeepBlock() {
+  const quote = getTodayQuote()
+  return (
+    <div className="py-5 px-2 text-center">
+      <p className="font-serif text-[14px] text-stone/60 italic leading-relaxed mb-2">
+        "{quote.text}"
+      </p>
+      {quote.source && (
+        <p className="text-[10px] text-stone/35">
+          — Oliver Burkeman, {quote.source}
+        </p>
       )}
     </div>
   )
