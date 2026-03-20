@@ -31,6 +31,9 @@ export function SmartFab({
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
   const focusSession = useStore(s => s.focusSession)
   const showCitadelOverlay = useStore(s => s.showCitadelOverlay)
+  const meetingSession = useStore(s => s.meetingSession)
+  const meetings = useStore(s => s.meetings)
+  const recurringMeetings = useStore(s => s.recurringMeetings)
   const [open, setOpen] = useState(false)
   const [hour, setHour] = useState(() => new Date().getHours())
 
@@ -50,12 +53,22 @@ export function SmartFab({
     ? `${focusSession.projectTitle || focusSession.taskTitle} · Back to focus`
     : null
 
+  const activeMeeting = meetingSession
+    ? [...meetings, ...recurringMeetings].find(m => m.id === meetingSession.meetingId)
+    : null
+  const meetingLabel = activeMeeting
+    ? `${activeMeeting.title} · Back to agenda`
+    : null
+
   const label = focusLabel
+    ?? meetingLabel
     ?? (!isPlanned ? 'Plan today' : isAfterThree && !isTomorrowPlanned ? 'Plan tomorrow?' : null)
 
   function handlePrimaryClick() {
     if (focusLabel) {
       showCitadelOverlay()
+    } else if (meetingLabel) {
+      onOpenMeetings()
     } else if (label === 'Plan today') {
       onPlanToday()
     } else if (label === 'Plan tomorrow?') {
@@ -109,31 +122,42 @@ export function SmartFab({
           </div>
         )}
 
-        {/* Main FAB */}
-        <div className="flex items-center gap-0">
-          {/* Label pill (when contextual prompt exists) */}
-          {label && !open && (
-            <button
-              onClick={handlePrimaryClick}
-              className={`flex items-center gap-2 pl-4 pr-3 py-3 rounded-l-full
-                bg-charcoal text-canvas text-[12px] font-medium
-                shadow-lg hover:bg-charcoal/80 transition-all duration-200
-                ${focusLabel ? 'animate-pulse-focus' : 'animate-pulse-label'}`}
-            >
-              {focusLabel && (
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-focus-dot shrink-0" />
-              )}
-              {label}
-            </button>
-          )}
+        {/* Label card (floats above FAB) */}
+        {label && !open && (
+          <button
+            onClick={handlePrimaryClick}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-[10px]
+              bg-card border border-border
+              shadow-[0_4px_20px_rgba(42,39,36,0.10)]
+              hover:shadow-[0_4px_28px_rgba(42,39,36,0.15)]
+              hover:border-stone/30
+              transition-all duration-200
+              ${focusLabel || meetingLabel ? 'animate-pulse-focus' : 'animate-pulse-label'}`}
+          >
+            {focusLabel ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-focus-dot shrink-0" />
+                <span className="text-[12px] font-medium text-charcoal">{label}</span>
+              </>
+            ) : meetingLabel ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-focus-dot shrink-0" />
+                <span className="text-[12px] font-medium text-charcoal">{label}</span>
+              </>
+            ) : (
+              <span className="font-serif text-[14px] text-charcoal/80 italic">{label}</span>
+            )}
+          </button>
+        )}
 
+        {/* Main FAB */}
+        <div>
           {/* Icon button */}
           <button
             onClick={label ? () => setOpen(o => !o) : handlePrimaryClick}
-            className={`flex items-center justify-center w-12 h-12
+            className="flex items-center justify-center w-12 h-12 rounded-full
               bg-charcoal text-canvas shadow-lg
-              hover:bg-charcoal/80 transition-all duration-200
-              ${label && !open ? 'rounded-r-full' : 'rounded-full'}`}
+              hover:bg-charcoal/80 transition-all duration-200"
           >
             <span
               className="transition-transform duration-200"
