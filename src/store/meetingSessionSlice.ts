@@ -10,7 +10,7 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
       set({ meetingSession: {
         meetingId, currentItemIndex: 0, completedItemIds: [],
         secondsLeft: firstItem?.durationMinutes != null ? firstItem.durationMinutes * 60 : null,
-        isRunning: true, startedAt: now, lastTickAt: now,
+        isRunning: true, startedAt: now, lastTickAt: now, isRecording: false,
       }})
     },
     endMeetingSession: () => set({ meetingSession: null }),

@@ -68,6 +68,19 @@ export interface AgendaItem {
   durationMinutes?: number
 }
 
+export interface MeetingActionItem {
+  description: string
+  assignee?: string
+}
+
+export interface MeetingNotes {
+  transcript: string
+  summary: string
+  actionItems: MeetingActionItem[]
+  decisions: string[]
+  generatedAt: string
+}
+
 export interface Meeting {
   id: string
   title: string
@@ -78,6 +91,8 @@ export interface Meeting {
   agendaItems?: AgendaItem[] // structured agenda items
   actions?: string           // post-meeting key actions
   takeaways?: string         // post-meeting takeaways/notes
+  language?: 'auto' | 'nl' | 'en'
+  meetingNotes?: MeetingNotes
   isRecurring: boolean
   recurrenceRule?: RecurrenceRule
   lastCompletedDate?: string // for recurring meetings (YYYY-MM-DD)
@@ -92,6 +107,8 @@ export interface MeetingSession {
   isRunning: boolean
   startedAt: string
   lastTickAt: string
+  isRecording: boolean
+  recordingError?: string
 }
 
 export interface DailyPlan {
