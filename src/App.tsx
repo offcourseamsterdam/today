@@ -35,6 +35,8 @@ function App() {
   const focusSession = useStore(s => s.focusSession)
   const showCitadel = useStore(s => s.showCitadel)
   const tickFocusSession = useStore(s => s.tickFocusSession)
+  const meetingSession = useStore(s => s.meetingSession)
+  const tickMeetingSession = useStore(s => s.tickMeetingSession)
   const hideCitadelOverlay = useStore(s => s.hideCitadelOverlay)
   const endFocusSession = useStore(s => s.endFocusSession)
   const startFocusSession = useStore(s => s.startFocusSession)
@@ -72,6 +74,13 @@ function App() {
     const id = setInterval(() => tickFocusSession(), 1000)
     return () => clearInterval(id)
   }, [focusSession?.isRunning, tickFocusSession])
+
+  // Global meeting session tick
+  useEffect(() => {
+    if (!meetingSession?.isRunning || meetingSession.secondsLeft === null) return
+    const id = setInterval(() => tickMeetingSession(), 1000)
+    return () => clearInterval(id)
+  }, [meetingSession?.isRunning, meetingSession?.secondsLeft, tickMeetingSession])
 
   const showNewDay = greetedDate !== todayStr
 
