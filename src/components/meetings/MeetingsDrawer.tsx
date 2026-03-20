@@ -5,7 +5,7 @@ import { useStore } from '../../store'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { LiveMeetingPanel } from './LiveMeetingPanel'
 import { describeRule } from '../../lib/recurrence'
-import type { Meeting } from '../../types'
+import type { Meeting, MeetingNotes } from '../../types'
 
 interface MeetingsDrawerProps {
   open: boolean
@@ -29,6 +29,83 @@ function TierPill({ label, active, onClick }: TierPillProps) {
     >
       {label}
     </button>
+  )
+}
+
+// AI-generated notes section
+function AiNotesSection({ notes }: { notes: MeetingNotes }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="border-t border-border/30 pt-2">
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="flex items-center gap-2 text-[10px] uppercase tracking-[0.08em]
+          text-stone/40 hover:text-stone/60 transition-colors font-medium w-full text-left"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" />
+        AI Notes
+        <ChevronDown
+          size={10}
+          className={`transition-transform ml-auto ${expanded ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {expanded && (
+        <div className="mt-2 space-y-3 animate-slide-up">
+          {/* Summary */}
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
+              Summary
+            </div>
+            <p className="text-[12px] text-charcoal/80 leading-relaxed">
+              {notes.summary}
+            </p>
+          </div>
+
+          {/* Action items */}
+          {notes.actionItems.length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
+                Action items
+              </div>
+              <ul className="space-y-1">
+                {notes.actionItems.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12px] text-charcoal/80">
+                    <span className="text-stone/30 mt-0.5">•</span>
+                    <span className="flex-1">
+                      {item.description}
+                      {item.assignee && (
+                        <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-500 font-medium">
+                          {item.assignee}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Decisions */}
+          {notes.decisions.length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
+                Decisions
+              </div>
+              <ul className="space-y-1">
+                {notes.decisions.map((decision, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12px] text-charcoal/80">
+                    <span className="text-stone/30 mt-0.5">•</span>
+                    <span>{decision}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -67,6 +144,7 @@ function MeetingRow({
   const updateMeeting = useStore(s => s.updateMeeting)
   const updateRecurringMeeting = useStore(s => s.updateRecurringMeeting)
   const startMeetingSession = useStore(s => s.startMeetingSession)
+  const processingMeetingId = useStore(s => s.processingMeetingId)
 
   const isDeep = deepMeetingId === meeting.id
   const isShort = shortMeetingIds.includes(meeting.id)
@@ -188,6 +266,17 @@ function MeetingRow({
                 outline-none focus:border-stone/40 transition-colors"
             />
           </div>
+
+          {/* AI Notes */}
+          {meeting.meetingNotes && (
+            <AiNotesSection notes={meeting.meetingNotes} />
+          )}
+          {processingMeetingId === meeting.id && (
+            <div className="flex items-center gap-2 py-3 text-[11px] text-stone/50">
+              <span className="w-3 h-3 border-2 border-stone/30 border-t-stone/60 rounded-full animate-spin" />
+              Processing recording...
+            </div>
+          )}
 
           {/* Edit / Delete */}
           <div className="flex items-center gap-3 pt-1">

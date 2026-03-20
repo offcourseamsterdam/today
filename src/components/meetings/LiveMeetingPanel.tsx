@@ -1,5 +1,6 @@
-import { Square, SkipForward, Pause, Play } from 'lucide-react'
+import { Square, SkipForward, Pause, Play, Mic, MicOff } from 'lucide-react'
 import { useStore } from '../../store'
+import { useRecording } from '../../hooks/useRecording'
 
 function formatSeconds(s: number): string {
   const m = Math.floor(s / 60)
@@ -16,12 +17,16 @@ export function LiveMeetingPanel() {
   const resumeMeetingSession = useStore(s => s.resumeMeetingSession)
   const advanceMeetingItem = useStore(s => s.advanceMeetingItem)
 
-  if (!meetingSession) return null
+  const meeting = meetingSession
+    ? [...meetings, ...recurringMeetings].find(m => m.id === meetingSession.meetingId)
+    : undefined
 
-  const meeting = [...meetings, ...recurringMeetings].find(
-    m => m.id === meetingSession.meetingId
+  const { isRecording, error: recordingError } = useRecording(
+    meetingSession ? meetingSession.meetingId : null,
+    meeting?.language ?? 'auto',
   )
-  if (!meeting) return null
+
+  if (!meetingSession || !meeting) return null
 
   const items = meeting.agendaItems ?? []
   const completedCount = meetingSession.completedItemIds.length
@@ -39,6 +44,17 @@ export function LiveMeetingPanel() {
           <span className="text-[11px] font-medium text-charcoal uppercase tracking-[0.06em]">
             Live — {meeting.title}
           </span>
+          {isRecording ? (
+            <span className="flex items-center gap-1 text-[10px] text-red-400">
+              <Mic size={10} className="animate-pulse" />
+              Rec
+            </span>
+          ) : recordingError ? (
+            <span className="flex items-center gap-1 text-[10px] text-stone/40">
+              <MicOff size={10} />
+              No mic
+            </span>
+          ) : null}
         </div>
         <button
           onClick={endMeetingSession}
