@@ -62,6 +62,12 @@ export interface Task {
   lastCompletedDate?: string  // YYYY-MM-DD — last date this recurring task was checked off
 }
 
+export interface AgendaItem {
+  id: string
+  title: string
+  durationMinutes?: number
+}
+
 export interface Meeting {
   id: string
   title: string
@@ -69,13 +75,23 @@ export interface Meeting {
   time: string               // "HH:mm" 24h format
   durationMinutes: number    // 15, 30, 45, 60, 90, etc.
   location?: string          // physical address or video link
-  agenda?: string            // pre-meeting agenda text
+  agendaItems?: AgendaItem[] // structured agenda items
   actions?: string           // post-meeting key actions
   takeaways?: string         // post-meeting takeaways/notes
   isRecurring: boolean
   recurrenceRule?: RecurrenceRule
   lastCompletedDate?: string // for recurring meetings (YYYY-MM-DD)
   createdAt: string
+}
+
+export interface MeetingSession {
+  meetingId: string
+  currentItemIndex: number
+  completedItemIds: string[]
+  secondsLeft: number | null   // null = this item has no duration
+  isRunning: boolean
+  startedAt: string
+  lastTickAt: string
 }
 
 export interface DailyPlan {
