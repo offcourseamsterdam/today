@@ -3,7 +3,9 @@ import { X, Trash2, RotateCcw } from 'lucide-react'
 import { RecurrenceFrequencyPicker, EMPTY_RULE_STATE, type RecurrenceFormState } from '../ui/RecurrenceFrequencyPicker'
 import { buildRule } from '../../lib/recurrence'
 import { useMeetingModal } from '../../hooks/useMeetingModal'
-import type { Meeting } from '../../types'
+import { AgendaItemEditor } from './AgendaItemEditor'
+import { useStore } from '../../store'
+import type { Meeting, AgendaItem } from '../../types'
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90]
 
@@ -16,12 +18,14 @@ export function MeetingModal() {
     addMeetingToPlan,
   } = useMeetingModal()
 
+  const startMeetingSession = useStore(s => s.startMeetingSession)
+
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
   const [time, setTime] = useState('09:00')
   const [durationMinutes, setDurationMinutes] = useState(30)
   const [location, setLocation] = useState('')
-  const [agenda, setAgenda] = useState('')
+  const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([])
   const [actions, setActions] = useState('')
   const [takeaways, setTakeaways] = useState('')
   const [isRecurring, setIsRecurring] = useState(false)
@@ -35,7 +39,7 @@ export function MeetingModal() {
       setTime('09:00')
       setDurationMinutes(30)
       setLocation('')
-      setAgenda('')
+      setAgendaItems([])
       setActions('')
       setTakeaways('')
       setIsRecurring(false)
@@ -46,7 +50,7 @@ export function MeetingModal() {
       setTime(existingMeeting.time)
       setDurationMinutes(existingMeeting.durationMinutes)
       setLocation(existingMeeting.location ?? '')
-      setAgenda(existingMeeting.agenda ?? '')
+      setAgendaItems(existingMeeting.agendaItems ?? [])
       setActions(existingMeeting.actions ?? '')
       setTakeaways(existingMeeting.takeaways ?? '')
       setIsRecurring(existingMeeting.isRecurring)
@@ -78,7 +82,7 @@ export function MeetingModal() {
       time,
       durationMinutes,
       location: location.trim() || undefined,
-      agenda: agenda.trim() || undefined,
+      agendaItems: agendaItems.length > 0 ? agendaItems : undefined,
       actions: actions.trim() || undefined,
       takeaways: takeaways.trim() || undefined,
       isRecurring,
@@ -225,18 +229,20 @@ export function MeetingModal() {
 
           {/* Agenda */}
           <div>
-            <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
+            <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-2 block">
               Agenda
             </label>
-            <textarea
-              value={agenda}
-              onChange={e => setAgenda(e.target.value)}
-              placeholder="What needs to be discussed..."
-              rows={3}
-              className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
-                text-[13px] text-charcoal placeholder:text-stone/30 resize-none
-                outline-none focus:border-stone/40 transition-colors"
-            />
+            {agendaItems.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setAgendaItems([{ id: crypto.randomUUID(), title: '' }])}
+                className="text-[12px] text-stone/40 hover:text-stone transition-colors"
+              >
+                + Add agenda item
+              </button>
+            ) : (
+              <AgendaItemEditor items={agendaItems} onChange={setAgendaItems} />
+            )}
           </div>
 
           {/* Recurring toggle */}
@@ -314,6 +320,20 @@ export function MeetingModal() {
             )}
 
             <div className="flex gap-2">
+              {!isNew && existingMeeting && agendaItems.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSave()
+                    startMeetingSession(existingMeeting.id)
+                    setOpenMeetingId(null)
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium
+                    text-white bg-green-600 rounded-[6px] hover:bg-green-700 transition-colors"
+                >
+                  Start meeting
+                </button>
+              )}
               <button
                 onClick={() => setOpenMeetingId(null)}
                 className="px-4 py-2 text-[12px] text-stone hover:text-charcoal transition-colors"
