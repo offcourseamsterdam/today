@@ -101,10 +101,13 @@ export function SmartFab({
         />
       )}
 
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+      <div
+        className="fixed right-6 z-50 flex flex-col items-end gap-2"
+        style={{ bottom: 'calc(1.5rem + var(--safe-area-bottom, 0px))' }}
+      >
         {/* Action stack */}
         {open && (
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex flex-col items-end gap-1.5 max-h-[calc(100vh-140px)] overflow-y-auto pb-1">
             {actions.map((item, i) => (
               <button
                 key={item.label}
@@ -137,15 +140,15 @@ export function SmartFab({
             {focusLabel ? (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-focus-dot shrink-0" />
-                <span className="text-[12px] font-medium text-charcoal">{label}</span>
+                <span className="text-[12px] font-medium text-charcoal max-w-[calc(100vw-96px)] truncate">{label}</span>
               </>
             ) : meetingLabel ? (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-focus-dot shrink-0" />
-                <span className="text-[12px] font-medium text-charcoal">{label}</span>
+                <span className="text-[12px] font-medium text-charcoal max-w-[calc(100vw-96px)] truncate">{label}</span>
               </>
             ) : (
-              <span className="font-serif text-[14px] text-charcoal/80 italic">{label}</span>
+              <span className="font-serif text-[14px] text-charcoal/80 italic max-w-[calc(100vw-96px)] truncate">{label}</span>
             )}
           </button>
         )}
