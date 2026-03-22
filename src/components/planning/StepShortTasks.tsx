@@ -41,7 +41,12 @@ export function StepShortTasks({
   const [showMeetingPicker, setShowMeetingPicker] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
 
-  const usedSlots = calendarShortEvents.length + taskIds.length + meetingIds.length
+  const meetingSlots = (durationMinutes: number) => Math.ceil(durationMinutes / 60)
+  const usedSlots = calendarShortEvents.length + taskIds.length +
+    meetingIds.reduce((sum, id) => {
+      const m = allMeetingsList.find(m => m.id === id)
+      return sum + (m ? meetingSlots(m.durationMinutes) : 1)
+    }, 0)
   const remainingSlots = MAX_SLOTS - usedSlots
 
   const availableTasks = getAvailableTasks(projects, orphanTasks, taskIds)
@@ -69,7 +74,9 @@ export function StepShortTasks({
   }
 
   function handleAddMeeting(id: string) {
-    if (remainingSlots <= 0) return
+    const meeting = allMeetingsList.find(m => m.id === id)
+    const needed = meeting ? meetingSlots(meeting.durationMinutes) : 1
+    if (remainingSlots < needed) return
     onAddMeeting(id)
     setShowMeetingPicker(false)
   }
@@ -194,18 +201,26 @@ export function StepShortTasks({
               </button>
               {showMeetingPicker && (
                 <div className="rounded-[6px] border border-[#E8E4DD] bg-white overflow-hidden">
-                  {availableMeetings.map(m => (
-                    <button
-                      key={m.id}
-                      onClick={() => handleAddMeeting(m.id)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#FAF9F7] transition-colors text-left border-b border-[#E8E4DD] last:border-0"
-                    >
-                      <Clock size={12} className="text-[#7A746A]/50 flex-shrink-0" />
-                      <span className="text-[11px] text-[#7A746A]/60 font-mono flex-shrink-0 w-10">{m.time}</span>
-                      <span className="text-[13px] text-[#2A2724] flex-1 truncate">{m.title}</span>
-                      <span className="text-[10px] text-[#7A746A]/50 flex-shrink-0">{m.durationMinutes}m</span>
-                    </button>
-                  ))}
+                  {availableMeetings.map(m => {
+                    const slots = meetingSlots(m.durationMinutes)
+                    const fits = remainingSlots >= slots
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => handleAddMeeting(m.id)}
+                        disabled={!fits}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left border-b border-[#E8E4DD] last:border-0
+                          ${fits ? 'hover:bg-[#FAF9F7]' : 'opacity-40 cursor-not-allowed'}`}
+                      >
+                        <Clock size={12} className="text-[#7A746A]/50 flex-shrink-0" />
+                        <span className="text-[11px] text-[#7A746A]/60 font-mono flex-shrink-0 w-10">{m.time}</span>
+                        <span className="text-[13px] text-[#2A2724] flex-1 truncate">{m.title}</span>
+                        <span className="text-[10px] text-[#7A746A]/50 flex-shrink-0">
+                          {m.durationMinutes}m{slots > 1 ? ` · ${slots} slots` : ''}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </>

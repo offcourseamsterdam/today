@@ -43,7 +43,9 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
       .sort((a, b) => a.time.localeCompare(b.time))
   }, [shortMeetingIds, allMeetings, recurringMeetings])
 
-  const slotsUsed = shortTaskIds.length + shortProjectIds.length + sortedShortMeetings.length
+  const meetingSlots = (durationMinutes: number) => Math.ceil(durationMinutes / 60)
+  const slotsUsed = shortTaskIds.length + shortProjectIds.length +
+    sortedShortMeetings.reduce((sum, m) => sum + meetingSlots(m.durationMinutes), 0)
 
   return (
     <div className="bg-card rounded-[10px] p-5 shadow-card border border-border/50">
@@ -60,30 +62,35 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
       {/* Content list */}
       <div className="min-h-[60px]">
         {/* Meeting cards from plan assignment */}
-        {sortedShortMeetings.map(meeting => (
-          <div
-            key={meeting.id}
-            className="flex items-center gap-3 py-2 group cursor-pointer hover:bg-canvas/50 -mx-1 px-1 rounded-[4px] transition-colors"
-            onClick={onOpenMeetings}
-          >
-            <Clock size={13} className="text-cat-marketing flex-shrink-0" />
-            <span className="text-[10px] font-medium text-cat-marketing bg-cat-marketing/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
-              {meeting.time}
-            </span>
-            <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">
-              {meeting.title}
-            </span>
-            <span className="text-[10px] text-stone/40 flex-shrink-0">
-              {meeting.durationMinutes}m
-            </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); removeShortMeeting(meeting.id) }}
-              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all flex-shrink-0"
+        {sortedShortMeetings.map(meeting => {
+          const slots = meetingSlots(meeting.durationMinutes)
+          const isMultiSlot = slots > 1
+          return (
+            <div
+              key={meeting.id}
+              className={`flex items-center gap-3 group cursor-pointer hover:bg-canvas/50 -mx-1 px-1 rounded-[4px] transition-colors
+                ${isMultiSlot ? 'py-3 border-l-2 border-cat-marketing/30 pl-2' : 'py-2'}`}
+              onClick={onOpenMeetings}
             >
-              <X size={13} />
-            </button>
-          </div>
-        ))}
+              <Clock size={13} className="text-cat-marketing flex-shrink-0" />
+              <span className="text-[10px] font-medium text-cat-marketing bg-cat-marketing/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                {meeting.time}
+              </span>
+              <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">
+                {meeting.title}
+              </span>
+              <span className="text-[10px] text-stone/40 flex-shrink-0">
+                {meeting.durationMinutes}m{isMultiSlot ? ` · ${slots} slots` : ''}
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); removeShortMeeting(meeting.id) }}
+                className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-stone transition-all flex-shrink-0"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )
+        })}
 
         {/* Divider between meetings and projects/tasks */}
         {sortedShortMeetings.length > 0 && (shortProjectIds.length > 0 || shortTaskIds.length > 0) && (
