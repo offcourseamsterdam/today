@@ -149,7 +149,7 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
       {/* Collapsed: compact summary row */}
       {collapsed && (
         <div
-          className="flex items-center gap-6 px-4 py-3 bg-card rounded-[8px] border border-border/50
+          className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 bg-card rounded-[8px] border border-border/50
             shadow-card text-[12px] text-stone cursor-pointer hover:border-stone/20 transition-all"
           onClick={onToggleCollapse}
         >
@@ -194,12 +194,12 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
             </p>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3 sm:gap-4">
             {blockOrder.map((block, i) => (
               <div key={block} className="relative group/tier h-full [&>*]:h-full">
                 {/* Swap arrows — visible on hover */}
                 <div className="absolute top-2 right-2 z-10 flex gap-0.5
-                  opacity-0 group-hover/tier:opacity-100 transition-opacity">
+                  opacity-100 sm:opacity-0 sm:group-hover/tier:opacity-100 transition-opacity">
                   {i > 0 && (
                     <button
                       onClick={() => swapBlocks(i, -1)}
@@ -252,7 +252,7 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
           )}
 
           {/* Quote + day done */}
-          <div className="mt-4 flex items-end justify-between gap-6">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
             <div className="p-3 rounded-[8px] bg-border-light/40 max-w-[460px]">
               <p className="text-[11px] text-[#5A5550] italic font-serif leading-relaxed">
                 &ldquo;{quote.text}&rdquo;
