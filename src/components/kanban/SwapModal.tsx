@@ -38,7 +38,7 @@ export function SwapModal() {
 
       {/* Modal */}
       <div
-        className="relative bg-card rounded-[10px] shadow-modal p-6 w-full max-w-md animate-scale-in"
+        className="relative bg-card rounded-[10px] shadow-modal p-6 w-full max-w-sm mx-4 animate-scale-in"
         onClick={e => e.stopPropagation()}
       >
         <button
