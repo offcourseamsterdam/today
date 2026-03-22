@@ -34,9 +34,9 @@ export function EnoughScreen({ onCloseDay, onKeepWorking }: EnoughScreenProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-citadel-bg flex items-center justify-center animate-fade-in">
-      <div className="max-w-[520px] w-full px-6 text-center">
+      <div className="max-w-[520px] w-full px-4 sm:px-6 text-center">
         {/* The word */}
-        <h1 className="font-serif text-[64px] text-citadel-text tracking-[-0.03em] mb-8">
+        <h1 className="font-serif text-[40px] sm:text-[64px] text-citadel-text tracking-[-0.03em] mb-8">
           Enough.
         </h1>
 

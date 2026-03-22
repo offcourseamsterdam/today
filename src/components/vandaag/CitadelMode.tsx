@@ -78,7 +78,8 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
       <button
         onClick={onExit}
         className="absolute top-6 left-6 flex items-center gap-2 text-[12px]
-          text-citadel-text/30 hover:text-citadel-text/60 transition-colors"
+          text-citadel-text/30 hover:text-citadel-text/60 transition-colors
+          min-h-[44px] px-2"
       >
         <ArrowLeft size={14} />
         Return to Vandaag
@@ -181,7 +182,7 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
 
       {/* Scratchpad — deep and short tiers only */}
       {showScratchpad && (
-        <div className="w-full max-w-[520px] px-6">
+        <div className="w-full max-w-[520px] px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <form onSubmit={handleCapture} className="relative flex-1">
               <input

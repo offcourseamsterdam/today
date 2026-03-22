@@ -36,7 +36,7 @@ export function NewDayScreen({ onStart, onPlan }: NewDayScreenProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-canvas flex items-center justify-center animate-fade-in">
-      <div className="max-w-sm w-full px-8">
+      <div className="max-w-sm w-full px-5 sm:px-8">
 
         {/* Date */}
         <div className="text-[11px] uppercase tracking-[0.12em] text-stone/40 mb-7 capitalize">
