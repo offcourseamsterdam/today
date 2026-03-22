@@ -123,7 +123,7 @@ export function MeetingModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-charcoal/30 backdrop-blur-sm"
@@ -131,7 +131,7 @@ export function MeetingModal() {
       />
 
       {/* Modal */}
-      <div className="relative bg-card rounded-[12px] shadow-lg border border-border/50 w-full max-w-[480px] max-h-[85vh] overflow-y-auto animate-scale-in mx-4">
+      <div className="relative bg-card rounded-t-[16px] sm:rounded-[12px] shadow-lg border border-border/50 w-full sm:max-w-[480px] max-h-[92vh] sm:max-h-[85vh] overflow-y-auto animate-scale-in sm:mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <h2 className="text-[15px] font-medium text-charcoal">
@@ -164,7 +164,7 @@ export function MeetingModal() {
           </div>
 
           {/* Date + Time row */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
                 Date <span className="normal-case text-stone/30">(optional)</span>
