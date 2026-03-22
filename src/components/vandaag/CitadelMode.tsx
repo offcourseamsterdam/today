@@ -124,7 +124,7 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
       </div>
 
       {/* Large timer circle */}
-      <div className="relative w-[280px] h-[280px] mb-12">
+      <div className="relative w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] mb-12">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
           <circle
             cx="140" cy="140" r={radius}
