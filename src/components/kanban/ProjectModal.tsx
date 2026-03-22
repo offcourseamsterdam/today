@@ -71,10 +71,10 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm" />
       <div
-        className="relative bg-card rounded-[10px] shadow-modal w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scale-in"
+        className="relative bg-card w-full rounded-t-[16px] sm:rounded-[10px] sm:max-w-2xl sm:max-h-[90vh] max-h-[92vh] overflow-y-auto animate-scale-in"
         onClick={e => e.stopPropagation()}
       >
         <ProjectModalCover
