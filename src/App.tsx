@@ -127,17 +127,17 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas overflow-x-hidden">
       {/* Header */}
-      <header className="max-w-[1400px] mx-auto px-6 pt-8 pb-6 flex justify-between items-start">
+      <header className="max-w-[1400px] mx-auto px-4 pt-5 pb-4 sm:px-6 sm:pt-8 sm:pb-6 flex justify-between items-start">
         <div className="flex items-center gap-3">
           <EnsoLogo size={40} color="#2A2724" />
           <div>
-            <h1 className="font-serif text-[22px] font-normal text-charcoal tracking-[-0.02em]">
+            <h1 className="font-serif text-[18px] sm:text-[22px] font-normal text-charcoal tracking-[-0.02em]">
               Vandaag{' '}
               <span className="text-stone/50 font-light">
                 / {dayName.toLowerCase()} {dateStr.toLowerCase()}
               </span>
             </h1>
-            <div className="text-[12px] text-stone/60 tracking-[0.04em] uppercase mt-1">
+            <div className="hidden sm:block text-[12px] text-stone/60 tracking-[0.04em] uppercase mt-1">
               Week {weekNum}
             </div>
           </div>
@@ -159,7 +159,7 @@ function App() {
         />
         {/* Panel */}
         <div
-          className={`fixed top-0 right-0 h-full w-full max-w-[360px] bg-canvas border-l border-border
+          className={`fixed top-0 right-0 h-full w-full sm:max-w-[360px] bg-canvas border-l border-border
             shadow-2xl z-50 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
             ${showTomorrowPeek ? 'translate-x-0' : 'translate-x-full'}`}
         >
@@ -198,7 +198,7 @@ function App() {
       <Toast />
 
       {/* Main content */}
-      <main className="px-6 pb-12">
+      <main className="px-4 pb-28 sm:px-6 sm:pb-12">
         {activeView === 'philosophy' ? (
           <PhilosophyPage onBack={() => setActiveView('vandaag')} />
         ) : activeView === 'planning' ? (
