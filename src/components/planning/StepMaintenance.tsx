@@ -80,10 +80,10 @@ export function StepMaintenance({
       {/* Overdue recurring tasks banner */}
       {hasOverdue && (
         <div className="rounded-[8px] border border-amber-200 bg-amber-50 p-3 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
               <AlertTriangle size={13} className="text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
+              <div className="min-w-0">
                 <div className="text-[12px] font-medium text-amber-800">
                   {overdueNotAdded.length} recurring task{overdueNotAdded.length !== 1 ? 's' : ''} not done today
                 </div>
@@ -119,7 +119,7 @@ export function StepMaintenance({
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="text-[11px] uppercase tracking-wider text-[#7A746A]/60">
           Maintenance tasks
         </div>
@@ -128,7 +128,7 @@ export function StepMaintenance({
             onClick={handleAutoPopulate}
             className="flex items-center gap-1.5 text-[11px] text-[#7A746A]
               px-2.5 py-1 rounded border border-[#E8E4DD]
-              hover:border-[#7A746A]/30 hover:text-[#2A2724] transition-all"
+              hover:border-[#7A746A]/30 hover:text-[#2A2724] transition-all flex-shrink-0"
           >
             <RotateCcw size={11} />
             Add {notYetAdded.length} {day === 'tomorrow' ? "tomorrow's" : "today's"} recurring
