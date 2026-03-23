@@ -1,4 +1,5 @@
 import type { StoreSet, StoreGet } from './types'
+import type { AgendaItem } from '../types'
 
 export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
   return {
@@ -9,12 +10,15 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
       const hasItems = items.length > 0
       const firstItem = hasItems ? items[0] : undefined
       const now = new Date().toISOString()
-      set({ meetingSession: {
-        meetingId, currentItemIndex: hasItems ? 0 : -1, completedItemIds: [],
-        secondsLeft: firstItem?.durationMinutes != null ? firstItem.durationMinutes * 60 : null,
-        isRunning: hasItems, startedAt: now, lastTickAt: now, isRecording: false,
-        processingItemIds: [],
-      }})
+      set({
+        isLiveMeetingOpen: true,
+        meetingSession: {
+          meetingId, currentItemIndex: hasItems ? 0 : -1, completedItemIds: [],
+          secondsLeft: firstItem?.durationMinutes != null ? firstItem.durationMinutes * 60 : null,
+          isRunning: hasItems, startedAt: now, lastTickAt: now, isRecording: false,
+          processingItemIds: [],
+        }
+      })
     },
     endMeetingSession: () => set({ meetingSession: null }),
     pauseMeetingSession: () => {
@@ -53,6 +57,39 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
         set({ meetingSession: { ...meetingSession, secondsLeft: 0, isRunning: false, lastTickAt: new Date().toISOString() } })
       } else {
         set({ meetingSession: { ...meetingSession, secondsLeft: newSecondsLeft, lastTickAt: new Date().toISOString() } })
+      }
+    },
+    setLiveMeetingOpen: (open: boolean) => set({ isLiveMeetingOpen: open }),
+    reorderLiveMeetingItems: (newItems: AgendaItem[]) => {
+      const { meetingSession, meetings, recurringMeetings } = get()
+      if (!meetingSession) return
+
+      const allMeetings = [...meetings, ...recurringMeetings]
+      const meeting = allMeetings.find(m => m.id === meetingSession.meetingId)
+      if (!meeting) return
+
+      const currentItem = meeting.agendaItems?.[meetingSession.currentItemIndex]
+
+      const isRecurring = recurringMeetings.some(m => m.id === meetingSession.meetingId)
+      if (isRecurring) {
+        set({
+          recurringMeetings: recurringMeetings.map(m =>
+            m.id === meetingSession.meetingId ? { ...m, agendaItems: newItems } : m
+          )
+        })
+      } else {
+        set({
+          meetings: meetings.map(m =>
+            m.id === meetingSession.meetingId ? { ...m, agendaItems: newItems } : m
+          )
+        })
+      }
+
+      if (currentItem) {
+        const newIndex = newItems.findIndex(i => i.id === currentItem.id)
+        if (newIndex >= 0 && newIndex !== meetingSession.currentItemIndex) {
+          set({ meetingSession: { ...meetingSession, currentItemIndex: newIndex } })
+        }
       }
     },
   }

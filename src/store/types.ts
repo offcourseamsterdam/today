@@ -33,6 +33,7 @@ export interface VandaagState {
   // Meeting session state
   meetingSession: MeetingSession | null
   processingMeetingId: string | null
+  isLiveMeetingOpen: boolean
 
   // Focus session actions
   startFocusSession: (params: { tier: PlanTier; taskId: string; taskTitle: string; projectTitle?: string; intention?: string; projectId?: string }) => void
@@ -101,6 +102,8 @@ export interface VandaagState {
   resumeMeetingSession: () => void
   advanceMeetingItem: () => void
   tickMeetingSession: () => void
+  setLiveMeetingOpen: (open: boolean) => void
+  reorderLiveMeetingItems: (newItems: AgendaItem[]) => void
 
   // Recording processing
   setProcessingMeetingId: (id: string | null) => void

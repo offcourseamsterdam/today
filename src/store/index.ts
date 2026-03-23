@@ -91,6 +91,7 @@ export const useStore = create<VandaagState>()(
       showCitadel: false,
       meetingSession: null,
       processingMeetingId: null,
+      isLiveMeetingOpen: false,
       calendarEvents: [],
       calendarLoading: false,
       calendarError: null,
