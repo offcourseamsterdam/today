@@ -64,6 +64,7 @@ export interface AgendaItem {
   id: string
   title: string
   durationMinutes?: number
+  recurring?: boolean  // appears in every instance of a recurring meeting
 }
 
 export interface MeetingActionItem {

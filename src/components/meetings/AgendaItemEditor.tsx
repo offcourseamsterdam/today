@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { GripVertical, X } from 'lucide-react'
+import { GripVertical, X, Repeat } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -120,6 +120,20 @@ function AgendaItemRow({
           </button>
         ))}
       </div>
+
+      {/* Recurring toggle */}
+      <button
+        type="button"
+        onClick={() => onChange(item.id, { recurring: !item.recurring })}
+        className={`flex-shrink-0 transition-colors
+          ${item.recurring
+            ? 'text-charcoal'
+            : 'text-stone/20 hover:text-stone/50 opacity-0 group-hover:opacity-100'}`}
+        tabIndex={-1}
+        title={item.recurring ? 'Recurring — appears every meeting' : 'Make recurring'}
+      >
+        <Repeat size={11} />
+      </button>
 
       {/* Delete */}
       <button
