@@ -343,74 +343,25 @@ interface ProjectEntryProps {
 function ProjectEntry({ entry, onRestore }: ProjectEntryProps) {
   const { project } = entry
   const categoryConfig = CATEGORY_CONFIG[project.category]
-  const taskCount = project.tasks.length
-  const objPos = project.coverImagePosition
-    ? `${project.coverImagePosition.x}% ${project.coverImagePosition.y}%`
-    : '50% 30%'
 
   return (
-    <div
-      className="bg-card rounded-[8px] border border-border/50 group
-        transition-all hover:border-stone/20 overflow-hidden mt-1.5"
-    >
-      {/* Cover image */}
-      {project.coverImageUrl ? (
-        <div className="relative h-[80px] overflow-hidden">
-          <img
-            src={project.coverImageUrl}
-            alt=""
-            className="w-full h-full object-cover opacity-70"
-            style={{ objectPosition: objPos }}
-          />
-          {/* Subtle darkening gradient at bottom for text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          {/* Restore button pinned top-right */}
-          <button
-            onClick={onRestore}
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100
-              text-[10px] text-white/70 hover:text-white bg-black/30 hover:bg-black/50
-              rounded px-1.5 py-0.5 transition-all whitespace-nowrap backdrop-blur-sm"
-            title="Restore to In Progress"
-          >
-            ↩
-          </button>
-        </div>
-      ) : (
-        /* No cover: category color strip */
-        <div
-          className="h-[6px]"
-          style={{ background: categoryConfig.color }}
-        />
-      )}
-
-      {/* Card body */}
-      <div className="flex items-center gap-3 px-3 py-2.5">
-        {!project.coverImageUrl && (
-          <div
-            className="w-[3px] h-7 rounded-full flex-shrink-0"
-            style={{ background: categoryConfig.color }}
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-medium text-stone/60 leading-snug truncate">
-            {project.title}
-          </div>
-          <div className="text-[10px] text-stone/35 mt-0.5">
-            project completed{taskCount > 0 ? ` · ${taskCount} tasks` : ''}
-          </div>
-        </div>
-        {/* Restore button when no cover (no overlay available) */}
-        {!project.coverImageUrl && (
-          <button
-            onClick={onRestore}
-            className="opacity-0 group-hover:opacity-100 text-[10px] text-stone/40
-              hover:text-charcoal transition-all flex-shrink-0 whitespace-nowrap"
-            title="Restore to In Progress"
-          >
-            ↩
-          </button>
-        )}
+    <div className="flex items-center gap-2.5 py-1 group">
+      <div
+        className="w-[14px] h-[14px] rounded-full flex-shrink-0"
+        style={{ background: `${categoryConfig.color}30`, border: `1.5px solid ${categoryConfig.color}` }}
+      />
+      <div className="flex-1 min-w-0">
+        <div className="text-[12px] text-stone/50 leading-snug truncate">{project.title}</div>
+        <div className="text-[10px] text-stone/30 mt-0.5">project completed</div>
       </div>
+      <button
+        onClick={onRestore}
+        className="opacity-0 group-hover:opacity-100 text-[10px] text-stone/40
+          hover:text-charcoal transition-all flex-shrink-0 ml-1 whitespace-nowrap"
+        title="Restore to In Progress"
+      >
+        ↩
+      </button>
     </div>
   )
 }
