@@ -33,7 +33,7 @@ export function TomorrowPeek({ onClose, onEdit }: TomorrowPeekProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-start justify-between px-7 pt-7 pb-6 border-b border-border/50">
+      <div className="flex items-start justify-between px-4 sm:px-7 pt-7 pb-6 border-b border-border/50">
         <div>
           <div className="text-[10px] uppercase tracking-[0.12em] text-stone/35 mb-1">Morgen</div>
           <div className="font-serif text-[20px] text-charcoal capitalize">
@@ -49,7 +49,7 @@ export function TomorrowPeek({ onClose, onEdit }: TomorrowPeekProps) {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-7 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-7 py-6">
         {!hasPlan ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-12">
             <Moon size={22} className="text-stone/20 mb-4" />
@@ -116,7 +116,7 @@ export function TomorrowPeek({ onClose, onEdit }: TomorrowPeekProps) {
       </div>
 
       {/* Footer */}
-      <div className="px-7 py-5 border-t border-border/50">
+      <div className="px-4 sm:px-7 py-5 border-t border-border/50">
         <button
           onClick={onEdit}
           className="text-[12px] text-stone/45 hover:text-stone transition-colors"

@@ -92,7 +92,7 @@ export function PhilosophyPage({ onBack }: PhilosophyPageProps) {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto animate-fade-in">
+    <div className="max-w-[1400px] mx-auto animate-fade-in px-4 sm:px-0">
       {/* Back navigation */}
       <button
         onClick={onBack}
@@ -114,7 +114,7 @@ export function PhilosophyPage({ onBack }: PhilosophyPageProps) {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-[1fr_380px] gap-10">
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_380px] gap-10">
         {/* Left: Life grid */}
         <div>
           {/* Birth date input */}
@@ -144,7 +144,7 @@ export function PhilosophyPage({ onBack }: PhilosophyPageProps) {
           ) : lifeWeeks ? (
             <>
               {/* Stats row */}
-              <div className="flex items-baseline gap-8 mb-6">
+              <div className="flex flex-wrap items-baseline gap-6 mb-6">
                 <div>
                   <span className="text-[32px] font-serif text-charcoal tracking-tight">
                     {lifeWeeks.weeksLived.toLocaleString()}

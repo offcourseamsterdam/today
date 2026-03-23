@@ -41,7 +41,7 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
 
       {/* Drawer panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-[380px] bg-canvas border-l border-border
+        className={`fixed top-0 right-0 h-full w-full sm:max-w-[380px] bg-canvas border-l border-border
           shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
           ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >

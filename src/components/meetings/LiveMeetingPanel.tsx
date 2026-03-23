@@ -143,10 +143,10 @@ export function LiveMeetingPanel() {
   return (
     <div className="bg-charcoal/5 border border-charcoal/10 rounded-[10px] p-4 mb-4 space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-          <span className="text-[11px] font-medium text-charcoal uppercase tracking-[0.06em]">
+          <span className="text-[11px] font-medium text-charcoal uppercase tracking-[0.06em] truncate">
             Live — {meeting.title}
           </span>
           {isRecording ? (
@@ -249,7 +249,7 @@ export function LiveMeetingPanel() {
       )}
 
       {/* Controls */}
-      <div className="flex items-center justify-between pt-1">
+      <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
         {hasItems && meetingSession.secondsLeft != null ? (
           <button
             onClick={meetingSession.isRunning ? pauseMeetingSession : resumeMeetingSession}

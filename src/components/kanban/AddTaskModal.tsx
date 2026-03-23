@@ -22,10 +22,10 @@ export function AddTaskModal({ open, onClose }: AddTaskModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm" />
       <div
-        className="relative bg-card rounded-[10px] shadow-modal p-6 w-full max-w-sm animate-scale-in"
+        className="relative bg-card rounded-t-[16px] sm:rounded-[10px] p-6 w-full sm:max-w-sm sm:max-h-[85vh] max-h-[90vh] overflow-y-auto animate-scale-in"
         onClick={e => e.stopPropagation()}
       >
         <button

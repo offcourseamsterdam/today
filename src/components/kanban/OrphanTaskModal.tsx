@@ -88,10 +88,10 @@ export function OrphanTaskModal({ task, onClose }: OrphanTaskModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm" />
       <div
-        className="relative bg-card rounded-[10px] shadow-modal w-full max-w-xl max-h-[85vh] overflow-y-auto animate-scale-in"
+        className="relative bg-card w-full rounded-t-[16px] sm:rounded-[10px] sm:max-w-xl sm:max-h-[85vh] max-h-[90vh] overflow-y-auto animate-scale-in"
         onClick={e => e.stopPropagation()}
       >
         {/* Close button */}

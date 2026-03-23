@@ -138,7 +138,7 @@ export function PlanningModal({ onClose, day = 'tomorrow' }: PlanningModalProps)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
@@ -146,9 +146,9 @@ export function PlanningModal({ onClose, day = 'tomorrow' }: PlanningModalProps)
       />
 
       {/* Modal card */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[90vh]">
+      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-lg sm:mx-4 flex flex-col max-h-[92vh] sm:max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#F0EEEB]">
+        <div className="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[#F0EEEB]">
           <span className="font-serif text-[18px] text-[#2A2724]">
             {isToday ? 'Plan today' : 'Plan tomorrow'}
           </span>
@@ -164,7 +164,7 @@ export function PlanningModal({ onClose, day = 'tomorrow' }: PlanningModalProps)
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
           <StepIndicator currentStep={step} />
 
           {step === 1 && (

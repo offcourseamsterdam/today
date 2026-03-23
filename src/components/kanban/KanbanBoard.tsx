@@ -98,6 +98,7 @@ export function KanbanBoard({
   const [showAddModal, setShowAddModal] = useState(false)
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [selectedContextId, setSelectedContextId] = useState<string | null>(null)
+  const [mobileCol, setMobileCol] = useState<string>('backlog')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -365,6 +366,27 @@ export function KanbanBoard({
           </div>
         )}
 
+        {/* Mobile column tabs — hidden on sm+ */}
+        <div className="flex sm:hidden gap-1 mb-3 p-1 bg-border-light/60 rounded-[8px]">
+          {[
+            { id: 'backlog', label: 'Backlog' },
+            { id: 'in_progress', label: 'Active' },
+            { id: 'waiting', label: 'Waiting' },
+            { id: 'done', label: 'Done' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setMobileCol(tab.id)}
+              className={`flex-1 py-1.5 text-[11px] font-medium rounded-[6px] transition-all duration-150
+                ${mobileCol === tab.id
+                  ? 'bg-card text-charcoal shadow-sm'
+                  : 'text-stone hover:text-charcoal'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Kanban columns */}
         <DndContext
           sensors={sensors}
@@ -373,36 +395,41 @@ export function KanbanBoard({
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-4 gap-4">
-            <BacklogColumn
-              projects={getProjectsByStatus('backlog')}
-              orphanTasks={getOrphansByColumn('backlog')}
-              onProjectClick={handleProjectClick}
-              backlogDragPreview={backlogDragPreview ?? undefined}
-              {...orphanHandlers}
-            />
+          <div className="sm:grid sm:grid-cols-4 sm:gap-4 flex flex-col gap-3">
+            <div className={mobileCol !== 'backlog' ? 'hidden sm:block' : ''}>
+              <BacklogColumn
+                projects={getProjectsByStatus('backlog')}
+                orphanTasks={getOrphansByColumn('backlog')}
+                onProjectClick={handleProjectClick}
+                backlogDragPreview={backlogDragPreview ?? undefined}
+                {...orphanHandlers}
+              />
+            </div>
             {KANBAN_COLUMNS.filter(col => col.id !== 'backlog').map(col => {
               const isWipColumn = col.id === 'in_progress' || col.id === 'waiting'
               return (
-                <KanbanColumn
-                  key={col.id}
-                  id={col.id}
-                  title={col.title}
-                  limit={isWipColumn ? inProgressLimit : null}
-                  combinedCount={isWipColumn ? getWipCount() : undefined}
-                  projects={getProjectsByStatus(col.id)}
-                  orphanTasks={getOrphansByColumn(col.id)}
-                  onProjectClick={handleProjectClick}
-                  dragPreview={
-                    dragPreview?.targetCol === col.id
-                      ? { activeId: dragPreview.activeId, afterItemId: dragPreview.afterItemId, height: dragPreview.height, beforeFirst: dragPreview.beforeFirst }
-                      : undefined
-                  }
-                  {...orphanHandlers}
-                />
+                <div key={col.id} className={mobileCol !== col.id ? 'hidden sm:block' : ''}>
+                  <KanbanColumn
+                    id={col.id}
+                    title={col.title}
+                    limit={isWipColumn ? inProgressLimit : null}
+                    combinedCount={isWipColumn ? getWipCount() : undefined}
+                    projects={getProjectsByStatus(col.id)}
+                    orphanTasks={getOrphansByColumn(col.id)}
+                    onProjectClick={handleProjectClick}
+                    dragPreview={
+                      dragPreview?.targetCol === col.id
+                        ? { activeId: dragPreview.activeId, afterItemId: dragPreview.afterItemId, height: dragPreview.height, beforeFirst: dragPreview.beforeFirst }
+                        : undefined
+                    }
+                    {...orphanHandlers}
+                  />
+                </div>
               )
             })}
-            <DoneListColumn />
+            <div className={mobileCol !== 'done' ? 'hidden sm:block' : ''}>
+              <DoneListColumn />
+            </div>
           </div>
 
           <DragOverlay>

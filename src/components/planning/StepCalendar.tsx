@@ -173,7 +173,7 @@ export function StepCalendar({
               {event.durationMinutes} min
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {TIER_PILLS.map(pill => (
               <button
                 key={pill.tier}
