@@ -5,7 +5,14 @@ import { useMeetingForm } from '../../hooks/useMeetingForm'
 import { AgendaItemEditor } from './AgendaItemEditor'
 import { useStore } from '../../store'
 
-const DURATION_PRESETS = [15, 30, 45, 60, 90]
+const DURATION_PRESETS = [15, 30, 60, 90, 120, 150, 180, 240, 300, 360, 480]
+
+function formatDuration(m: number): string {
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  return r ? `${h}h${r}` : `${h}h`
+}
 
 export function MeetingModal() {
   const {
@@ -142,18 +149,18 @@ export function MeetingModal() {
             <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
               Duration
             </label>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {DURATION_PRESETS.map(d => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => actions.setDurationMinutes(d)}
-                  className={`text-[10px] px-2 py-2 rounded-[4px] border transition-all flex-1
+                  className={`text-[10px] px-2.5 py-1.5 rounded-[4px] border transition-all
                     ${form.durationMinutes === d
                       ? 'border-charcoal bg-charcoal text-canvas'
                       : 'border-border text-stone hover:border-stone/40'}`}
                 >
-                  {d}m
+                  {formatDuration(d)}
                 </button>
               ))}
             </div>
