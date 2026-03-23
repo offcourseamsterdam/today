@@ -20,7 +20,7 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
         }
       })
     },
-    endMeetingSession: () => set({ meetingSession: null }),
+    endMeetingSession: () => set({ meetingSession: null, isLiveMeetingOpen: false }),
     pauseMeetingSession: () => {
       const { meetingSession } = get()
       if (meetingSession) set({ meetingSession: { ...meetingSession, isRunning: false } })
@@ -71,26 +71,18 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
       const currentItem = meeting.agendaItems?.[meetingSession.currentItemIndex]
 
       const isRecurring = recurringMeetings.some(m => m.id === meetingSession.meetingId)
-      if (isRecurring) {
-        set({
-          recurringMeetings: recurringMeetings.map(m =>
-            m.id === meetingSession.meetingId ? { ...m, agendaItems: newItems } : m
-          )
-        })
-      } else {
-        set({
-          meetings: meetings.map(m =>
-            m.id === meetingSession.meetingId ? { ...m, agendaItems: newItems } : m
-          )
-        })
-      }
 
-      if (currentItem) {
-        const newIndex = newItems.findIndex(i => i.id === currentItem.id)
-        if (newIndex >= 0 && newIndex !== meetingSession.currentItemIndex) {
-          set({ meetingSession: { ...meetingSession, currentItemIndex: newIndex } })
-        }
-      }
+      const newIndex = currentItem ? newItems.findIndex(i => i.id === currentItem.id) : -1
+      const indexChanged = !!(currentItem && newIndex >= 0 && newIndex !== meetingSession.currentItemIndex)
+
+      const meetingsUpdate = isRecurring
+        ? { recurringMeetings: recurringMeetings.map(m => m.id === meetingSession.meetingId ? { ...m, agendaItems: newItems } : m) }
+        : { meetings: meetings.map(m => m.id === meetingSession.meetingId ? { ...m, agendaItems: newItems } : m) }
+
+      set({
+        ...meetingsUpdate,
+        ...(indexChanged ? { meetingSession: { ...meetingSession, currentItemIndex: newIndex } } : {}),
+      })
     },
   }
 }
