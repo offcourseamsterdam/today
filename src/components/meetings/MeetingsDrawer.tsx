@@ -123,23 +123,20 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
                     <div className="animate-slide-up">
                       {sortedRecurring.map(m => (
                         <div key={m.id} className="border-b border-border/30 last:border-0">
-                          <div className="flex items-center gap-3 py-2.5">
+                          <button
+                            onClick={() => setOpenMeetingId(m.id)}
+                            className="flex items-center gap-3 py-2.5 w-full text-left hover:bg-canvas/60 rounded-[4px] transition-colors -mx-1 px-1"
+                          >
                             <span className="text-[11px] text-stone/50 w-[38px] text-right flex-shrink-0">
                               {m.time}
                             </span>
                             <span className="text-[12px] text-charcoal/80 flex-1 truncate">
                               {m.title}
                             </span>
-                            <span className="text-[10px] text-stone/30 italic">
+                            <span className="text-[10px] text-stone/30 italic flex-shrink-0">
                               {m.recurrenceRule ? describeRule(m.recurrenceRule) : ''}
                             </span>
-                            <button
-                              onClick={() => setOpenMeetingId(m.id)}
-                              className="text-[10px] text-stone/40 hover:text-charcoal transition-colors flex-shrink-0"
-                            >
-                              Edit
-                            </button>
-                          </div>
+                          </button>
                         </div>
                       ))}
                     </div>

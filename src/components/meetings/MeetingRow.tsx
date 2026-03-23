@@ -55,7 +55,7 @@ export function MeetingRow({ meeting, onEdit, onDelete }: MeetingRowProps) {
       {/* Row header */}
       <div className="flex items-center gap-0 group -mx-1">
         <button
-          onClick={() => setExpanded(e => !e)}
+          onClick={onEdit}
           className="flex-1 flex items-center gap-3 py-3 px-1 text-left
             hover:bg-canvas/60 rounded-l-[4px] transition-colors min-w-0"
         >
@@ -72,6 +72,7 @@ export function MeetingRow({ meeting, onEdit, onDelete }: MeetingRowProps) {
           <ChevronDown
             size={12}
             className={`text-stone/30 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            onClick={(e) => { e.stopPropagation(); setExpanded(v => !v) }}
           />
         </button>
         <button
@@ -121,13 +122,6 @@ export function MeetingRow({ meeting, onEdit, onDelete }: MeetingRowProps) {
           {/* Actions row */}
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-3">
-              <button
-                onClick={onEdit}
-                className="text-[11px] text-stone/40 hover:text-charcoal transition-colors"
-              >
-                Edit
-              </button>
-              <span className="text-stone/20">·</span>
               <button
                 onClick={onDelete}
                 className="text-[11px] text-red-400/70 hover:text-red-500 transition-colors"
