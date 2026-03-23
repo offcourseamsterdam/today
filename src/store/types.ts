@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand'
-import type { Project, Task, Meeting, MeetingNotes, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession } from '../types'
+import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession } from '../types'
 
 export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
 
@@ -48,6 +48,10 @@ export interface VandaagState {
   calendarEvents: CalendarEvent[]
   calendarLoading: boolean
   calendarError: string | null
+
+  // Done reflection (non-persisted)
+  doneReflection: { text: string; headline: string; generatedAt: string } | null
+  doneReflectionLoading: boolean
 
   // Navigation
   setOpenProjectId: (id: string | null) => void
@@ -101,6 +105,14 @@ export interface VandaagState {
   // Recording processing
   setProcessingMeetingId: (id: string | null) => void
   saveMeetingNotes: (meetingId: string, notes: MeetingNotes) => void
+  saveAgendaItemNotes: (meetingId: string, itemNotes: AgendaItemNotes) => void
+  addProcessingItemId: (itemId: string) => void
+  removeProcessingItemId: (itemId: string) => void
+
+  // Done reflection
+  setDoneReflection: (reflection: { text: string; headline: string; generatedAt: string }) => void
+  setDoneReflectionLoading: (loading: boolean) => void
+  clearDoneReflection: () => void
 
   // Recurring tasks
   addRecurringTask: (title: string, rule: RecurrenceRule, projectId?: string) => string

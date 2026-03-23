@@ -19,21 +19,24 @@ export function getTomorrowString(): string {
   return format(addDays(new Date(), 1), 'yyyy-MM-dd')
 }
 
-export function ensureTodayPlan(state: VandaagState): DailyPlan {
-  const today = getTodayString()
-  if (state.dailyPlan && state.dailyPlan.date === today) {
+function ensurePlan(
+  existing: DailyPlan | null,
+  date: string,
+  isToday: boolean,
+): DailyPlan {
+  if (existing && existing.date === date) {
     return {
-      ...state.dailyPlan,
-      shortProjects: state.dailyPlan.shortProjects ?? [],
-      maintenanceProjects: state.dailyPlan.maintenanceProjects ?? [],
-      meetings: state.dailyPlan.meetings ?? [],
-      shortMeetingIds: state.dailyPlan.shortMeetingIds ?? [],
-      maintenanceMeetingIds: state.dailyPlan.maintenanceMeetingIds ?? [],
-      blockOrder: state.dailyPlan.blockOrder ?? ['deep', 'short', 'maintenance'],
+      ...existing,
+      shortProjects: existing.shortProjects ?? [],
+      maintenanceProjects: existing.maintenanceProjects ?? [],
+      meetings: existing.meetings ?? [],
+      shortMeetingIds: existing.shortMeetingIds ?? [],
+      maintenanceMeetingIds: existing.maintenanceMeetingIds ?? [],
+      ...(isToday ? { blockOrder: existing.blockOrder ?? ['deep', 'short', 'maintenance'] } : {}),
     }
   }
   return {
-    date: today,
+    date,
     deepBlock: { projectId: '' },
     shortTasks: [],
     shortProjects: [],
@@ -46,30 +49,12 @@ export function ensureTodayPlan(state: VandaagState): DailyPlan {
   }
 }
 
+export function ensureTodayPlan(state: VandaagState): DailyPlan {
+  return ensurePlan(state.dailyPlan, getTodayString(), true)
+}
+
 export function ensureTomorrowPlan(state: VandaagState): DailyPlan {
-  const tomorrow = getTomorrowString()
-  if (state.tomorrowPlan && state.tomorrowPlan.date === tomorrow) {
-    return {
-      ...state.tomorrowPlan,
-      shortProjects: state.tomorrowPlan.shortProjects ?? [],
-      maintenanceProjects: state.tomorrowPlan.maintenanceProjects ?? [],
-      meetings: state.tomorrowPlan.meetings ?? [],
-      shortMeetingIds: state.tomorrowPlan.shortMeetingIds ?? [],
-      maintenanceMeetingIds: state.tomorrowPlan.maintenanceMeetingIds ?? [],
-    }
-  }
-  return {
-    date: tomorrow,
-    deepBlock: { projectId: '' },
-    shortTasks: [],
-    shortProjects: [],
-    maintenanceTasks: [],
-    maintenanceProjects: [],
-    meetings: [],
-    shortMeetingIds: [],
-    maintenanceMeetingIds: [],
-    isComplete: false,
-  }
+  return ensurePlan(state.tomorrowPlan, getTomorrowString(), false)
 }
 
 type PlanSetter = (plan: DailyPlan) => void

@@ -2,302 +2,14 @@ import { useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { X, Plus, ChevronDown, RotateCcw, Calendar } from 'lucide-react'
 import { useStore } from '../../store'
-import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { LiveMeetingPanel } from './LiveMeetingPanel'
+import { MeetingRow } from './MeetingRow'
 import { describeRule } from '../../lib/recurrence'
-import type { Meeting, MeetingNotes } from '../../types'
+import type { Meeting } from '../../types'
 
 interface MeetingsDrawerProps {
   open: boolean
   onClose: () => void
-}
-
-// Pill for assigning a meeting to a tier
-interface TierPillProps {
-  label: string
-  active: boolean
-  onClick: () => void
-}
-function TierPill({ label, active, onClick }: TierPillProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all
-        ${active
-          ? 'bg-charcoal text-canvas border-charcoal'
-          : 'border-border text-stone/60 hover:border-stone/40 hover:text-charcoal'}`}
-    >
-      {label}
-    </button>
-  )
-}
-
-// AI-generated notes section
-function AiNotesSection({ notes }: { notes: MeetingNotes }) {
-  const [expanded, setExpanded] = useState(false)
-
-  return (
-    <div className="border-t border-border/30 pt-2">
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="flex items-center gap-2 text-[10px] uppercase tracking-[0.08em]
-          text-stone/40 hover:text-stone/60 transition-colors font-medium w-full text-left"
-      >
-        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" />
-        AI Notes
-        <ChevronDown
-          size={10}
-          className={`transition-transform ml-auto ${expanded ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {expanded && (
-        <div className="mt-2 space-y-3 animate-slide-up">
-          {/* Summary */}
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
-              Summary
-            </div>
-            <p className="text-[12px] text-charcoal/80 leading-relaxed">
-              {notes.summary}
-            </p>
-          </div>
-
-          {/* Action items */}
-          {notes.actionItems.length > 0 && (
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
-                Action items
-              </div>
-              <ul className="space-y-1">
-                {notes.actionItems.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[12px] text-charcoal/80">
-                    <span className="text-stone/30 mt-0.5">•</span>
-                    <span className="flex-1">
-                      {item.description}
-                      {item.assignee && (
-                        <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-500 font-medium">
-                          {item.assignee}
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Decisions */}
-          {notes.decisions.length > 0 && (
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
-                Decisions
-              </div>
-              <ul className="space-y-1">
-                {notes.decisions.map((decision, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[12px] text-charcoal/80">
-                    <span className="text-stone/30 mt-0.5">•</span>
-                    <span>{decision}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Expandable meeting row
-interface MeetingRowProps {
-  meeting: Meeting
-  isInRecurring: boolean
-  deepMeetingId: string | undefined
-  shortMeetingIds: string[]
-  maintenanceMeetingIds: string[]
-  setDeepMeeting: (id: string | undefined) => void
-  addShortMeeting: (id: string) => void
-  removeShortMeeting: (id: string) => void
-  addMaintenanceMeeting: (id: string) => void
-  removeMaintenanceMeeting: (id: string) => void
-  onEdit: () => void
-  onDelete: () => void
-}
-
-function MeetingRow({
-  meeting,
-  deepMeetingId,
-  shortMeetingIds,
-  maintenanceMeetingIds,
-  setDeepMeeting,
-  addShortMeeting,
-  removeShortMeeting,
-  addMaintenanceMeeting,
-  removeMaintenanceMeeting,
-  onEdit,
-  onDelete,
-}: MeetingRowProps) {
-  const [expanded, setExpanded] = useState(false)
-  const [actions, setActions] = useState(meeting.actions ?? '')
-  const [takeaways, setTakeaways] = useState(meeting.takeaways ?? '')
-  const updateMeeting = useStore(s => s.updateMeeting)
-  const updateRecurringMeeting = useStore(s => s.updateRecurringMeeting)
-  const startMeetingSession = useStore(s => s.startMeetingSession)
-  const processingMeetingId = useStore(s => s.processingMeetingId)
-
-  const isDeep = deepMeetingId === meeting.id
-  const isShort = shortMeetingIds.includes(meeting.id)
-  const isMaint = maintenanceMeetingIds.includes(meeting.id)
-
-  function saveField(field: 'actions' | 'takeaways', value: string) {
-    const updateFn = meeting.isRecurring ? updateRecurringMeeting : updateMeeting
-    updateFn(meeting.id, { [field]: value.trim() || undefined })
-  }
-
-  function handleDeep() {
-    if (isDeep) {
-      setDeepMeeting(undefined)
-    } else {
-      setDeepMeeting(meeting.id)
-    }
-  }
-  function handleShort() {
-    if (isShort) removeShortMeeting(meeting.id)
-    else addShortMeeting(meeting.id)
-  }
-  function handleMaint() {
-    if (isMaint) removeMaintenanceMeeting(meeting.id)
-    else addMaintenanceMeeting(meeting.id)
-  }
-
-  return (
-    <div className="border-b border-border/30 last:border-0">
-      {/* Row header */}
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-center gap-3 py-3 px-1 text-left
-          hover:bg-canvas/60 -mx-1 rounded-[4px] transition-colors group"
-      >
-        <span className="text-[11px] font-medium text-stone/60 flex-shrink-0 w-[38px] text-right">
-          {meeting.time}
-        </span>
-        <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">
-          {meeting.title}
-        </span>
-        <span className="text-[10px] text-stone/40 flex-shrink-0">{meeting.durationMinutes}m</span>
-        <ChevronDown
-          size={12}
-          className={`text-stone/30 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {/* Expanded content */}
-      {expanded && (
-        <div className="pb-4 px-1 space-y-3 animate-slide-up">
-          {/* Assign to tier */}
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-2">
-              Assign to plan
-            </div>
-            <div className="flex gap-2">
-              <TierPill label="Deep block" active={isDeep} onClick={handleDeep} />
-              <TierPill label="Short three" active={isShort} onClick={handleShort} />
-              <TierPill label="Maintenance" active={isMaint} onClick={handleMaint} />
-            </div>
-          </div>
-
-          {/* Agenda items */}
-          {(meeting.agendaItems?.length ?? 0) > 0 && (
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-2">
-                Agenda
-              </div>
-              <div className="space-y-1">
-                {meeting.agendaItems!.map(item => (
-                  <div key={item.id} className="flex items-center gap-2 text-[12px] text-charcoal/80">
-                    <span className="w-1 h-1 rounded-full bg-stone/30 flex-shrink-0" />
-                    <span className="flex-1">{item.title}</span>
-                    {item.durationMinutes != null && (
-                      <span className="text-[10px] text-stone/30">{item.durationMinutes}m</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => startMeetingSession(meeting.id)}
-                className="mt-2 text-[11px] text-stone/50 hover:text-charcoal transition-colors"
-              >
-                ▶ Start meeting
-              </button>
-            </div>
-          )}
-
-          {/* Actions & Takeaways */}
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
-              Actions
-            </div>
-            <textarea
-              value={actions}
-              onChange={e => setActions(e.target.value)}
-              onBlur={e => saveField('actions', e.target.value)}
-              placeholder="Key actions from the meeting..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
-                text-[12px] text-charcoal placeholder:text-stone/25 resize-none
-                outline-none focus:border-stone/40 transition-colors"
-            />
-          </div>
-
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1">
-              Takeaways
-            </div>
-            <textarea
-              value={takeaways}
-              onChange={e => setTakeaways(e.target.value)}
-              onBlur={e => saveField('takeaways', e.target.value)}
-              placeholder="Key decisions and notes..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
-                text-[12px] text-charcoal placeholder:text-stone/25 resize-none
-                outline-none focus:border-stone/40 transition-colors"
-            />
-          </div>
-
-          {/* AI Notes */}
-          {meeting.meetingNotes && (
-            <AiNotesSection notes={meeting.meetingNotes} />
-          )}
-          {processingMeetingId === meeting.id && (
-            <div className="flex items-center gap-2 py-3 text-[11px] text-stone/50">
-              <span className="w-3 h-3 border-2 border-stone/30 border-t-stone/60 rounded-full animate-spin" />
-              Processing recording...
-            </div>
-          )}
-
-          {/* Edit / Delete */}
-          <div className="flex items-center gap-3 pt-1">
-            <button
-              onClick={onEdit}
-              className="text-[11px] text-stone/50 hover:text-charcoal transition-colors"
-            >
-              Edit details
-            </button>
-            <span className="text-stone/20">·</span>
-            <button
-              onClick={onDelete}
-              className="text-[11px] text-red-400 hover:text-red-500 transition-colors"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
 }
 
 export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
@@ -308,17 +20,6 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
   const deleteRecurringMeeting = useStore(s => s.deleteRecurringMeeting)
   const [showRecurring, setShowRecurring] = useState(false)
 
-  const {
-    deepMeetingId,
-    shortMeetingIds,
-    maintenanceMeetingIds,
-    setDeepMeeting,
-    addShortMeeting,
-    removeShortMeeting,
-    addMaintenanceMeeting,
-    removeMaintenanceMeeting,
-  } = useTodayPlan()
-
   const todayStr = format(new Date(), 'yyyy-MM-dd')
   const todayMeetings = meetings.filter(m => !m.date || m.date === todayStr)
   const sortedMeetings = [...todayMeetings].sort((a, b) => a.time.localeCompare(b.time))
@@ -328,17 +29,6 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
     if (isRecurring) deleteRecurringMeeting(meeting.id)
     else deleteMeeting(meeting.id)
   }, [deleteMeeting, deleteRecurringMeeting])
-
-  const rowProps = {
-    deepMeetingId,
-    shortMeetingIds,
-    maintenanceMeetingIds,
-    setDeepMeeting,
-    addShortMeeting,
-    removeShortMeeting,
-    addMaintenanceMeeting,
-    removeMaintenanceMeeting,
-  }
 
   return (
     <>
@@ -382,7 +72,6 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <LiveMeetingPanel />
-          {/* One-off meetings */}
           {sortedMeetings.length === 0 && sortedRecurring.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Calendar size={28} className="text-stone/20" />
@@ -407,10 +96,8 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
                     <MeetingRow
                       key={m.id}
                       meeting={m}
-                      isInRecurring={false}
                       onEdit={() => setOpenMeetingId(m.id)}
                       onDelete={() => handleDelete(m, false)}
-                      {...rowProps}
                     />
                   ))}
                 </div>

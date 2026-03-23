@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react'
 import { X, Trash2, RotateCcw } from 'lucide-react'
-import { RecurrenceFrequencyPicker, EMPTY_RULE_STATE, type RecurrenceFormState } from '../ui/RecurrenceFrequencyPicker'
-import { buildRule } from '../../lib/recurrence'
+import { RecurrenceFrequencyPicker } from '../ui/RecurrenceFrequencyPicker'
 import { useMeetingModal } from '../../hooks/useMeetingModal'
+import { useMeetingForm } from '../../hooks/useMeetingForm'
 import { AgendaItemEditor } from './AgendaItemEditor'
 import { useStore } from '../../store'
-import type { Meeting, AgendaItem } from '../../types'
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90]
 
@@ -19,118 +17,40 @@ export function MeetingModal() {
   } = useMeetingModal()
 
   const startMeetingSession = useStore(s => s.startMeetingSession)
+  const projects = useStore(s => s.projects)
 
-  const [title, setTitle] = useState('')
-  const [date, setDate] = useState('')
-  const [time, setTime] = useState('09:00')
-  const [durationMinutes, setDurationMinutes] = useState(30)
-  const [location, setLocation] = useState('')
-  const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([])
-  const [actions, setActions] = useState('')
-  const [takeaways, setTakeaways] = useState('')
-  const [isRecurring, setIsRecurring] = useState(false)
-  const [ruleState, setRuleState] = useState<RecurrenceFormState>(EMPTY_RULE_STATE)
-  const [language, setLanguage] = useState<'auto' | 'nl' | 'en'>('auto')
-
-  // Reset form when modal opens
-  useEffect(() => {
-    if (isNew) {
-      setTitle('')
-      setDate('')
-      setTime('09:00')
-      setDurationMinutes(30)
-      setLocation('')
-      setAgendaItems([])
-      setActions('')
-      setTakeaways('')
-      setIsRecurring(false)
-      setRuleState(EMPTY_RULE_STATE)
-      setLanguage('auto')
-    } else if (existingMeeting) {
-      setTitle(existingMeeting.title)
-      setDate(existingMeeting.date ?? '')
-      setTime(existingMeeting.time)
-      setDurationMinutes(existingMeeting.durationMinutes)
-      setLocation(existingMeeting.location ?? '')
-      setAgendaItems(existingMeeting.agendaItems ?? [])
-      setActions(existingMeeting.actions ?? '')
-      setTakeaways(existingMeeting.takeaways ?? '')
-      setLanguage(existingMeeting.language ?? 'auto')
-      setIsRecurring(existingMeeting.isRecurring)
-      if (existingMeeting.recurrenceRule) {
-        const r = existingMeeting.recurrenceRule
-        setRuleState({
-          freq: r.frequency,
-          weeklyDay: r.customDays?.[0] ?? 1,
-          monthlyDate: r.monthlyDate ?? 1,
-          monthlyWeek: r.monthlyWeekday?.week ?? 1,
-          monthlyDay: r.monthlyWeekday?.day ?? 1,
-          customDays: r.customDays ?? [],
-          annualDates: r.annualDates ?? [],
-        })
-      } else {
-        setRuleState(EMPTY_RULE_STATE)
-      }
-    }
-  }, [openMeetingId]) // eslint-disable-line react-hooks/exhaustive-deps
+  const { form, actions, buildMeetingData, isValid } = useMeetingForm(openMeetingId, isNew, existingMeeting)
 
   if (!isOpen) return null
 
   function handleSave() {
-    if (!title.trim()) return
-
-    const meetingData: Omit<Meeting, 'id' | 'createdAt'> = {
-      title: title.trim(),
-      date: date || undefined,
-      time,
-      durationMinutes,
-      location: location.trim() || undefined,
-      agendaItems: agendaItems.length > 0 ? agendaItems : undefined,
-      actions: actions.trim() || undefined,
-      takeaways: takeaways.trim() || undefined,
-      isRecurring,
-      recurrenceRule: isRecurring ? buildRule(ruleState) : undefined,
-      language: language !== 'auto' ? language : undefined,
-    }
+    if (!isValid) return
+    const data = buildMeetingData()
 
     if (isNew) {
-      let id: string
-      if (isRecurring) {
-        id = addRecurringMeeting(meetingData)
-      } else {
-        id = addMeeting(meetingData)
-      }
+      const id = data.isRecurring ? addRecurringMeeting(data) : addMeeting(data)
       addMeetingToPlan(id)
     } else if (existingMeeting) {
-      if (isInRecurring) {
-        updateRecurringMeeting(existingMeeting.id, meetingData)
-      } else {
-        updateMeeting(existingMeeting.id, meetingData)
-      }
+      if (isInRecurring) updateRecurringMeeting(existingMeeting.id, data)
+      else updateMeeting(existingMeeting.id, data)
     }
-
     setOpenMeetingId(null)
   }
 
   function handleDelete() {
     if (!existingMeeting) return
-    if (isInRecurring) {
-      deleteRecurringMeeting(existingMeeting.id)
-    } else {
-      deleteMeeting(existingMeeting.id)
-    }
+    if (isInRecurring) deleteRecurringMeeting(existingMeeting.id)
+    else deleteMeeting(existingMeeting.id)
     setOpenMeetingId(null)
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-charcoal/30 backdrop-blur-sm"
         onClick={() => setOpenMeetingId(null)}
       />
 
-      {/* Modal */}
       <div className="relative bg-card rounded-[12px] shadow-lg border border-border/50 w-full max-w-[480px] max-h-[85vh] overflow-y-auto animate-scale-in mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
@@ -153,8 +73,8 @@ export function MeetingModal() {
             </label>
             <input
               type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
+              value={form.title}
+              onChange={e => actions.setTitle(e.target.value)}
               placeholder="Meeting title..."
               autoFocus
               className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
@@ -171,8 +91,8 @@ export function MeetingModal() {
               </label>
               <input
                 type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
+                value={form.date}
+                onChange={e => actions.setDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
                   text-[13px] text-charcoal
                   outline-none focus:border-stone/40 transition-colors"
@@ -184,8 +104,8 @@ export function MeetingModal() {
               </label>
               <input
                 type="time"
-                value={time}
-                onChange={e => setTime(e.target.value)}
+                value={form.time}
+                onChange={e => actions.setTime(e.target.value)}
                 className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
                   text-[13px] text-charcoal
                   outline-none focus:border-stone/40 transition-colors"
@@ -203,9 +123,9 @@ export function MeetingModal() {
                 <button
                   key={val}
                   type="button"
-                  onClick={() => setLanguage(val)}
+                  onClick={() => actions.setLanguage(val)}
                   className={`text-[10px] px-3 py-2 rounded-[4px] border transition-all flex-1
-                    ${language === val
+                    ${form.language === val
                       ? 'border-charcoal bg-charcoal text-canvas'
                       : 'border-border text-stone hover:border-stone/40'}`}
                 >
@@ -225,9 +145,9 @@ export function MeetingModal() {
                 <button
                   key={d}
                   type="button"
-                  onClick={() => setDurationMinutes(d)}
+                  onClick={() => actions.setDurationMinutes(d)}
                   className={`text-[10px] px-2 py-2 rounded-[4px] border transition-all flex-1
-                    ${durationMinutes === d
+                    ${form.durationMinutes === d
                       ? 'border-charcoal bg-charcoal text-canvas'
                       : 'border-border text-stone hover:border-stone/40'}`}
                 >
@@ -244,8 +164,8 @@ export function MeetingModal() {
             </label>
             <input
               type="text"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
+              value={form.location}
+              onChange={e => actions.setLocation(e.target.value)}
               placeholder="Office, Zoom link, etc."
               className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
                 text-[13px] text-charcoal placeholder:text-stone/30
@@ -258,78 +178,84 @@ export function MeetingModal() {
             <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-2 block">
               Agenda
             </label>
-            {agendaItems.length === 0 ? (
+            {form.agendaItems.length === 0 ? (
               <button
                 type="button"
-                onClick={() => setAgendaItems([{ id: crypto.randomUUID(), title: '' }])}
+                onClick={() => actions.setAgendaItems([{ id: crypto.randomUUID(), title: '' }])}
                 className="text-[12px] text-stone/40 hover:text-stone transition-colors"
               >
                 + Add agenda item
               </button>
             ) : (
-              <AgendaItemEditor items={agendaItems} onChange={setAgendaItems} />
+              <AgendaItemEditor items={form.agendaItems} onChange={actions.setAgendaItems} />
             )}
+          </div>
+
+          {/* Linked project */}
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
+              Linked project
+              <span className="normal-case tracking-normal text-stone/30 ml-1.5 font-normal">optional — feeds AI notes</span>
+            </label>
+            <select
+              value={form.projectId}
+              onChange={e => actions.setProjectId(e.target.value)}
+              className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
+                text-[13px] text-charcoal
+                outline-none focus:border-stone/40 transition-colors appearance-none cursor-pointer"
+            >
+              <option value="">No project</option>
+              {[...projects]
+                .sort((a, b) => {
+                  const order = { in_progress: 0, waiting: 1, backlog: 2, done: 3 }
+                  return (order[a.status] ?? 9) - (order[b.status] ?? 9)
+                })
+                .map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                    {p.status === 'in_progress' ? ' ●' : ''}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {/* AI context */}
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
+              Context for AI notes
+              <span className="normal-case tracking-normal text-stone/30 ml-1.5 font-normal">optional</span>
+            </label>
+            <textarea
+              value={form.context}
+              onChange={e => actions.setContext(e.target.value)}
+              placeholder="Who's attending, background, what to focus on..."
+              rows={2}
+              className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
+                text-[13px] text-charcoal placeholder:text-stone/30 resize-none
+                outline-none focus:border-stone/40 transition-colors"
+            />
           </div>
 
           {/* Recurring toggle */}
           <div className="border-t border-border/50 pt-4">
             <button
               type="button"
-              onClick={() => setIsRecurring(!isRecurring)}
+              onClick={() => actions.setIsRecurring(!form.isRecurring)}
               className="flex items-center gap-2 text-[12px] text-stone hover:text-charcoal transition-colors"
             >
-              <RotateCcw size={12} className={isRecurring ? 'text-cat-marketing' : 'text-stone/30'} />
-              <span>{isRecurring ? 'Recurring meeting' : 'Make recurring'}</span>
+              <RotateCcw size={12} className={form.isRecurring ? 'text-cat-marketing' : 'text-stone/30'} />
+              <span>{form.isRecurring ? 'Recurring meeting' : 'Make recurring'}</span>
             </button>
 
-            {isRecurring && (
+            {form.isRecurring && (
               <div className="mt-3 space-y-3 animate-slide-up">
                 <RecurrenceFrequencyPicker
-                  value={ruleState}
-                  onChange={patch => setRuleState(prev => ({ ...prev, ...patch }))}
+                  value={form.ruleState}
+                  onChange={patch => actions.setRuleState(prev => ({ ...prev, ...patch }))}
                 />
               </div>
             )}
           </div>
-
-          {/* Post-meeting section */}
-          {!isNew && (
-            <div className="border-t border-border/50 pt-4 space-y-3">
-              <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium">
-                Post-meeting notes
-              </div>
-
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
-                  Key actions
-                </label>
-                <textarea
-                  value={actions}
-                  onChange={e => setActions(e.target.value)}
-                  placeholder="Action items from the meeting..."
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
-                    text-[13px] text-charcoal placeholder:text-stone/30 resize-none
-                    outline-none focus:border-stone/40 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.08em] text-stone/50 font-medium mb-1 block">
-                  Takeaways
-                </label>
-                <textarea
-                  value={takeaways}
-                  onChange={e => setTakeaways(e.target.value)}
-                  placeholder="Key takeaways and decisions..."
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-[6px] border border-border bg-canvas
-                    text-[13px] text-charcoal placeholder:text-stone/30 resize-none
-                    outline-none focus:border-stone/40 transition-colors"
-                />
-              </div>
-            </div>
-          )}
 
           {/* Footer actions */}
           <div className="flex items-center justify-between pt-2">
@@ -346,7 +272,7 @@ export function MeetingModal() {
             )}
 
             <div className="flex gap-2">
-              {!isNew && existingMeeting && agendaItems.length > 0 && (
+              {!isNew && existingMeeting && (
                 <button
                   type="button"
                   onClick={() => {
@@ -368,7 +294,7 @@ export function MeetingModal() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!title.trim()}
+                disabled={!isValid}
                 className="px-4 py-2 text-[12px] font-medium text-canvas bg-charcoal
                   rounded-[6px] hover:bg-charcoal/90 transition-all
                   disabled:opacity-30 disabled:cursor-not-allowed"

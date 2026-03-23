@@ -5,12 +5,15 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
     startMeetingSession: (meetingId: string) => {
       const meeting = [...get().meetings, ...get().recurringMeetings].find(m => m.id === meetingId)
       if (!meeting) return
-      const firstItem = meeting.agendaItems?.[0]
+      const items = meeting.agendaItems ?? []
+      const hasItems = items.length > 0
+      const firstItem = hasItems ? items[0] : undefined
       const now = new Date().toISOString()
       set({ meetingSession: {
-        meetingId, currentItemIndex: 0, completedItemIds: [],
+        meetingId, currentItemIndex: hasItems ? 0 : -1, completedItemIds: [],
         secondsLeft: firstItem?.durationMinutes != null ? firstItem.durationMinutes * 60 : null,
-        isRunning: true, startedAt: now, lastTickAt: now, isRecording: false,
+        isRunning: hasItems, startedAt: now, lastTickAt: now, isRecording: false,
+        processingItemIds: [],
       }})
     },
     endMeetingSession: () => set({ meetingSession: null }),

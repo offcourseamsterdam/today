@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
+import { X } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG, type Category, type Task, type Project } from '../../types'
 import { daysSince } from '../../lib/utils'
@@ -52,6 +53,11 @@ export function DoneListColumn() {
   const updateTask = useStore(s => s.updateTask)
   const updateOrphanTask = useStore(s => s.updateOrphanTask)
   const updateProject = useStore(s => s.updateProject)
+  const doneReflection = useStore(s => s.doneReflection)
+  const doneReflectionLoading = useStore(s => s.doneReflectionLoading)
+  const setDoneReflection = useStore(s => s.setDoneReflection)
+  const setDoneReflectionLoading = useStore(s => s.setDoneReflectionLoading)
+  const clearDoneReflection = useStore(s => s.clearDoneReflection)
 
   const entries = useMemo<DoneEntry[]>(() => {
     const result: DoneEntry[] = []
@@ -109,6 +115,58 @@ export function DoneListColumn() {
 
   const totalCount = entries.length
 
+  const handleReflect = useCallback(async () => {
+    if (doneReflectionLoading || totalCount === 0) return
+    setDoneReflectionLoading(true)
+
+    const todayEntries = grouped.get('today') ?? []
+    const weekEntries = [
+      ...(grouped.get('yesterday') ?? []),
+      ...(grouped.get('this_week') ?? []),
+    ]
+
+    const doneToday = todayEntries.map(e =>
+      e.kind === 'task' ? e.task.title : e.project.title
+    )
+
+    const doneThisWeek = weekEntries.map(e => {
+      if (e.kind === 'project') {
+        return { title: e.project.title, category: e.project.category, daysWorked: e.project.daysWorked }
+      }
+      return { title: e.task.title, project: e.projectTitle }
+    })
+
+    const uncomfortableTasksDone = entries.filter(
+      e => e.kind === 'task' && e.task.isUncomfortable
+    ).length
+
+    const now = new Date()
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - now.getDay())
+    const weekStartStr = weekStart.toISOString().slice(0, 10)
+    const totalDaysWorkedThisWeek = new Set(
+      projects.flatMap(p => (p.daysWorkedLog ?? []).filter(d => d >= weekStartStr))
+    ).size
+
+    try {
+      const resp = await fetch('/api/done-reflection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doneToday, doneThisWeek, uncomfortableTasksDone, totalDaysWorkedThisWeek }),
+      })
+
+      if (!resp.ok) throw new Error('Failed')
+      const data = await resp.json()
+      setDoneReflection({
+        text: data.reflection,
+        headline: data.headline,
+        generatedAt: new Date().toISOString(),
+      })
+    } catch {
+      setDoneReflectionLoading(false)
+    }
+  }, [entries, grouped, projects, totalCount, doneReflectionLoading, setDoneReflection, setDoneReflectionLoading])
+
   return (
     <div className="flex flex-col min-h-0">
       {/* Column header */}
@@ -119,7 +177,40 @@ export function DoneListColumn() {
         {totalCount > 0 && (
           <span className="text-[10px] text-stone/40">{totalCount}</span>
         )}
+        {totalCount > 0 && (
+          <button
+            onClick={handleReflect}
+            disabled={doneReflectionLoading}
+            className="ml-auto text-[10px] text-stone/40 hover:text-charcoal transition-colors disabled:opacity-40"
+          >
+            {doneReflectionLoading ? (
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 border border-stone/30 border-t-stone/60 rounded-full animate-spin" />
+              </span>
+            ) : (
+              'Reflect'
+            )}
+          </button>
+        )}
       </div>
+
+      {/* Reflection card */}
+      {doneReflection && (
+        <div className="mb-4 p-3.5 rounded-[8px] bg-amber-50/50 border border-amber-100/60 relative">
+          <button
+            onClick={clearDoneReflection}
+            className="absolute top-2 right-2 text-stone/30 hover:text-stone/60 transition-colors"
+          >
+            <X size={12} />
+          </button>
+          <p className="font-serif text-[14px] text-charcoal/80 italic leading-snug mb-2 pr-4">
+            {doneReflection.headline}
+          </p>
+          <p className="text-[12px] text-charcoal/60 leading-relaxed">
+            {doneReflection.text}
+          </p>
+        </div>
+      )}
 
       {/* Entries */}
       {totalCount === 0 ? (

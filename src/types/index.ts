@@ -55,8 +55,6 @@ export interface Task {
   bodyContent?: string  // BlockNote JSON — rich text notes for standalone tasks
   kanbanColumn?: ProjectStatus  // which kanban column this orphan task appears in
   waitingOn?: WaitingOn[]       // waiting-on entries (same as Project)
-  pomodoroSessions?: number
-  totalMinutesWorked?: number
   createdAt: string
   completedAt?: string
   lastCompletedDate?: string  // YYYY-MM-DD — last date this recurring task was checked off
@@ -71,6 +69,19 @@ export interface AgendaItem {
 export interface MeetingActionItem {
   description: string
   assignee?: string
+  dueDate?: string
+}
+
+export type MeetingOutcome = 'productive' | 'inconclusive' | 'needs-followup'
+
+export interface AgendaItemNotes {
+  agendaItemId: string
+  agendaItemTitle: string
+  summary: string
+  decisions: string[]
+  actionItems: MeetingActionItem[]
+  openQuestions: string[]
+  generatedAt: string
 }
 
 export interface MeetingNotes {
@@ -78,7 +89,10 @@ export interface MeetingNotes {
   summary: string
   actionItems: MeetingActionItem[]
   decisions: string[]
+  openQuestions: string[]
+  outcome: MeetingOutcome
   generatedAt: string
+  agendaItemNotes?: AgendaItemNotes[]
 }
 
 export interface Meeting {
@@ -89,8 +103,8 @@ export interface Meeting {
   durationMinutes: number    // 15, 30, 45, 60, 90, etc.
   location?: string          // physical address or video link
   agendaItems?: AgendaItem[] // structured agenda items
-  actions?: string           // post-meeting key actions
-  takeaways?: string         // post-meeting takeaways/notes
+  context?: string           // free-form context for AI notes (who's attending, background, etc.)
+  projectId?: string         // linked project — its tasks/notes feed into AI note generation
   language?: 'auto' | 'nl' | 'en'
   meetingNotes?: MeetingNotes
   isRecurring: boolean
@@ -109,6 +123,7 @@ export interface MeetingSession {
   lastTickAt: string
   isRecording: boolean
   recordingError?: string
+  processingItemIds: string[]  // agenda item IDs currently being summarized
 }
 
 export interface DailyPlan {

@@ -9,6 +9,7 @@ import { ProjectModalCover } from './ProjectModalCover'
 import { ProjectModalTasks } from './ProjectModalTasks'
 import { ProjectModalWaiting } from './ProjectModalWaiting'
 import { ProjectModalRecurring } from './ProjectModalRecurring'
+import { ProjectModalMeetings } from './ProjectModalMeetings'
 import { ToggleSwitch } from '../ui/ToggleSwitch'
 
 interface ProjectModalProps {
@@ -253,6 +254,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
           <ProjectModalRecurring project={project} />
 
           <ProjectModalTasks project={project} />
+
+          <ProjectModalMeetings projectId={project.id} />
 
           {/* Delete project */}
           <div className="mt-6 pt-4 border-t border-border">
