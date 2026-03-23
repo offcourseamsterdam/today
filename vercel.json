@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "api/transcribe.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "api/meeting-notes.ts": {
+      "maxDuration": 60,
+      "memory": 512
+    },
+    "api/done-reflection.ts": {
+      "maxDuration": 30
+    }
+  }
+}
