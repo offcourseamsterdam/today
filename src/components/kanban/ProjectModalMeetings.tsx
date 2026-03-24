@@ -16,7 +16,7 @@ function computeNotesHash(meetings: Meeting[]): string {
 
 // ── A. Key Decisions card ─────────────────────────────────────────────────────
 
-function KeyDecisionsCard({ projectId, linkedMeetingsWithNotes }: { projectId: string; linkedMeetingsWithNotes: Meeting[] }) {
+function KeyDecisionsCard({ projectId, projectTitle, linkedMeetingsWithNotes }: { projectId: string; projectTitle: string; linkedMeetingsWithNotes: Meeting[] }) {
   const projectDecisionsCache = useStore(s => s.projectDecisionsCache)
   const setProjectDecisions = useStore(s => s.setProjectDecisions)
   const [loading, setLoading] = useState(false)
@@ -50,19 +50,30 @@ function KeyDecisionsCard({ projectId, linkedMeetingsWithNotes }: { projectId: s
         return d >= cutoff
       })
 
+      if (recentMeetings.length === 0) return
+
       const res = await fetch('/api/project-decisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId,
+          projectTitle,
           meetings: recentMeetings.map(m => ({
-            id: m.id,
             title: m.title,
             date: m.date ?? m.meetingNotes!.generatedAt.slice(0, 10),
-            notes: m.meetingNotes,
+            decisions: m.meetingNotes!.decisions ?? [],
+            actionItems: (m.meetingNotes!.actionItems ?? []).map(a => ({
+              description: a.description,
+              owner: a.assignee ?? null,
+            })),
+            openQuestions: m.meetingNotes!.openQuestions ?? [],
           })),
         }),
       })
+
+      if (!res.ok) {
+        console.error('project-decisions API error:', res.status)
+        return
+      }
 
       const data = await res.json()
       setProjectDecisions(projectId, {
@@ -201,6 +212,9 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
   const [pastExpanded, setPastExpanded] = useState(true)
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
+  const projects = useStore(s => s.projects)
+
+  const projectTitle = projects.find(p => p.id === projectId)?.title ?? 'Unknown project'
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -261,6 +275,7 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
       {linkedMeetingsWithNotes.length > 0 && (
         <KeyDecisionsCard
           projectId={projectId}
+          projectTitle={projectTitle}
           linkedMeetingsWithNotes={linkedMeetingsWithNotes}
         />
       )}
