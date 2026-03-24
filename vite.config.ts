@@ -68,6 +68,8 @@ function devApiPlugin(): Plugin {
             handler = await import('./api/meeting-notes')
           } else if (route === 'done-reflection') {
             handler = await import('./api/done-reflection')
+          } else if (route === 'project-decisions') {
+            handler = await import('./api/project-decisions')
           } else {
             res.writeHead(404)
             res.end('Not found')

@@ -13,6 +13,9 @@
     },
     "api/health.ts": {
       "maxDuration": 10
+    },
+    "api/project-decisions.ts": {
+      "maxDuration": 30
     }
   }
 }
