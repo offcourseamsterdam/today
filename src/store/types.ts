@@ -1,6 +1,20 @@
 import type { StoreApi } from 'zustand'
 import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, AgendaItem, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession } from '../types'
 
+export interface ProjectDecision {
+  decision: string
+  responsible: string | null
+  date: string
+  meetingTitle: string
+}
+
+export interface ProjectDecisionsData {
+  decisions: ProjectDecision[]
+  themes: string[]
+  generatedAt: string
+  notesHash: string
+}
+
 export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
 
 export interface VandaagState {
@@ -53,6 +67,9 @@ export interface VandaagState {
   // Done reflection (non-persisted)
   doneReflection: { text: string; headline: string; generatedAt: string } | null
   doneReflectionLoading: boolean
+
+  // Project decisions cache (non-persisted)
+  projectDecisionsCache: Record<string, ProjectDecisionsData>
 
   // Navigation
   setOpenProjectId: (id: string | null) => void
@@ -117,6 +134,10 @@ export interface VandaagState {
   setDoneReflectionLoading: (loading: boolean) => void
   clearDoneReflection: () => void
 
+  // Project decisions cache
+  setProjectDecisions: (projectId: string, data: ProjectDecisionsData) => void
+  clearProjectDecisions: (projectId: string) => void
+
   // Recurring tasks
   addRecurringTask: (title: string, rule: RecurrenceRule, projectId?: string) => string
   updateRecurringTask: (taskId: string, updates: Partial<Omit<Task, 'id'>>) => void
@@ -174,6 +195,7 @@ export interface VandaagState {
   removeTomorrowMaintenanceProject: (projectId: string) => void
   addTomorrowMeeting: (meetingId: string) => void
   removeTomorrowMeeting: (meetingId: string) => void
+  setTomorrowBlockOrder: (order: Array<'deep' | 'short' | 'maintenance'>) => void
   lockInTomorrow: () => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean

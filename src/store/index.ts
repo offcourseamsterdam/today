@@ -97,12 +97,21 @@ export const useStore = create<VandaagState>()(
       calendarError: null,
       doneReflection: null,
       doneReflectionLoading: false,
+      projectDecisionsCache: {},
 
       setOpenProjectId: (id) => set({ openProjectId: id }),
       setProcessingMeetingId: (id) => set({ processingMeetingId: id }),
       setDoneReflection: (reflection) => set({ doneReflection: reflection, doneReflectionLoading: false }),
       setDoneReflectionLoading: (loading) => set({ doneReflectionLoading: loading }),
       clearDoneReflection: () => set({ doneReflection: null }),
+
+      setProjectDecisions: (projectId, data) => set(s => ({
+        projectDecisionsCache: { ...s.projectDecisionsCache, [projectId]: data }
+      })),
+      clearProjectDecisions: (projectId) => set(s => {
+        const { [projectId]: _, ...rest } = s.projectDecisionsCache
+        return { projectDecisionsCache: rest }
+      }),
 
       saveMeetingNotes: (meetingId, notes) => {
         const { meetings, recurringMeetings } = get()
