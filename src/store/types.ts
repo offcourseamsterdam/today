@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand'
-import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession } from '../types'
+import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, AgendaItem, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession } from '../types'
 
 export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
 
