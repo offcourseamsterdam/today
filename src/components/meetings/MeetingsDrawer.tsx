@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { X, Plus, ChevronDown, RotateCcw, Calendar } from 'lucide-react'
 import { useStore } from '../../store'
-import { LiveMeetingPanel } from './LiveMeetingPanel'
 import { MeetingRow } from './MeetingRow'
 import { describeRule } from '../../lib/recurrence'
 import type { Meeting } from '../../types'
@@ -16,6 +15,8 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
+  const meetingSession = useStore(s => s.meetingSession)
+  const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
   const deleteMeeting = useStore(s => s.deleteMeeting)
   const deleteRecurringMeeting = useStore(s => s.deleteRecurringMeeting)
   const [showRecurring, setShowRecurring] = useState(false)
@@ -41,7 +42,7 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
 
       {/* Drawer panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:max-w-[380px] bg-canvas border-l border-border
+        className={`fixed top-0 right-0 h-full w-full sm:max-w-[420px] bg-canvas border-l border-border
           shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
           ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
@@ -71,7 +72,24 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          <LiveMeetingPanel />
+          {meetingSession && (() => {
+            const allM = [...meetings, ...recurringMeetings]
+            const activeMeeting = allM.find(m => m.id === meetingSession.meetingId)
+            if (!activeMeeting) return null
+            return (
+              <div className="mx-0 mb-3 px-3 py-2 bg-amber-50/50 border border-amber-200/40 rounded-[8px]
+                flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+                <span className="flex-1 text-[12px] text-charcoal/70 truncate">{activeMeeting.title}</span>
+                <button
+                  onClick={() => { setLiveMeetingOpen(true); onClose() }}
+                  className="text-[11px] text-amber-700/70 hover:text-amber-800 transition-colors flex-shrink-0"
+                >
+                  Open &rarr;
+                </button>
+              </div>
+            )
+          })()}
           {sortedMeetings.length === 0 && sortedRecurring.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Calendar size={28} className="text-stone/20" />

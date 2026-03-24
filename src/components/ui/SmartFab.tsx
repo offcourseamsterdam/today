@@ -13,6 +13,7 @@ interface SmartFabProps {
   onSignIn: () => void
   onSignOut: () => void
   isSignedIn: boolean
+  onBackToMeeting: () => void
 }
 
 export function SmartFab({
@@ -26,6 +27,7 @@ export function SmartFab({
   onSignIn,
   onSignOut,
   isSignedIn,
+  onBackToMeeting,
 }: SmartFabProps) {
   const dailyPlan = useStore(s => s.dailyPlan)
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
@@ -68,7 +70,7 @@ export function SmartFab({
     if (focusLabel) {
       showCitadelOverlay()
     } else if (meetingLabel) {
-      onOpenMeetings()
+      onBackToMeeting()
     } else if (label === 'Plan today') {
       onPlanToday()
     } else if (label === 'Plan tomorrow?') {

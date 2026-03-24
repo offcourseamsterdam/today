@@ -11,6 +11,7 @@ import { PlanningModal } from './components/planning/PlanningModal'
 import { RecurringTasksDrawer } from './components/ui/RecurringTasksDrawer'
 import { SmartFab } from './components/ui/SmartFab'
 import { MeetingsDrawer } from './components/meetings/MeetingsDrawer'
+import { LiveMeetingView } from './components/meetings/LiveMeetingView'
 import { CitadelMode } from './components/vandaag/CitadelMode'
 import { EnoughScreen } from './components/vandaag/EnoughScreen'
 import { NewDayScreen } from './components/vandaag/NewDayScreen'
@@ -36,6 +37,7 @@ function App() {
   const showCitadel = useStore(s => s.showCitadel)
   const tickFocusSession = useStore(s => s.tickFocusSession)
   const meetingSession = useStore(s => s.meetingSession)
+  const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
   const tickMeetingSession = useStore(s => s.tickMeetingSession)
   const hideCitadelOverlay = useStore(s => s.hideCitadelOverlay)
   const endFocusSession = useStore(s => s.endFocusSession)
@@ -182,6 +184,7 @@ function App() {
         onSignIn={signIn}
         onSignOut={signOut}
         isSignedIn={!!user}
+        onBackToMeeting={() => setLiveMeetingOpen(true)}
       />
       <RecurringTasksDrawer open={showRecurringDrawer} onClose={() => setShowRecurringDrawer(false)} />
       <MeetingsDrawer open={showMeetingsDrawer} onClose={() => setShowMeetingsDrawer(false)} />
@@ -193,6 +196,9 @@ function App() {
       {openProject && (
         <ProjectModal project={openProject} onClose={() => setOpenProjectId(null)} />
       )}
+
+      {/* Live meeting full-screen view */}
+      <LiveMeetingView />
 
       {/* Update-reminder toast */}
       <Toast />
