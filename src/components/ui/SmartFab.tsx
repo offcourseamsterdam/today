@@ -159,7 +159,7 @@ export function SmartFab({
         <div>
           {/* Icon button */}
           <button
-            onClick={label ? () => setOpen(o => !o) : handlePrimaryClick}
+            onClick={label && !meetingLabel ? () => setOpen(o => !o) : handlePrimaryClick}
             className="flex items-center justify-center w-12 h-12 rounded-full
               bg-charcoal text-canvas shadow-lg
               hover:bg-charcoal/80 transition-all duration-200"

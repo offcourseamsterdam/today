@@ -58,10 +58,10 @@ export function LiveNotesLog({ meeting, session }: LiveNotesLogProps) {
                 {notes.summary && (
                   <p className="text-[13px] text-charcoal/70 leading-relaxed">{notes.summary}</p>
                 )}
-                {notes.decisions.length > 0 && (
+                {(notes.decisions?.length ?? 0) > 0 && (
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase tracking-[0.06em] text-stone/50">Decisions</p>
-                    {notes.decisions.map((d, i) => (
+                    {notes.decisions?.map((d, i) => (
                       <div key={i} className="flex items-start gap-2 text-[12px] text-charcoal/70">
                         <span className="text-green-600 mt-0.5 flex-shrink-0">✔</span>
                         <span>{d}</span>
@@ -69,10 +69,10 @@ export function LiveNotesLog({ meeting, session }: LiveNotesLogProps) {
                     ))}
                   </div>
                 )}
-                {notes.actionItems.length > 0 && (
+                {(notes.actionItems?.length ?? 0) > 0 && (
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase tracking-[0.06em] text-stone/50">Actions</p>
-                    {notes.actionItems.map((a, i) => (
+                    {notes.actionItems?.map((a, i) => (
                       <div key={i} className="flex items-start gap-2 text-[12px] text-charcoal/70">
                         <span className="text-amber-600 mt-0.5 flex-shrink-0">→</span>
                         <span>{a.description}</span>
@@ -80,10 +80,10 @@ export function LiveNotesLog({ meeting, session }: LiveNotesLogProps) {
                     ))}
                   </div>
                 )}
-                {notes.openQuestions.length > 0 && (
+                {(notes.openQuestions?.length ?? 0) > 0 && (
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase tracking-[0.06em] text-stone/50">Open questions</p>
-                    {notes.openQuestions.map((q, i) => (
+                    {notes.openQuestions?.map((q, i) => (
                       <div key={i} className="flex items-start gap-2 text-[12px] text-charcoal/70">
                         <span className="text-stone/50 mt-0.5 flex-shrink-0">?</span>
                         <span>{q}</span>

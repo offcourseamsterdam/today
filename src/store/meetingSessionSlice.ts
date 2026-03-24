@@ -40,7 +40,7 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
         ? [...meetingSession.completedItemIds, currentItem.id]
         : meetingSession.completedItemIds
       const nextIndex = meetingSession.currentItemIndex + 1
-      if (nextIndex >= items.length) { set({ meetingSession: null }); return }
+      if (nextIndex >= items.length) { set({ meetingSession: null, isLiveMeetingOpen: false }); return }
       const nextItem = items[nextIndex]
       set({ meetingSession: {
         ...meetingSession, currentItemIndex: nextIndex, completedItemIds,
