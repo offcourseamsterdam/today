@@ -1,6 +1,6 @@
 // src/components/meetings/LiveAgendaPanel.tsx
 import { useState, useRef } from 'react'
-import { GripVertical, Pause, Play, SkipForward, Square, MicOff } from 'lucide-react'
+import { GripVertical, Pause, Play, SkipForward, Square, Mic, MicOff } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -32,7 +32,7 @@ function formatElapsed(s: number) {
   const m = Math.floor((s % 3600) / 60)
   const sec = s % 60
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
-  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '00')}`
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
 function formatTimeLeft(s: number | null): string | null {
@@ -169,7 +169,7 @@ export function LiveAgendaPanel({ meeting, session, isRecording, elapsedSeconds 
         <div className="flex items-center gap-2 mb-1">
           {isRecording ? (
             <span className="flex items-center gap-1.5 text-[11px] text-red-500/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse block" />
+              <Mic size={10} />
               Recording
             </span>
           ) : (
