@@ -1,27 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { format } from 'date-fns'
-import { Cloud, CloudOff, Loader2, CloudAlert } from 'lucide-react'
+import { Cloud, CloudOff, Loader2, CloudAlert, Calendar } from 'lucide-react'
+import { SharedProjectPage } from './components/shared/SharedProjectPage'
 import { EnsoLogo } from './components/ui/EnsoLogo'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { ProjectModal } from './components/kanban/ProjectModal'
 import { Toast } from './components/ui/Toast'
 import { VandaagView } from './components/vandaag/VandaagView'
 import { PlanningMode } from './components/vandaag/PlanningMode'
-import { PlanningModal } from './components/planning/PlanningModal'
-import { RecurringTasksDrawer } from './components/ui/RecurringTasksDrawer'
 import { SmartFab } from './components/ui/SmartFab'
-import { MeetingsDrawer } from './components/meetings/MeetingsDrawer'
-import { LiveMeetingView } from './components/meetings/LiveMeetingView'
+import { WindDownBanner } from './components/ui/WindDownBanner'
 import { CitadelMode } from './components/vandaag/CitadelMode'
 import { EnoughScreen } from './components/vandaag/EnoughScreen'
 import { NewDayScreen } from './components/vandaag/NewDayScreen'
 import { TomorrowPeek } from './components/vandaag/TomorrowPeek'
-import { PhilosophyPage } from './components/philosophy/PhilosophyPage'
 import { useStore } from './store'
 import { useAuth } from './hooks/useAuth'
 import { useFirestoreSync } from './hooks/useFirestoreSync'
 
+// Lazy-loaded heavy components
+const PhilosophyPage = lazy(() => import('./components/philosophy/PhilosophyPage').then(m => ({ default: m.PhilosophyPage })))
+const PlanningModal = lazy(() => import('./components/planning/PlanningModal').then(m => ({ default: m.PlanningModal })))
+const LiveMeetingView = lazy(() => import('./components/meetings/LiveMeetingView').then(m => ({ default: m.LiveMeetingView })))
+const MeetingsDrawer = lazy(() => import('./components/meetings/MeetingsDrawer').then(m => ({ default: m.MeetingsDrawer })))
+const MeetingsPage = lazy(() => import('./components/meetings/MeetingsPage').then(m => ({ default: m.MeetingsPage })))
+const RecurringTasksDrawer = lazy(() => import('./components/ui/RecurringTasksDrawer').then(m => ({ default: m.RecurringTasksDrawer })))
+
 function App() {
+  // Shared project page — standalone route, no auth/store needed
+  const shareMatch = useMemo(() => window.location.pathname.match(/^\/p\/([a-zA-Z0-9]+)/), [])
+  if (shareMatch) return <SharedProjectPage shareId={shareMatch[1]} />
+
   const activeView = useStore(s => s.activeView)
   const setActiveView = useStore(s => s.setActiveView)
   const openProjectId = useStore(s => s.openProjectId)
@@ -51,12 +60,14 @@ function App() {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [showAddProjectModal, setShowAddProjectModal] = useState(false)
   const [showRecurringDrawer, setShowRecurringDrawer] = useState(false)
+  const [hour, setHour] = useState(() => new Date().getHours())
 
   // Track today's date string — updates if the tab is kept open past midnight
   const [todayStr, setTodayStr] = useState(() => format(new Date(), 'yyyy-MM-dd'))
   useEffect(() => {
     const interval = setInterval(() => {
       setTodayStr(format(new Date(), 'yyyy-MM-dd'))
+      setHour(new Date().getHours())
     }, 60_000)
     return () => clearInterval(interval)
   }, [])
@@ -151,6 +162,29 @@ function App() {
         )}
       </header>
 
+      {/* Nav bar */}
+      <nav className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-3 flex items-center gap-1">
+        <button
+          onClick={() => setActiveView('vandaag')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-medium tracking-[0.02em] transition-colors
+            ${activeView === 'vandaag' || activeView === 'planning'
+              ? 'bg-charcoal text-[#FAF9F7]'
+              : 'text-stone/60 hover:text-charcoal hover:bg-border-light'}`}
+        >
+          Vandaag
+        </button>
+        <button
+          onClick={() => setActiveView('meetings')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-medium tracking-[0.02em] transition-colors
+            ${activeView === 'meetings'
+              ? 'bg-charcoal text-[#FAF9F7]'
+              : 'text-stone/60 hover:text-charcoal hover:bg-border-light'}`}
+        >
+          <Calendar size={13} />
+          Meetings
+        </button>
+      </nav>
+
       {/* Tomorrow peek — slide-in drawer from the right */}
       <>
         {/* Backdrop */}
@@ -172,6 +206,11 @@ function App() {
         </div>
       </>
 
+      {/* Wind-down banner — after 4 PM, no active sessions */}
+      {hour >= 16 && !focusSession && !meetingSession && !dailyPlan?.isComplete && (
+        <WindDownBanner onEnough={() => setShowEnough(true)} />
+      )}
+
       {/* Smart FAB */}
       <SmartFab
         onOpenMeetings={() => setShowMeetingsDrawer(true)}
@@ -186,11 +225,11 @@ function App() {
         isSignedIn={!!user}
         onBackToMeeting={() => setLiveMeetingOpen(true)}
       />
-      <RecurringTasksDrawer open={showRecurringDrawer} onClose={() => setShowRecurringDrawer(false)} />
-      <MeetingsDrawer open={showMeetingsDrawer} onClose={() => setShowMeetingsDrawer(false)} />
-      {showPlanTodayModal && (
-        <PlanningModal day="today" onClose={() => setShowPlanTodayModal(false)} />
-      )}
+      <Suspense fallback={null}>
+        {showRecurringDrawer && <RecurringTasksDrawer open onClose={() => setShowRecurringDrawer(false)} />}
+        {showMeetingsDrawer && <MeetingsDrawer open onClose={() => setShowMeetingsDrawer(false)} />}
+        {showPlanTodayModal && <PlanningModal day="today" onClose={() => setShowPlanTodayModal(false)} />}
+      </Suspense>
 
       {/* Project modal — openable from any view */}
       {openProject && (
@@ -198,7 +237,9 @@ function App() {
       )}
 
       {/* Live meeting full-screen view */}
-      <LiveMeetingView />
+      <Suspense fallback={null}>
+        <LiveMeetingView />
+      </Suspense>
 
       {/* Update-reminder toast */}
       <Toast />
@@ -206,9 +247,11 @@ function App() {
       {/* Main content */}
       <main className="px-4 pb-28 sm:px-6 sm:pb-12">
         {activeView === 'philosophy' ? (
-          <PhilosophyPage onBack={() => setActiveView('vandaag')} />
+          <Suspense fallback={null}><PhilosophyPage onBack={() => setActiveView('vandaag')} /></Suspense>
         ) : activeView === 'planning' ? (
           <PlanningMode onExit={() => setActiveView('vandaag')} />
+        ) : activeView === 'meetings' ? (
+          <Suspense fallback={null}><MeetingsPage /></Suspense>
         ) : (
           <>
             <VandaagView
