@@ -196,6 +196,8 @@ function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
   const addMeeting = useStore(s => s.addMeeting)
   const spawnRecurringOccurrence = useStore(s => s.spawnRecurringOccurrence)
   const rule = meeting.recurrenceRule
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+
   const occurrences = useMemo(() => {
     if (!rule) return []
     // If today's occurrence has already ended (start + duration < now), skip to tomorrow
@@ -212,15 +214,37 @@ function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
     }
     return getNextOccurrences(rule, 5, from)
   }, [rule, meeting.time, meeting.durationMinutes])
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
+
+  // Eagerly pre-spawn a concrete instance for every visible occurrence so each
+  // has its own independent agenda from the moment it appears in the list.
+  useEffect(() => {
+    occurrences.forEach(date => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      if (dateStr === todayStr) {
+        spawnRecurringOccurrence(meeting.id)
+      } else {
+        findOrCreateMeetingInstance(meeting, date, meetings, addMeeting)
+      }
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleOccurrenceClick(date: Date) {
     const dateStr = format(date, 'yyyy-MM-dd')
-    // For today's occurrence, use spawnRecurringOccurrence for consistency with the drawer
+    // Use the pre-spawned concrete instance (or spawn on click as fallback)
+    const existing = meetings.find(
+      m => !m.isRecurring && m.date === dateStr && m.recurringMeetingId === meeting.id
+    )
+    if (existing) { setOpenMeetingId(existing.id); return }
     const id = dateStr === todayStr
       ? spawnRecurringOccurrence(meeting.id)
       : findOrCreateMeetingInstance(meeting, date, meetings, addMeeting)
     setOpenMeetingId(id)
+  }
+
+  // For each displayed date, find the concrete instance (if already spawned) to show its data
+  function getInstanceForDate(date: Date): Meeting | undefined {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return meetings.find(m => !m.isRecurring && m.date === dateStr && m.recurringMeetingId === meeting.id)
   }
 
   return (
@@ -232,25 +256,32 @@ function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
       </div>
 
       <div className="pl-3 border-l border-border/40">
-        {occurrences.map((date, i) => (
-          <button
-            key={i}
-            onClick={() => handleOccurrenceClick(date)}
-            className="w-full flex items-center gap-3 py-1.5 text-left hover:bg-stone/5 rounded transition-colors group"
-          >
-            <span className="text-[11px] text-stone/40 flex-shrink-0 w-[42px]">{meeting.time}</span>
-            <span className="text-[12px] text-charcoal/70 group-hover:text-charcoal transition-colors flex-shrink-0">{format(date, 'EEE d MMM')}</span>
-          </button>
-        ))}
+        {occurrences.map((date, i) => {
+          const instance = getInstanceForDate(date)
+          const agendaCount = (instance?.agendaItems ?? meeting.agendaItems ?? []).length
+          return (
+            <button
+              key={i}
+              onClick={() => handleOccurrenceClick(date)}
+              className="w-full flex items-center gap-3 py-1.5 text-left hover:bg-stone/5 rounded transition-colors group"
+            >
+              <span className="text-[11px] text-stone/40 flex-shrink-0 w-[42px]">{meeting.time}</span>
+              <span className="text-[12px] text-charcoal/70 group-hover:text-charcoal transition-colors">{format(date, 'EEE d MMM')}</span>
+              {agendaCount > 0 && (
+                <span className="text-[10px] text-stone/30 flex-shrink-0 ml-auto">{agendaCount} items</span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       <p className="mt-1.5 pl-3 text-[10px] text-stone/35">
-        This is a recurring meeting ·{' '}
+        Each occurrence has its own agenda ·{' '}
         <button
           onClick={() => setOpenMeetingId(meeting.id)}
           className="underline underline-offset-2 hover:text-stone/60 transition-colors"
         >
-          change occurrence
+          edit schedule
         </button>
       </p>
     </div>
