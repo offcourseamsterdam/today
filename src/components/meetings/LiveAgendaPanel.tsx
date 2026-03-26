@@ -1,6 +1,6 @@
 // src/components/meetings/LiveAgendaPanel.tsx
 import { useState, useRef } from 'react'
-import { GripVertical, Pause, Play, SkipForward, Square, Mic, MicOff } from 'lucide-react'
+import { GripVertical, Pause, Play, SkipForward, Square, Mic, MicOff, PlayCircle } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -49,9 +49,10 @@ interface AgendaRowProps {
   item: AgendaItem
   status: 'done' | 'current' | 'upcoming'
   timeLeft: string | null
+  isRecording?: boolean
 }
 
-function AgendaRow({ item, status, timeLeft }: AgendaRowProps) {
+function AgendaRow({ item, status, timeLeft, isRecording }: AgendaRowProps) {
   const {
     attributes,
     listeners,
@@ -74,28 +75,33 @@ function AgendaRow({ item, status, timeLeft }: AgendaRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2.5 px-3 py-2 rounded-[6px] transition-colors
+      className={`relative flex items-center gap-2.5 px-3 py-2 rounded-[6px] transition-colors
         ${status === 'current' ? 'bg-amber-50/60 border border-amber-200/40' : ''}
         ${status === 'done' ? 'opacity-50' : ''}
       `}
     >
+      {/* Recording pulse — rendered behind content */}
+      {status === 'current' && isRecording && (
+        <span className="absolute inset-0 rounded-[6px] bg-red-400/10 animate-pulse pointer-events-none z-0" />
+      )}
+
       {/* Drag handle — only visible/active for upcoming items */}
       <div
         {...(status === 'upcoming' ? { ...attributes, ...listeners } : {})}
-        className={`flex-shrink-0 ${status === 'upcoming' ? 'cursor-grab text-stone/30 hover:text-stone/60' : 'text-transparent pointer-events-none'}`}
+        className={`relative z-10 flex-shrink-0 ${status === 'upcoming' ? 'cursor-grab text-stone/30 hover:text-stone/60' : 'text-transparent pointer-events-none'}`}
       >
         <GripVertical size={13} />
       </div>
 
       {/* Status indicator */}
-      <div className="flex-shrink-0 w-4 flex items-center justify-center">
+      <div className="relative z-10 flex-shrink-0 w-4 flex items-center justify-center">
         {status === 'done' && <span className="text-[11px] text-stone/40">✓</span>}
         {status === 'current' && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse block" />}
         {status === 'upcoming' && <span className="w-1.5 h-1.5 rounded-full bg-stone/20 block" />}
       </div>
 
       {/* Title */}
-      <span className={`flex-1 text-[13px] leading-snug ${
+      <span className={`relative z-10 flex-1 text-[13px] leading-snug ${
         status === 'done' ? 'text-stone/50 line-through' :
         status === 'current' ? 'text-charcoal font-medium' :
         'text-charcoal/70'
@@ -105,7 +111,7 @@ function AgendaRow({ item, status, timeLeft }: AgendaRowProps) {
 
       {/* Time left — only shown for current item */}
       {timeLeft !== null && status === 'current' && (
-        <span className={`text-[11px] flex-shrink-0 tabular-nums ${
+        <span className={`relative z-10 text-[11px] flex-shrink-0 tabular-nums ${
           timeLeft === '—' || parseInt(timeLeft) <= 1 ? 'text-red-500' : 'text-stone/50'
         }`}>
           {timeLeft}
@@ -121,15 +127,17 @@ export function LiveAgendaPanel({ meeting, session, isRecording, elapsedSeconds 
   const pauseMeetingSession = useStore(s => s.pauseMeetingSession)
   const resumeMeetingSession = useStore(s => s.resumeMeetingSession)
   const advanceMeetingItem = useStore(s => s.advanceMeetingItem)
-  const endMeetingSession = useStore(s => s.endMeetingSession)
-  const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
+  const endAndRedirectMeeting = useStore(s => s.endAndRedirectMeeting)
   const reorderLiveMeetingItems = useStore(s => s.reorderLiveMeetingItems)
   const updateMeeting = useStore(s => s.updateMeeting)
   const updateRecurringMeeting = useStore(s => s.updateRecurringMeeting)
   const recurringMeetings = useStore(s => s.recurringMeetings)
 
   const [newItemTitle, setNewItemTitle] = useState('')
+  const [newItemDuration, setNewItemDuration] = useState<number | undefined>(undefined)
   const addInputRef = useRef<HTMLInputElement>(null)
+
+  const QUICK_DURATIONS = [5, 10, 15, 20, 30]
 
   const items = meeting.agendaItems ?? []
   const total = items.length
@@ -150,7 +158,7 @@ export function LiveAgendaPanel({ meeting, session, isRecording, elapsedSeconds 
   function handleAddItem() {
     const title = newItemTitle.trim()
     if (!title) return
-    const newItem: AgendaItem = { id: uuid(), title }
+    const newItem: AgendaItem = { id: uuid(), title, ...(newItemDuration != null ? { durationMinutes: newItemDuration } : {}) }
     const newItems = [...items, newItem]
     const isRecurring = recurringMeetings.some(m => m.id === meeting.id)
     if (isRecurring) {
@@ -159,6 +167,7 @@ export function LiveAgendaPanel({ meeting, session, isRecording, elapsedSeconds 
       updateMeeting(meeting.id, { agendaItems: newItems })
     }
     setNewItemTitle('')
+    setNewItemDuration(undefined)
     addInputRef.current?.focus()
   }
 
@@ -206,7 +215,7 @@ export function LiveAgendaPanel({ meeting, session, isRecording, elapsedSeconds 
                 'upcoming'
               const timeLeft = status === 'current' ? formatTimeLeft(session.secondsLeft) : null
               return (
-                <AgendaRow key={item.id} item={item} status={status} timeLeft={timeLeft} />
+                <AgendaRow key={item.id} item={item} status={status} timeLeft={timeLeft} isRecording={isRecording} />
               )
             })}
           </SortableContext>
@@ -223,12 +232,40 @@ export function LiveAgendaPanel({ meeting, session, isRecording, elapsedSeconds 
             className="w-full text-[12px] text-stone/60 placeholder:text-stone/30 bg-transparent
               border-none outline-none py-1.5 px-1"
           />
+          {newItemTitle.trim().length > 0 && (
+            <div className="flex items-center gap-1 mt-1 px-1">
+              <span className="text-[10px] text-stone/30 mr-0.5">min:</span>
+              {QUICK_DURATIONS.map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setNewItemDuration(newItemDuration === d ? undefined : d)}
+                  className={`text-[10px] px-1.5 py-0.5 rounded transition-colors
+                    ${newItemDuration === d
+                      ? 'bg-charcoal/80 text-canvas'
+                      : 'text-stone/40 hover:text-stone/70 bg-border-light'}`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Controls bar */}
       <div className="px-4 py-4 border-t border-border/60 flex items-center gap-2">
-        {session.isRunning ? (
+        {!session.hasStarted ? (
+          /* Fresh session — show prominent Start button */
+          <button
+            onClick={resumeMeetingSession}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-medium
+              text-canvas bg-charcoal rounded-[6px] hover:bg-charcoal/85 transition-colors"
+          >
+            <PlayCircle size={13} />
+            Start
+          </button>
+        ) : session.isRunning ? (
           <button
             onClick={pauseMeetingSession}
             className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-stone/70
@@ -248,24 +285,23 @@ export function LiveAgendaPanel({ meeting, session, isRecording, elapsedSeconds 
           </button>
         )}
 
-        <button
-          onClick={advanceMeetingItem}
-          disabled={session.currentItemIndex >= items.length - 1}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-stone/70
-            hover:text-charcoal border border-border rounded-[6px] hover:bg-border-light
-            transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <SkipForward size={12} />
-          Next
-        </button>
+        {session.hasStarted && (
+          <button
+            onClick={advanceMeetingItem}
+            disabled={session.currentItemIndex >= items.length - 1}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-stone/70
+              hover:text-charcoal border border-border rounded-[6px] hover:bg-border-light
+              transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <SkipForward size={12} />
+            Next
+          </button>
+        )}
 
         <div className="flex-1" />
 
         <button
-          onClick={() => {
-            endMeetingSession()
-            setLiveMeetingOpen(false)
-          }}
+          onClick={() => endAndRedirectMeeting(session.meetingId)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-red-500/70
             hover:text-red-600 border border-red-200/50 rounded-[6px] hover:bg-red-50/50 transition-colors"
         >
