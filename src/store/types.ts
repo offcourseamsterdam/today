@@ -44,6 +44,7 @@ export interface VandaagState {
   waitingPromptProjectId: string | null  // triggers "Op wie wacht je?" modal
   openMeetingId: string | null  // null = closed, 'new' = create mode, uuid = edit mode
   justEndedMeetingId: string | null  // auto-expands this meeting in History after ending
+  projectModalDefaultTab: string | null  // e.g. 'meetings' — consumed once by ProjectModal
   activeView: ActiveView
   greetedDate: string | null  // YYYY-MM-DD — last date the morning screen was dismissed
   artworkLoadingIds: string[]  // project IDs with in-flight artwork fetch (not persisted)
@@ -105,6 +106,7 @@ export interface VandaagState {
   setSwapModalProjectId: (id: string | null) => void
   setWaitingPromptProjectId: (id: string | null) => void
   setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => void
+  clearProjectModalDefaultTab: () => void
 
   // Task actions
   addTask: (title: string, projectId?: string) => string
@@ -133,6 +135,8 @@ export interface VandaagState {
   // Meeting session actions
   startMeetingSession: (meetingId: string) => void
   endMeetingSession: () => void
+  endAndRedirectMeeting: (meetingId: string) => void
+  clearJustEndedMeeting: () => void
   pauseMeetingSession: () => void
   resumeMeetingSession: () => void
   advanceMeetingItem: () => void

@@ -127,6 +127,7 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
 
     setSwapModalProjectId: (id: string | null) => set({ swapModalProjectId: id }),
     setWaitingPromptProjectId: (id: string | null) => set({ waitingPromptProjectId: id }),
+    clearProjectModalDefaultTab: () => set({ projectModalDefaultTab: null }),
 
     setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => {
       set(state => ({

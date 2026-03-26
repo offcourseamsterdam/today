@@ -15,19 +15,47 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
         meetingSession: {
           meetingId, currentItemIndex: hasItems ? 0 : -1, completedItemIds: [],
           secondsLeft: firstItem?.durationMinutes != null ? firstItem.durationMinutes * 60 : null,
-          isRunning: hasItems, startedAt: now, lastTickAt: now, isRecording: false,
+          isRunning: false, hasStarted: false, startedAt: now, lastTickAt: now, isRecording: false,
           processingItemIds: [],
         }
       })
     },
     endMeetingSession: () => set({ meetingSession: null, isLiveMeetingOpen: false }),
+    endAndRedirectMeeting: (meetingId: string) => {
+      const state = get()
+      const allMeetings = [...state.meetings, ...state.recurringMeetings]
+      const meeting = allMeetings.find(m => m.id === meetingId)
+
+      // End the session
+      set({ meetingSession: null, isLiveMeetingOpen: false, openMeetingId: null })
+
+      if (meeting?.projectId) {
+        const projectExists = state.projects.some(p => p.id === meeting.projectId)
+        if (projectExists) {
+          // Redirect to project modal — Meetings tab, row auto-expanded
+          set({
+            openProjectId: meeting.projectId,
+            projectModalDefaultTab: 'meetings',
+            justEndedMeetingId: meetingId,
+          })
+          return
+        }
+      }
+
+      // Standalone meeting — navigate to Meetings page
+      set({
+        activeView: 'meetings',
+        justEndedMeetingId: meetingId,
+      })
+    },
+    clearJustEndedMeeting: () => set({ justEndedMeetingId: null }),
     pauseMeetingSession: () => {
       const { meetingSession } = get()
       if (meetingSession) set({ meetingSession: { ...meetingSession, isRunning: false } })
     },
     resumeMeetingSession: () => {
       const { meetingSession } = get()
-      if (meetingSession) set({ meetingSession: { ...meetingSession, isRunning: true, lastTickAt: new Date().toISOString() } })
+      if (meetingSession) set({ meetingSession: { ...meetingSession, isRunning: true, hasStarted: true, lastTickAt: new Date().toISOString() } })
     },
     advanceMeetingItem: () => {
       const { meetingSession, meetings, recurringMeetings } = get()

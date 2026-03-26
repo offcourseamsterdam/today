@@ -85,6 +85,7 @@ export const useStore = create<VandaagState>()(
       waitingPromptProjectId: null,
       openMeetingId: null,
       justEndedMeetingId: null,
+      projectModalDefaultTab: null,
       activeView: 'vandaag',
       greetedDate: null,
       artworkLoadingIds: [],
