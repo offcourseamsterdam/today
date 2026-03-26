@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { GripVertical, X, Repeat } from 'lucide-react'
+import { GripVertical, X, Repeat, User } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -58,93 +58,111 @@ function AgendaItemRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 group py-1"
+      className="flex gap-2 group py-1.5"
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="text-stone/20 hover:text-stone/50 transition-colors cursor-grab active:cursor-grabbing flex-shrink-0"
+        className="text-stone/20 hover:text-stone/50 transition-colors cursor-grab active:cursor-grabbing flex-shrink-0 mt-1"
         tabIndex={-1}
       >
         <GripVertical size={12} />
       </button>
 
-      {/* Title input */}
-      <input
-        ref={el => {
-          if (el) focusRef.current.set(item.id, el)
-          else focusRef.current.delete(item.id)
-        }}
-        type="text"
-        value={item.title}
-        onChange={e => onChange(item.id, { title: e.target.value })}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            onEnter(item.id)
-          } else if (e.key === 'Backspace' && item.title === '') {
-            e.preventDefault()
-            onBackspaceEmpty(item.id)
-          }
-        }}
-        placeholder="Agenda item..."
-        className="flex-1 min-w-0 bg-transparent text-[13px] text-charcoal
-          placeholder:text-stone/25 outline-none border-b border-transparent
-          focus:border-stone/20 transition-colors py-0.5"
-      />
+      {/* Main content: title row + controls row */}
+      <div className="flex-1 min-w-0">
+        {/* Row 1: title */}
+        <input
+          ref={el => {
+            if (el) focusRef.current.set(item.id, el)
+            else focusRef.current.delete(item.id)
+          }}
+          type="text"
+          value={item.title}
+          onChange={e => onChange(item.id, { title: e.target.value })}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              onEnter(item.id)
+            } else if (e.key === 'Backspace' && item.title === '') {
+              e.preventDefault()
+              onBackspaceEmpty(item.id)
+            }
+          }}
+          placeholder="Agenda item..."
+          className="w-full bg-transparent text-[13px] text-charcoal
+            placeholder:text-stone/25 outline-none border-b border-transparent
+            focus:border-stone/20 transition-colors py-0.5"
+        />
 
-      {/* Duration chips */}
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => onChange(item.id, { durationMinutes: undefined })}
-          className={`text-[10px] px-1.5 py-0.5 rounded transition-colors
-            ${item.durationMinutes == null
-              ? 'bg-charcoal text-canvas'
-              : 'text-stone/40 hover:text-stone'}`}
-        >
-          —
-        </button>
-        {DURATION_OPTIONS.map(d => (
+        {/* Row 2: duration + owner + actions */}
+        <div className="flex items-center gap-1 mt-1">
+          {/* Duration chips */}
           <button
-            key={d}
             type="button"
-            onClick={() => onChange(item.id, { durationMinutes: d })}
+            onClick={() => onChange(item.id, { durationMinutes: undefined })}
             className={`text-[10px] px-1.5 py-0.5 rounded transition-colors
-              ${item.durationMinutes === d
+              ${item.durationMinutes == null
                 ? 'bg-charcoal text-canvas'
                 : 'text-stone/40 hover:text-stone'}`}
           >
-            {d}
+            —
           </button>
-        ))}
+          {DURATION_OPTIONS.map(d => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => onChange(item.id, { durationMinutes: d })}
+              className={`text-[10px] px-1.5 py-0.5 rounded transition-colors
+                ${item.durationMinutes === d
+                  ? 'bg-charcoal text-canvas'
+                  : 'text-stone/40 hover:text-stone'}`}
+            >
+              {d}
+            </button>
+          ))}
+
+          {/* Owner */}
+          <div className="flex items-center gap-1 ml-1">
+            <User size={10} className="text-stone/30 flex-shrink-0" />
+            <input
+              type="text"
+              value={item.owner ?? ''}
+              onChange={e => onChange(item.id, { owner: e.target.value || undefined })}
+              placeholder="who"
+              tabIndex={-1}
+              className="w-[52px] bg-transparent text-[11px] text-stone/60 placeholder:text-stone/25
+                outline-none border-b border-transparent focus:border-stone/20 transition-colors py-0.5"
+            />
+          </div>
+
+          {/* Recurring toggle */}
+          <button
+            type="button"
+            onClick={() => onChange(item.id, { recurring: !item.recurring })}
+            className={`flex-shrink-0 transition-colors ml-1
+              ${item.recurring
+                ? 'text-charcoal'
+                : 'text-stone/20 hover:text-stone/50 opacity-0 group-hover:opacity-100'}`}
+            tabIndex={-1}
+            title={item.recurring ? 'Recurring — appears every meeting' : 'Make recurring'}
+          >
+            <Repeat size={11} />
+          </button>
+
+          {/* Delete */}
+          <button
+            type="button"
+            onClick={() => onDelete(item.id)}
+            className="text-stone/20 hover:text-red-400 transition-colors flex-shrink-0
+              opacity-0 group-hover:opacity-100"
+            tabIndex={-1}
+          >
+            <X size={12} />
+          </button>
+        </div>
       </div>
-
-      {/* Recurring toggle */}
-      <button
-        type="button"
-        onClick={() => onChange(item.id, { recurring: !item.recurring })}
-        className={`flex-shrink-0 transition-colors
-          ${item.recurring
-            ? 'text-charcoal'
-            : 'text-stone/20 hover:text-stone/50 opacity-0 group-hover:opacity-100'}`}
-        tabIndex={-1}
-        title={item.recurring ? 'Recurring — appears every meeting' : 'Make recurring'}
-      >
-        <Repeat size={11} />
-      </button>
-
-      {/* Delete */}
-      <button
-        type="button"
-        onClick={() => onDelete(item.id)}
-        className="text-stone/20 hover:text-red-400 transition-colors flex-shrink-0
-          opacity-0 group-hover:opacity-100"
-        tabIndex={-1}
-      >
-        <X size={12} />
-      </button>
     </div>
   )
 }
