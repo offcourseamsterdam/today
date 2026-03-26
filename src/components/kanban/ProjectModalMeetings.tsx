@@ -526,6 +526,7 @@ interface ProjectModalMeetingsProps {
 
 export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
   const [pastExpanded, setPastExpanded] = useState(true)
+  const [moreUpcomingExpanded, setMoreUpcomingExpanded] = useState(false)
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const projects = useStore(s => s.projects)
@@ -535,11 +536,17 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
   const today = format(now, 'yyyy-MM-dd')
   const nowTime = format(now, 'HH:mm')
 
-  // A meeting is considered past if its date+time have elapsed
+  // A meeting is considered past if its date+time (+ duration) have elapsed
   function isPastMeeting(m: Meeting): boolean {
     if (!m.date) return false
     if (m.date < today) return true
-    if (m.date === today && m.time && m.time < nowTime) return true
+    if (m.date === today && m.time) {
+      const [h, min] = m.time.split(':').map(Number)
+      const endMinutes = h * 60 + min + (m.durationMinutes ?? 0)
+      const [nowH, nowMin] = nowTime.split(':').map(Number)
+      const nowMinutes = nowH * 60 + nowMin
+      return nowMinutes >= endMinutes
+    }
     return false
   }
 
@@ -613,20 +620,58 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
       )}
 
       {/* B. Upcoming meetings + Agenda suggestions */}
-      {hasUpcoming && (
-        <div className={linkedMeetingsWithNotes.length > 0 ? 'border-t border-border/40 pt-3 mt-3' : ''}>
-          <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1.5">
-            Upcoming
-          </div>
-          {upcomingMeetings.map(m => (
-            <UpcomingMeetingRow key={m.id} meeting={m} />
-          ))}
-          {recurringLinked.map(m => (
-            <RecurringUpcomingBlock key={m.id} meeting={m} />
-          ))}
+      {hasUpcoming && (() => {
+        const nextMeeting = upcomingMeetings[0] ?? null
+        const moreMeetings = upcomingMeetings.slice(1)
+        // Collapsible shows: remaining one-off meetings + all recurring blocks
+        // (recurring blocks only go in the collapsible when there's already a one-off next meeting)
+        const collapsibleMeetings = moreMeetings
+        const collapsibleRecurring = nextMeeting ? recurringLinked : []
+        const hasCollapsible = collapsibleMeetings.length > 0 || collapsibleRecurring.length > 0
+        const collapsibleCount = collapsibleMeetings.length + collapsibleRecurring.length
 
-        </div>
-      )}
+        return (
+          <div className={linkedMeetingsWithNotes.length > 0 ? 'border-t border-border/40 pt-3 mt-3' : ''}>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1.5">
+              Next up
+            </div>
+
+            {/* The single next meeting */}
+            {nextMeeting && <UpcomingMeetingRow meeting={nextMeeting} />}
+
+            {/* If no one-off next meeting, show recurring blocks directly */}
+            {!nextMeeting && recurringLinked.map(m => (
+              <RecurringUpcomingBlock key={m.id} meeting={m} />
+            ))}
+
+            {/* Collapsible: remaining one-off + recurring (when a one-off is already shown) */}
+            {hasCollapsible && (
+              <div className="mt-1">
+                <button
+                  onClick={() => setMoreUpcomingExpanded(e => !e)}
+                  className="flex items-center gap-1.5 text-[11px] text-stone/40 hover:text-stone/70 transition-colors py-1"
+                >
+                  <ChevronDown
+                    size={11}
+                    className={`transition-transform ${moreUpcomingExpanded ? 'rotate-180' : ''}`}
+                  />
+                  {moreUpcomingExpanded ? 'Hide others' : `${collapsibleCount} more upcoming`}
+                </button>
+                {moreUpcomingExpanded && (
+                  <div className="animate-slide-up">
+                    {collapsibleMeetings.map(m => (
+                      <UpcomingMeetingRow key={m.id} meeting={m} />
+                    ))}
+                    {collapsibleRecurring.map(m => (
+                      <RecurringUpcomingBlock key={m.id} meeting={m} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* C. Past meetings + Recent summary */}
       {pastMeetings.length > 0 && (
