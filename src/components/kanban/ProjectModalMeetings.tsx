@@ -196,7 +196,22 @@ function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
   const addMeeting = useStore(s => s.addMeeting)
   const spawnRecurringOccurrence = useStore(s => s.spawnRecurringOccurrence)
   const rule = meeting.recurrenceRule
-  const occurrences = useMemo(() => rule ? getNextOccurrences(rule, 5) : [], [rule])
+  const occurrences = useMemo(() => {
+    if (!rule) return []
+    // If today's occurrence has already ended (start + duration < now), skip to tomorrow
+    let from = new Date()
+    if (meeting.time) {
+      const [h, m] = meeting.time.split(':').map(Number)
+      const endMinutes = h * 60 + m + (meeting.durationMinutes ?? 0)
+      const nowMinutes = from.getHours() * 60 + from.getMinutes()
+      if (nowMinutes >= endMinutes) {
+        from = new Date(from)
+        from.setDate(from.getDate() + 1)
+        from.setHours(0, 0, 0, 0)
+      }
+    }
+    return getNextOccurrences(rule, 5, from)
+  }, [rule, meeting.time, meeting.durationMinutes])
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   function handleOccurrenceClick(date: Date) {

@@ -71,9 +71,19 @@ export function UpcomingColumn() {
     }
   }
 
+  function isRecurringStillUpcoming(m: Meeting): boolean {
+    if (!m.time) return true
+    const [h, min] = m.time.split(':').map(Number)
+    const endMinutes = h * 60 + min + (m.durationMinutes ?? 0)
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    return nowMinutes < endMinutes
+  }
+
   const recurringAsToday = useMemo(() => {
-    return recurringMeetings.filter(m => m.recurrenceRule && isDueToday(m.recurrenceRule, now))
-  }, [recurringMeetings]) // eslint-disable-line react-hooks/exhaustive-deps
+    return recurringMeetings.filter(m =>
+      m.recurrenceRule && isDueToday(m.recurrenceRule, now) && isRecurringStillUpcoming(m)
+    )
+  }, [recurringMeetings, nowTime]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { todayItems, tomorrowItems, thisWeekItems, laterItems } = useMemo(() => {
     const oneOff = meetings.filter(m => !isPast(m))
