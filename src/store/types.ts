@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand'
-import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, AgendaItem, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession } from '../types'
+import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, AgendaItem, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession, PlanItem } from '../types'
 
 export interface ProjectDecision {
   decision: string
@@ -15,7 +15,14 @@ export interface ProjectDecisionsData {
   notesHash: string
 }
 
-export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy'
+export interface RecentMeetingSummaryData {
+  summary: string
+  commitments: Array<{ description: string; owner: string | null; fromMeeting: string }>
+  generatedAt: string
+  notesHash: string
+}
+
+export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy' | 'meetings'
 
 export interface VandaagState {
   // Data
@@ -36,6 +43,7 @@ export interface VandaagState {
   swapModalTargetStatus: 'in_progress' | 'waiting' | null  // destination for the incoming project
   waitingPromptProjectId: string | null  // triggers "Op wie wacht je?" modal
   openMeetingId: string | null  // null = closed, 'new' = create mode, uuid = edit mode
+  justEndedMeetingId: string | null  // auto-expands this meeting in History after ending
   activeView: ActiveView
   greetedDate: string | null  // YYYY-MM-DD — last date the morning screen was dismissed
   artworkLoadingIds: string[]  // project IDs with in-flight artwork fetch (not persisted)
@@ -47,6 +55,10 @@ export interface VandaagState {
   // Meeting session state
   meetingSession: MeetingSession | null
   processingMeetingId: string | null
+  processingPhase: 'transcribing' | 'summarizing' | null
+  processingError: string | null
+  processingItemPhases: Record<string, 'transcribing' | 'summarizing'>
+  processingItemErrors: Record<string, string>
   isLiveMeetingOpen: boolean
 
   // Focus session actions
@@ -70,6 +82,7 @@ export interface VandaagState {
 
   // Project decisions cache (non-persisted)
   projectDecisionsCache: Record<string, ProjectDecisionsData>
+  recentMeetingSummaryCache: Record<string, RecentMeetingSummaryData>
 
   // Navigation
   setOpenProjectId: (id: string | null) => void
@@ -96,7 +109,11 @@ export interface VandaagState {
   // Task actions
   addTask: (title: string, projectId?: string) => string
   updateTask: (taskId: string, projectId: string | undefined, updates: Partial<Omit<Task, 'id'>>) => void
+  reorderProjectTasks: (projectId: string, taskIds: string[]) => void
   deleteTask: (taskId: string, projectId?: string) => void
+  addSubtask: (projectId: string, taskId: string, title: string) => string
+  toggleSubtask: (projectId: string, taskId: string, subtaskId: string) => void
+  deleteSubtask: (projectId: string, taskId: string, subtaskId: string) => void
   addOrphanTask: (title: string) => string
   updateOrphanTask: (taskId: string, updates: Partial<Omit<Task, 'id'>>) => void
   deleteOrphanTask: (taskId: string) => void
@@ -111,6 +128,7 @@ export interface VandaagState {
   deleteRecurringMeeting: (id: string) => void
   getTodayRecurringMeetings: () => Meeting[]
   setOpenMeetingId: (id: string | null) => void
+  spawnRecurringOccurrence: (templateId: string) => string
 
   // Meeting session actions
   startMeetingSession: (meetingId: string) => void
@@ -124,6 +142,10 @@ export interface VandaagState {
 
   // Recording processing
   setProcessingMeetingId: (id: string | null) => void
+  setProcessingPhase: (phase: 'transcribing' | 'summarizing' | null) => void
+  setProcessingError: (error: string | null) => void
+  setProcessingItemPhase: (itemId: string, phase: 'transcribing' | 'summarizing' | null) => void
+  setProcessingItemError: (itemId: string, error: string | null) => void
   saveMeetingNotes: (meetingId: string, notes: MeetingNotes) => void
   saveAgendaItemNotes: (meetingId: string, itemNotes: AgendaItemNotes) => void
   addProcessingItemId: (itemId: string) => void
@@ -137,6 +159,9 @@ export interface VandaagState {
   // Project decisions cache
   setProjectDecisions: (projectId: string, data: ProjectDecisionsData) => void
   clearProjectDecisions: (projectId: string) => void
+
+  // Recent meeting summary + agenda suggestions cache
+  setRecentMeetingSummary: (projectId: string, data: RecentMeetingSummaryData) => void
 
   // Recurring tasks
   addRecurringTask: (title: string, rule: RecurrenceRule, projectId?: string) => string
@@ -178,6 +203,7 @@ export interface VandaagState {
   removeTomorrowMaintenanceMeeting: (meetingId: string) => void
   addQuickMaintenanceTask: (title: string) => string
   setBlockOrder: (order: Array<'deep' | 'short' | 'maintenance'>) => void
+  setItemOrder: (items: PlanItem[]) => void
   completeDailyPlan: () => void
   getTodayPlan: () => DailyPlan | null
   isDayComplete: () => boolean
@@ -196,6 +222,7 @@ export interface VandaagState {
   addTomorrowMeeting: (meetingId: string) => void
   removeTomorrowMeeting: (meetingId: string) => void
   setTomorrowBlockOrder: (order: Array<'deep' | 'short' | 'maintenance'>) => void
+  setTomorrowItemOrder: (items: PlanItem[]) => void
   lockInTomorrow: () => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean

@@ -84,6 +84,7 @@ export const useStore = create<VandaagState>()(
       swapModalTargetStatus: null,
       waitingPromptProjectId: null,
       openMeetingId: null,
+      justEndedMeetingId: null,
       activeView: 'vandaag',
       greetedDate: null,
       artworkLoadingIds: [],
@@ -91,6 +92,10 @@ export const useStore = create<VandaagState>()(
       showCitadel: false,
       meetingSession: null,
       processingMeetingId: null,
+      processingPhase: null,
+      processingError: null,
+      processingItemPhases: {},
+      processingItemErrors: {},
       isLiveMeetingOpen: false,
       calendarEvents: [],
       calendarLoading: false,
@@ -98,9 +103,26 @@ export const useStore = create<VandaagState>()(
       doneReflection: null,
       doneReflectionLoading: false,
       projectDecisionsCache: {},
+      recentMeetingSummaryCache: {},
 
       setOpenProjectId: (id) => set({ openProjectId: id }),
       setProcessingMeetingId: (id) => set({ processingMeetingId: id }),
+      setProcessingPhase: (phase) => set({ processingPhase: phase }),
+      setProcessingError: (error) => set({ processingError: error }),
+      setProcessingItemPhase: (itemId, phase) => set(s => {
+        if (phase === null) {
+          const { [itemId]: _, ...rest } = s.processingItemPhases
+          return { processingItemPhases: rest }
+        }
+        return { processingItemPhases: { ...s.processingItemPhases, [itemId]: phase } }
+      }),
+      setProcessingItemError: (itemId, error) => set(s => {
+        if (error === null) {
+          const { [itemId]: _, ...rest } = s.processingItemErrors
+          return { processingItemErrors: rest }
+        }
+        return { processingItemErrors: { ...s.processingItemErrors, [itemId]: error } }
+      }),
       setDoneReflection: (reflection) => set({ doneReflection: reflection, doneReflectionLoading: false }),
       setDoneReflectionLoading: (loading) => set({ doneReflectionLoading: loading }),
       clearDoneReflection: () => set({ doneReflection: null }),
@@ -113,6 +135,9 @@ export const useStore = create<VandaagState>()(
         return { projectDecisionsCache: rest }
       }),
 
+      setRecentMeetingSummary: (projectId, data) => set(s => ({
+        recentMeetingSummaryCache: { ...s.recentMeetingSummaryCache, [projectId]: data }
+      })),
       saveMeetingNotes: (meetingId, notes) => {
         const { meetings, recurringMeetings } = get()
         const inMeetings = meetings.some(m => m.id === meetingId)
