@@ -74,6 +74,28 @@ function CitadelTaskRow({ task, onToggle }: { task: Task; onToggle: (id: string)
   )
 }
 
+function CitadelDoneTaskRow({ task, onToggle }: { task: Task; onToggle: (id: string) => void }) {
+  return (
+    <div className="flex items-center gap-3 py-2.5 px-4 rounded-[8px] hover:bg-citadel-text/5 transition-all">
+      {/* Spacer to align with sortable rows that have a drag handle */}
+      <div className="w-[13px] flex-shrink-0" />
+
+      <button
+        onClick={() => onToggle(task.id)}
+        className="w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center transition-all bg-citadel-accent/50 border-citadel-accent/50"
+      >
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+          <path d="M1 3L3 5L7 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-citadel-bg" />
+        </svg>
+      </button>
+
+      <span className="text-[13px] flex-1 min-w-0 leading-snug line-through text-citadel-text/25">
+        {task.title}
+      </span>
+    </div>
+  )
+}
+
 export function CitadelTaskPanel({ project }: { project: Project }) {
   const reorderProjectTasks = useStore(s => s.reorderProjectTasks)
   const toggleTask = useTaskToggle()
@@ -134,7 +156,7 @@ export function CitadelTaskPanel({ project }: { project: Project }) {
             {doneTasks.length > 0 && (
               <div className="mt-1">
                 {doneTasks.map(task => (
-                  <CitadelTaskRow key={task.id} task={task} onToggle={toggleTask} />
+                  <CitadelDoneTaskRow key={task.id} task={task} onToggle={toggleTask} />
                 ))}
               </div>
             )}
