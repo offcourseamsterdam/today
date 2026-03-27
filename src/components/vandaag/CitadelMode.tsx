@@ -3,6 +3,7 @@ import { Play, Pause, RotateCcw, ArrowLeft, NotebookPen, X } from 'lucide-react'
 import { useStore } from '../../store'
 import type { Project } from '../../types'
 import { ProjectEditor } from '../editor/ProjectEditor'
+import { CitadelTaskPanel } from './CitadelTaskPanel'
 
 interface CitadelModeProps {
   onExit: () => void        // hide overlay, timer continues
@@ -234,7 +235,9 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
 
       {/* Right column — project tasks */}
       <div className="w-[340px] flex-shrink-0 border-l border-citadel-text/10 flex flex-col">
-        {/* CitadelTaskPanel will go here */}
+        {project ? (
+          <CitadelTaskPanel project={project} />
+        ) : null}
       </div>
 
       {/* Notes bottom sheet */}
