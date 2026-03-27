@@ -73,7 +73,7 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
   const showScratchpad = tier === 'deep' || tier === 'short'
 
   return (
-    <div className="fixed inset-0 z-50 bg-citadel-bg flex flex-col items-center justify-center animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-citadel-bg flex animate-fade-in">
       {/* Return button — subtle, top left */}
       <button
         onClick={onExit}
@@ -92,6 +92,9 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
           <span className="ml-2 opacity-60">({sessionsCompleted} done)</span>
         )}
       </div>
+
+      {/* Left column — timer */}
+      <div className="flex-1 flex flex-col items-center justify-center relative px-6">
 
       {/* Heading */}
       <div className="text-center mb-12">
@@ -261,6 +264,13 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
           </div>
         </div>
       )}
+
+      </div>{/* end left column */}
+
+      {/* Right column — project tasks */}
+      <div className="w-[340px] flex-shrink-0 border-l border-citadel-text/10 flex flex-col">
+        {/* CitadelTaskPanel will go here */}
+      </div>
     </div>
   )
 }
