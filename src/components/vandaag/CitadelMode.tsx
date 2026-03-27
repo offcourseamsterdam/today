@@ -96,139 +96,146 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
       {/* Left column — timer */}
       <div className="flex-1 flex flex-col items-center justify-center relative px-6">
 
-      {/* Heading */}
-      <div className="text-center mb-12">
-        {tier === 'deep' ? (
-          <>
-            <h1 className="font-serif text-[28px] text-citadel-text tracking-[-0.02em]">
-              {projectTitle || taskTitle}
-            </h1>
-            {intention && (
-              <p className="text-[14px] text-citadel-text/40 mt-2 italic font-serif">
-                {intention}
-              </p>
-            )}
-          </>
-        ) : (
-          <>
-            <h1 className="font-serif text-[24px] text-citadel-text tracking-[-0.02em]">
-              {taskTitle}
-            </h1>
-            {projectTitle && (
-              <p className="text-[13px] text-citadel-text/40 mt-1.5">
-                {projectTitle}
-              </p>
-            )}
-          </>
-        )}
-        <p className="text-[11px] text-citadel-accent/40 uppercase tracking-[0.1em] mt-3">
-          {sessionLabel}
-        </p>
-      </div>
-
-      {/* Large timer circle */}
-      <div className="relative w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] mb-12">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
-          <circle
-            cx="140" cy="140" r={radius}
-            fill="none"
-            stroke="rgba(212, 207, 197, 0.08)"
-            strokeWidth="4"
-          />
-          <circle
-            cx="140" cy="140" r={radius}
-            fill="none"
-            stroke={isBreak ? 'var(--color-citadel-accent)' : 'rgba(212, 207, 197, 0.5)'}
-            strokeWidth="4"
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - progress)}
-            strokeLinecap="round"
-            className="transition-[stroke-dashoffset] duration-1000 ease-linear"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[48px] font-light text-citadel-text tabular-nums tracking-[-0.02em]">
-            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-          </span>
-          <span className="text-[11px] uppercase tracking-[0.1em] text-citadel-text/30 mt-1">
-            {isBreak ? 'Break' : 'Focus'}
-          </span>
+        {/* Heading */}
+        <div className="text-center mb-12">
+          {tier === 'deep' ? (
+            <>
+              <h1 className="font-serif text-[28px] text-citadel-text tracking-[-0.02em]">
+                {projectTitle || taskTitle}
+              </h1>
+              {intention && (
+                <p className="text-[14px] text-citadel-text/40 mt-2 italic font-serif">
+                  {intention}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <h1 className="font-serif text-[24px] text-citadel-text tracking-[-0.02em]">
+                {taskTitle}
+              </h1>
+              {projectTitle && (
+                <p className="text-[13px] text-citadel-text/40 mt-1.5">
+                  {projectTitle}
+                </p>
+              )}
+            </>
+          )}
+          <p className="text-[11px] text-citadel-accent/40 uppercase tracking-[0.1em] mt-3">
+            {sessionLabel}
+          </p>
         </div>
-      </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-3 mb-16">
-        <button
-          onClick={handlePlayPause}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all
-            ${isRunning
-              ? 'bg-citadel-text/10 text-citadel-text/60 hover:bg-citadel-text/15'
-              : 'bg-citadel-text/15 text-citadel-text hover:bg-citadel-text/20'}`}
-        >
-          {isRunning ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-        </button>
-        <button
-          onClick={handleReset}
-          className="w-12 h-12 rounded-full flex items-center justify-center
-            text-citadel-text/20 hover:text-citadel-text/40 hover:bg-citadel-text/5 transition-all"
-        >
-          <RotateCcw size={18} />
-        </button>
-        <button
-          onClick={onEndSession}
-          className="text-[11px] text-citadel-text/20 hover:text-citadel-text/40
-            transition-colors px-3 py-2"
-        >
-          End session
-        </button>
-      </div>
+        {/* Large timer circle */}
+        <div className="relative w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] mb-12">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
+            <circle
+              cx="140" cy="140" r={radius}
+              fill="none"
+              stroke="rgba(212, 207, 197, 0.08)"
+              strokeWidth="4"
+            />
+            <circle
+              cx="140" cy="140" r={radius}
+              fill="none"
+              stroke={isBreak ? 'var(--color-citadel-accent)' : 'rgba(212, 207, 197, 0.5)'}
+              strokeWidth="4"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - progress)}
+              strokeLinecap="round"
+              className="transition-[stroke-dashoffset] duration-1000 ease-linear"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-[48px] font-light text-citadel-text tabular-nums tracking-[-0.02em]">
+              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+            </span>
+            <span className="text-[11px] uppercase tracking-[0.1em] text-citadel-text/30 mt-1">
+              {isBreak ? 'Break' : 'Focus'}
+            </span>
+          </div>
+        </div>
 
-      {/* Scratchpad — deep and short tiers only */}
-      {showScratchpad && (
-        <div className="w-full max-w-[520px] px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <form onSubmit={handleCapture} className="relative flex-1">
-              <input
-                ref={inputRef}
-                type="text"
-                value={thought}
-                onChange={e => setThought(e.target.value)}
-                placeholder="Intrusive thought? Capture it here and let it go..."
-                className="w-full bg-citadel-text/5 border border-citadel-text/10
-                  rounded-[8px] px-4 py-3 text-[13px] text-citadel-text/70
-                  placeholder:text-citadel-text/20 outline-none
-                  focus:border-citadel-accent/30 transition-colors"
-              />
-            </form>
+        {/* Controls */}
+        <div className="flex items-center gap-3 mb-16">
+          <button
+            onClick={handlePlayPause}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all
+              ${isRunning
+                ? 'bg-citadel-text/10 text-citadel-text/60 hover:bg-citadel-text/15'
+                : 'bg-citadel-text/15 text-citadel-text hover:bg-citadel-text/20'}`}
+          >
+            {isRunning ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+          </button>
+          <button
+            onClick={handleReset}
+            className="w-12 h-12 rounded-full flex items-center justify-center
+              text-citadel-text/20 hover:text-citadel-text/40 hover:bg-citadel-text/5 transition-all"
+          >
+            <RotateCcw size={18} />
+          </button>
+          <button
+            onClick={onEndSession}
+            className="text-[11px] text-citadel-text/20 hover:text-citadel-text/40
+              transition-colors px-3 py-2"
+          >
+            End session
+          </button>
+        </div>
 
-            {project && (
-              <button
-                onClick={() => setNotesOpen(o => !o)}
-                className={`flex items-center gap-1.5 px-3 py-[11px] rounded-[8px] border text-[12px] transition-all whitespace-nowrap
-                  ${notesOpen
-                    ? 'border-citadel-text/20 bg-citadel-text/10 text-citadel-text/70'
-                    : 'border-citadel-text/10 text-citadel-text/30 hover:text-citadel-text/60 hover:border-citadel-text/20'
-                  }`}
-              >
-                <NotebookPen size={14} />
-                <span>Notes</span>
-              </button>
+        {/* Scratchpad — deep and short tiers only */}
+        {showScratchpad && (
+          <div className="w-full max-w-[520px] px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <form onSubmit={handleCapture} className="relative flex-1">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={thought}
+                  onChange={e => setThought(e.target.value)}
+                  placeholder="Intrusive thought? Capture it here and let it go..."
+                  className="w-full bg-citadel-text/5 border border-citadel-text/10
+                    rounded-[8px] px-4 py-3 text-[13px] text-citadel-text/70
+                    placeholder:text-citadel-text/20 outline-none
+                    focus:border-citadel-accent/30 transition-colors"
+                />
+              </form>
+
+              {project && (
+                <button
+                  onClick={() => setNotesOpen(o => !o)}
+                  className={`flex items-center gap-1.5 px-3 py-[11px] rounded-[8px] border text-[12px] transition-all whitespace-nowrap
+                    ${notesOpen
+                      ? 'border-citadel-text/20 bg-citadel-text/10 text-citadel-text/70'
+                      : 'border-citadel-text/10 text-citadel-text/30 hover:text-citadel-text/60 hover:border-citadel-text/20'
+                    }`}
+                >
+                  <NotebookPen size={14} />
+                  <span>Notes</span>
+                </button>
+              )}
+            </div>
+
+            {captured.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {captured.slice(-3).map((t, i) => (
+                  <div key={i} className="text-[11px] text-citadel-text/20 flex items-center gap-2">
+                    <span className="w-1 h-1 rounded-full bg-citadel-accent/30" />
+                    {t}
+                    <span className="text-citadel-accent/30 ml-auto">captured</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
+        )}
 
-          {captured.length > 0 && (
-            <div className="mt-3 space-y-1">
-              {captured.slice(-3).map((t, i) => (
-                <div key={i} className="text-[11px] text-citadel-text/20 flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-citadel-accent/30" />
-                  {t}
-                  <span className="text-citadel-accent/30 ml-auto">captured</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      </div>{/* end left column */}
+
+      {/* Right column — project tasks */}
+      <div className="w-[340px] flex-shrink-0 border-l border-citadel-text/10 flex flex-col">
+        {/* CitadelTaskPanel will go here */}
+      </div>
 
       {/* Notes bottom sheet */}
       {project && (
@@ -265,12 +272,6 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
         </div>
       )}
 
-      </div>{/* end left column */}
-
-      {/* Right column — project tasks */}
-      <div className="w-[340px] flex-shrink-0 border-l border-citadel-text/10 flex flex-col">
-        {/* CitadelTaskPanel will go here */}
-      </div>
     </div>
   )
 }
