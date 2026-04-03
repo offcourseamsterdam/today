@@ -131,7 +131,7 @@ export interface VandaagState {
   deleteRecurringMeeting: (id: string) => void
   getTodayRecurringMeetings: () => Meeting[]
   setOpenMeetingId: (id: string | null) => void
-  spawnRecurringOccurrence: (templateId: string) => string
+  spawnRecurringOccurrence: (templateId: string, date?: string) => string
 
   // Meeting session actions
   startMeetingSession: (meetingId: string) => void
