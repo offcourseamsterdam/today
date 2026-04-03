@@ -71,6 +71,7 @@ export interface VandaagState {
   pauseFocusSession: () => void
   resumeFocusSession: () => void
   resetFocusSession: () => void
+  skipFocusPhase: () => void
 
   // Calendar state (non-persisted)
   calendarEvents: CalendarEvent[]
@@ -228,6 +229,12 @@ export interface VandaagState {
   setTomorrowBlockOrder: (order: Array<'deep' | 'short' | 'maintenance'>) => void
   setTomorrowItemOrder: (items: PlanItem[]) => void
   lockInTomorrow: () => void
+  lockInPlan: (target: 'today' | 'tomorrow', payload: {
+    deepProjectId: string; intention?: string; deepMeetingId?: string
+    shortTasks: string[]; shortProjects: string[]; shortMeetingIds: string[]
+    maintenanceTasks: string[]; maintenanceProjects: string[]; maintenanceMeetingIds: string[]
+    blockOrder: Array<'deep' | 'short' | 'maintenance'>; itemOrder: PlanItem[]
+  }) => void
   clearTomorrowPlan: () => void
   loadTomorrowPlanIfReady: () => boolean
   refreshDailyPlan: () => void

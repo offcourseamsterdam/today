@@ -132,5 +132,51 @@ export function makeFocusActions(set: StoreSet, get: StoreGet) {
         : focusSession.workMinutes * 60
       set({ focusSession: { ...focusSession, secondsLeft: duration, isRunning: false } })
     },
+
+    skipFocusPhase: () => {
+      const { focusSession } = get()
+      if (!focusSession) return
+
+      if (!focusSession.isBreak) {
+        // Skipping a work phase — counts as a completed session
+        const newSessionsCompleted = focusSession.sessionsCompleted + 1
+        get().logPomodoroSession(focusSession.taskId, focusSession.tier, focusSession.workMinutes)
+
+        if (focusSession.breakMinutes === 0) {
+          set({
+            focusSession: {
+              ...focusSession,
+              sessionsCompleted: newSessionsCompleted,
+              isBreak: false,
+              secondsLeft: focusSession.workMinutes * 60,
+              isRunning: false,
+              lastTickAt: new Date().toISOString(),
+            },
+          })
+        } else {
+          set({
+            focusSession: {
+              ...focusSession,
+              sessionsCompleted: newSessionsCompleted,
+              isBreak: true,
+              secondsLeft: focusSession.breakMinutes * 60,
+              isRunning: false,
+              lastTickAt: new Date().toISOString(),
+            },
+          })
+        }
+      } else {
+        // Skipping a break — just move to next work phase
+        set({
+          focusSession: {
+            ...focusSession,
+            isBreak: false,
+            secondsLeft: focusSession.workMinutes * 60,
+            isRunning: false,
+            lastTickAt: new Date().toISOString(),
+          },
+        })
+      }
+    },
   }
 }
