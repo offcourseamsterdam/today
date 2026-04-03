@@ -143,17 +143,23 @@ export function makeFocusActions(set: StoreSet, get: StoreGet) {
         get().logPomodoroSession(focusSession.taskId, focusSession.tier, focusSession.workMinutes)
 
         if (focusSession.breakMinutes === 0) {
-          set({
-            focusSession: {
-              ...focusSession,
-              sessionsCompleted: newSessionsCompleted,
-              isBreak: false,
-              secondsLeft: focusSession.workMinutes * 60,
-              isRunning: false,
-              lastTickAt: new Date().toISOString(),
-            },
-          })
+          if (newSessionsCompleted >= focusSession.targetSessions) {
+            set({ focusSession: null, showCitadel: false })
+          } else {
+            // Phase transitions always pause — user confirms start of next phase
+            set({
+              focusSession: {
+                ...focusSession,
+                sessionsCompleted: newSessionsCompleted,
+                isBreak: false,
+                secondsLeft: focusSession.workMinutes * 60,
+                isRunning: false,
+                lastTickAt: new Date().toISOString(),
+              },
+            })
+          }
         } else {
+          // Phase transitions always pause — user confirms start of next phase
           set({
             focusSession: {
               ...focusSession,
@@ -167,6 +173,7 @@ export function makeFocusActions(set: StoreSet, get: StoreGet) {
         }
       } else {
         // Skipping a break — just move to next work phase
+        // Phase transitions always pause — user confirms start of next phase
         set({
           focusSession: {
             ...focusSession,
