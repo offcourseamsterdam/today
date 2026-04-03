@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Play, Pause, RotateCcw, ArrowLeft, NotebookPen, X } from 'lucide-react'
+import { Play, Pause, RotateCcw, SkipForward, ArrowLeft, NotebookPen, X } from 'lucide-react'
 import { useStore } from '../../store'
 import type { Project } from '../../types'
 import { ProjectEditor } from '../editor/ProjectEditor'
@@ -15,6 +15,7 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
   const pauseFocusSession = useStore(s => s.pauseFocusSession)
   const resumeFocusSession = useStore(s => s.resumeFocusSession)
   const resetFocusSession = useStore(s => s.resetFocusSession)
+  const skipFocusPhase = useStore(s => s.skipFocusPhase)
   const projects = useStore(s => s.projects)
   const updateProject = useStore(s => s.updateProject)
   const addOrphanTask = useStore(s => s.addOrphanTask)
@@ -44,6 +45,10 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
 
   function handleReset() {
     resetFocusSession()
+  }
+
+  function handleSkip() {
+    skipFocusPhase()
   }
 
   // Scratchpad — only shown for deep/short tiers
@@ -167,6 +172,14 @@ export function CitadelMode({ onExit, onEndSession }: CitadelModeProps) {
                 : 'bg-citadel-text/15 text-citadel-text hover:bg-citadel-text/20'}`}
           >
             {isRunning ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+          </button>
+          <button
+            onClick={handleSkip}
+            title={isBreak ? 'Skip break' : 'Skip to break'}
+            className="w-9 h-9 flex items-center justify-center rounded-full
+              text-citadel-text/20 hover:text-citadel-text/40 transition-colors"
+          >
+            <SkipForward size={14} />
           </button>
           <button
             onClick={handleReset}
