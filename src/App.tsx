@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { format } from 'date-fns'
-import { Cloud, CloudOff, Loader2, CloudAlert, Calendar } from 'lucide-react'
+import { Cloud, CloudOff, Loader2, CloudAlert, Calendar, ClipboardCheck } from 'lucide-react'
 import { SharedProjectPage } from './components/shared/SharedProjectPage'
 import { EnsoLogo } from './components/ui/EnsoLogo'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
@@ -22,9 +22,9 @@ import { useFirestoreSync } from './hooks/useFirestoreSync'
 const PhilosophyPage = lazy(() => import('./components/philosophy/PhilosophyPage').then(m => ({ default: m.PhilosophyPage })))
 const PlanningModal = lazy(() => import('./components/planning/PlanningModal').then(m => ({ default: m.PlanningModal })))
 const LiveMeetingView = lazy(() => import('./components/meetings/LiveMeetingView').then(m => ({ default: m.LiveMeetingView })))
-const MeetingsDrawer = lazy(() => import('./components/meetings/MeetingsDrawer').then(m => ({ default: m.MeetingsDrawer })))
 const MeetingsPage = lazy(() => import('./components/meetings/MeetingsPage').then(m => ({ default: m.MeetingsPage })))
 const RecurringTasksDrawer = lazy(() => import('./components/ui/RecurringTasksDrawer').then(m => ({ default: m.RecurringTasksDrawer })))
+const WeeklyReviewPage = lazy(() => import('./components/review/WeeklyReviewPage').then(m => ({ default: m.WeeklyReviewPage })))
 
 function App() {
   // Shared project page — standalone route, no auth/store needed
@@ -55,7 +55,6 @@ function App() {
   const [vandaagCollapsed, setVandaagCollapsed] = useState(false)
   const [kanbanCollapsed, setKanbanCollapsed] = useState(false)
   const [showTomorrowPeek, setShowTomorrowPeek] = useState(false)
-  const [showMeetingsDrawer, setShowMeetingsDrawer] = useState(false)
   const [showPlanTodayModal, setShowPlanTodayModal] = useState(false)
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [showAddProjectModal, setShowAddProjectModal] = useState(false)
@@ -183,6 +182,16 @@ function App() {
           <Calendar size={13} />
           Meetings
         </button>
+        <button
+          onClick={() => setActiveView('review')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-medium tracking-[0.02em] transition-colors
+            ${activeView === 'review'
+              ? 'bg-charcoal text-[#FAF9F7]'
+              : 'text-stone/60 hover:text-charcoal hover:bg-border-light'}`}
+        >
+          <ClipboardCheck size={14} />
+          Review
+        </button>
       </nav>
 
       {/* Tomorrow peek — slide-in drawer from the right */}
@@ -213,7 +222,6 @@ function App() {
 
       {/* Smart FAB */}
       <SmartFab
-        onOpenMeetings={() => setShowMeetingsDrawer(true)}
         onAddTask={() => setShowAddTaskModal(true)}
         onAddProject={() => setShowAddProjectModal(true)}
         onOpenRecurringTasks={() => setShowRecurringDrawer(true)}
@@ -227,7 +235,6 @@ function App() {
       />
       <Suspense fallback={null}>
         {showRecurringDrawer && <RecurringTasksDrawer open onClose={() => setShowRecurringDrawer(false)} />}
-        {showMeetingsDrawer && <MeetingsDrawer open onClose={() => setShowMeetingsDrawer(false)} />}
         {showPlanTodayModal && <PlanningModal day="today" onClose={() => setShowPlanTodayModal(false)} />}
       </Suspense>
 
@@ -252,10 +259,12 @@ function App() {
           <PlanningMode onExit={() => setActiveView('vandaag')} />
         ) : activeView === 'meetings' ? (
           <Suspense fallback={null}><MeetingsPage /></Suspense>
+        ) : activeView === 'review' ? (
+          <Suspense fallback={null}><WeeklyReviewPage /></Suspense>
         ) : (
           <>
             <VandaagView
-              onOpenMeetings={() => setShowMeetingsDrawer(true)}
+              onOpenMeetings={() => setActiveView('meetings')}
               onEnterCitadel={(ctx) => {
                 if (ctx) {
                   startFocusSession(ctx)

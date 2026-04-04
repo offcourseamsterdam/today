@@ -22,7 +22,7 @@ export interface RecentMeetingSummaryData {
   notesHash: string
 }
 
-export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy' | 'meetings'
+export type ActiveView = 'vandaag' | 'kanban' | 'planning' | 'philosophy' | 'meetings' | 'review'
 
 export interface VandaagState {
   // Data
