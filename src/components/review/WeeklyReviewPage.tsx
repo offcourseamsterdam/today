@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import {
@@ -126,7 +126,7 @@ export function WeeklyReviewPage() {
     setFinished(true)
   }, [])
 
-  const todayFormatted = format(new Date(), 'EEEE d MMMM yyyy', { locale: nl })
+  const todayFormatted = useMemo(() => format(new Date(), 'EEEE d MMMM yyyy', { locale: nl }), [])
 
   return (
     <div className="max-w-[900px] mx-auto px-4 sm:px-6 pb-12">
@@ -237,9 +237,7 @@ export function WeeklyReviewPage() {
               {/* Section header */}
               <button
                 type="button"
-                onClick={() =>
-                  setActiveSection(isOpen ? activeSection : section.id)
-                }
+                onClick={() => setActiveSection(section.id)}
                 className="w-full flex items-center gap-2.5 px-5 py-3.5 cursor-pointer"
               >
                 {isOpen ? (
@@ -266,45 +264,54 @@ export function WeeklyReviewPage() {
               </button>
 
               {/* Section content */}
-              {isOpen && (
-                <div className="px-5 pb-5 border-t border-border/30">
-                  <div className="pt-4">
-                    {section.id === 'inbox' && (
-                      <InboxSection onStats={handleInboxStats} />
-                    )}
-                    {section.id === 'projects' && (
-                      <ProjectsSection
-                        onTaskCompleted={handleTaskCompleted}
-                        onTaskDeleted={handleTaskDeleted}
-                        onProjectMoved={handleProjectMoved}
-                      />
-                    )}
-                    {section.id === 'recurring' && (
-                      <RecurringSection onDeactivated={handleDeactivated} />
-                    )}
-                    {section.id === 'summary' && (
-                      <SummarySection
-                        stats={stats}
-                        onFinish={handleFinish}
-                      />
+              <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+              }`}>
+                <div className="overflow-hidden">
+                  <div className="px-5 pb-5 border-t border-border/30">
+                    <div className="pt-4">
+                      {section.id === 'inbox' && (
+                        <InboxSection
+                          onStats={handleInboxStats}
+                          onAllProcessed={() => {
+                            setTimeout(() => markSectionDone('inbox'), 800)
+                          }}
+                        />
+                      )}
+                      {section.id === 'projects' && (
+                        <ProjectsSection
+                          onTaskCompleted={handleTaskCompleted}
+                          onTaskDeleted={handleTaskDeleted}
+                          onProjectMoved={handleProjectMoved}
+                        />
+                      )}
+                      {section.id === 'recurring' && (
+                        <RecurringSection onDeactivated={handleDeactivated} />
+                      )}
+                      {section.id === 'summary' && (
+                        <SummarySection
+                          stats={stats}
+                          onFinish={handleFinish}
+                        />
+                      )}
+                    </div>
+
+                    {/* "Sectie afvinken" button (not for summary — it has its own finish button) */}
+                    {section.id !== 'summary' && !done && (
+                      <div className="mt-4 pt-3 border-t border-border/20">
+                        <button
+                          type="button"
+                          onClick={() => markSectionDone(section.id)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition-colors cursor-pointer"
+                        >
+                          <Check size={14} />
+                          Sectie afvinken
+                        </button>
+                      </div>
                     )}
                   </div>
-
-                  {/* "Sectie afvinken" button (not for summary — it has its own finish button) */}
-                  {section.id !== 'summary' && !done && (
-                    <div className="mt-4 pt-3 border-t border-border/20">
-                      <button
-                        type="button"
-                        onClick={() => markSectionDone(section.id)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition-colors cursor-pointer"
-                      >
-                        <Check size={14} />
-                        Sectie afvinken
-                      </button>
-                    </div>
-                  )}
                 </div>
-              )}
+              </div>
             </div>
           )
         })}
