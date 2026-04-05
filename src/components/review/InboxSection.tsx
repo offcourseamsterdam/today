@@ -112,6 +112,9 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
     }
   }, [currentId, currentTask, markProcessed])
 
+  // Waiting for effect to process externally-deleted task
+  if (!currentTask) return null
+
   return (
     <div className="flex flex-col items-center gap-5 py-6">
       {/* Counter */}
