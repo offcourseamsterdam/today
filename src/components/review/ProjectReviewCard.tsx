@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { ChevronRight, ChevronDown, Clock, Trash2, CheckCircle2, GripVertical, Plus } from 'lucide-react'
+import { ChevronRight, ChevronDown, Clock, Trash2, CheckCircle2, GripVertical, Plus, AlertTriangle } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Project, ProjectStatus, Task } from '../../types'
 import { useStore } from '../../store'
 import { daysSince, getWaitingLabel, getWaitingStatus } from '../../lib/utils'
+import { CategoryBadge } from '../ui/CategoryBadge'
 
 interface ProjectReviewCardProps {
   project: Project
@@ -26,6 +27,20 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
   waiting: 'Waiting',
   backlog: 'Backlog',
   done: 'Done',
+}
+
+function getDescriptionSnippet(bodyContent: string, maxLen = 120): string | null {
+  if (!bodyContent) return null
+  try {
+    const blocks = JSON.parse(bodyContent)
+    for (const block of blocks) {
+      if (block.content && Array.isArray(block.content)) {
+        const text = block.content.map((c: { text?: string }) => c.text || '').join('').trim()
+        if (text) return text.length > maxLen ? text.slice(0, maxLen) + '...' : text
+      }
+    }
+  } catch { return null }
+  return null
 }
 
 function SortableTaskRow({
@@ -85,6 +100,14 @@ export default function ProjectReviewCard({
   const openTasks = project.tasks.filter(t => t.status !== 'done' && t.status !== 'dropped')
   const hasWaiting = (project.waitingOn?.length ?? 0) > 0
 
+  const lastActivity = project.daysWorkedLog.length > 0
+    ? project.daysWorkedLog[project.daysWorkedLog.length - 1]
+    : project.createdAt
+  const daysSinceActivity = daysSince(lastActivity)
+  const isStale = daysSinceActivity > 14
+
+  const snippet = getDescriptionSnippet(project.bodyContent)
+
   function toggleTask(taskId: string) {
     const task = project.tasks.find(t => t.id === taskId)
     if (!task) return
@@ -137,7 +160,7 @@ export default function ProjectReviewCard({
   }
 
   return (
-    <div className="border border-border rounded-lg bg-white">
+    <div className={`border rounded-lg ${isStale ? 'border-l-2 border-l-amber-400 bg-amber-50/30' : 'border-border bg-white'}`}>
       <button
         onClick={() => setExpanded(prev => !prev)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-canvas transition-colors rounded-lg"
@@ -146,103 +169,115 @@ export default function ProjectReviewCard({
           ? <ChevronDown size={16} className="text-stone shrink-0" />
           : <ChevronRight size={16} className="text-stone shrink-0" />
         }
+        {isStale && <AlertTriangle size={14} className="text-amber-500 shrink-0" />}
         <span className={`text-[11px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_BADGE[project.status]}`}>
           {STATUS_LABEL[project.status]}
         </span>
+        <CategoryBadge category={project.category} />
         <span className="text-[14px] font-medium text-charcoal truncate">
           {project.title}
         </span>
         <span className="ml-auto flex items-center gap-2 shrink-0">
           {hasWaiting && <Clock size={14} className="text-amber-500" />}
           <span className="text-[12px] text-stone">{openTasks.length} open</span>
+          <span className={`text-[11px] ${daysSinceActivity > 14 ? 'text-amber-500' : 'text-stone/40'}`}>
+            {daysSinceActivity}d
+          </span>
         </span>
       </button>
 
-      {expanded && (
-        <div className="px-4 pb-4 pt-1 space-y-4 border-t border-border-light">
-          {/* Add task at top */}
-          <form onSubmit={handleAddTask} className="flex items-center gap-2 mt-2">
-            <Plus size={14} className="text-stone/30 shrink-0" />
-            <input
-              type="text"
-              value={newTask}
-              onChange={e => setNewTask(e.target.value)}
-              placeholder={openTasks.length === 0 ? 'Wat is de eerstvolgende stap?' : 'Taak toevoegen...'}
-              className={`flex-1 text-[13px] px-2 py-1.5 rounded-md border border-border outline-none focus:border-stone/40 transition-colors ${
-                openTasks.length === 0 ? 'bg-amber-50 border-amber-200' : 'bg-white'
-              }`}
-            />
-          </form>
-
-          {/* Sortable tasks */}
-          {project.tasks.length > 0 && (
-            <div>
-              <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
-                Taken
-              </h4>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={project.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                  {project.tasks.map(task => (
-                    <SortableTaskRow
-                      key={task.id}
-                      task={task}
-                      onToggle={() => toggleTask(task.id)}
-                      onDelete={() => deleteTask(task.id)}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </div>
-          )}
-
-          {/* Waiting-on list */}
-          {hasWaiting && (
-            <div className="space-y-1">
-              <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
-                Wachten op
-              </h4>
-              {project.waitingOn!.map(w => {
-                const days = daysSince(w.since)
-                const status = getWaitingStatus(days)
-                return (
-                  <div key={w.person} className="flex items-center gap-2 py-1">
-                    <span className="text-[13px] text-charcoal">{w.person}</span>
-                    <span className={`text-[11px] ${status === 'red' ? 'text-red-600' : status === 'amber' ? 'text-amber-600' : 'text-stone'}`}>
-                      {getWaitingLabel(days)}
-                    </span>
-                    <button
-                      onClick={() => resolveWaiting(w.person)}
-                      className="ml-auto text-[12px] text-green-600 hover:text-green-700 font-medium transition-colors"
-                    >
-                      Opgelost
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Move buttons */}
-          <div className="flex gap-2">
-            {project.status !== 'backlog' && (
-              <button
-                onClick={() => handleMove('backlog')}
-                className="text-[12px] px-3 py-1.5 rounded-md border border-border text-stone hover:bg-canvas transition-colors"
-              >
-                &rarr; Backlog
-              </button>
+      <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4 pt-1 space-y-4 border-t border-border-light">
+            {/* Description snippet */}
+            {snippet && (
+              <p className="text-[12px] text-stone/60 italic line-clamp-2 mb-3">{snippet}</p>
             )}
-            {project.status !== 'done' && (
-              <button
-                onClick={() => handleMove('done')}
-                className="text-[12px] px-3 py-1.5 rounded-md border border-green-200 text-green-700 hover:bg-green-50 transition-colors"
-              >
-                &rarr; Done
-              </button>
+
+            {/* Add task at top */}
+            <form onSubmit={handleAddTask} className="flex items-center gap-2 mt-2">
+              <Plus size={14} className="text-stone/30 shrink-0" />
+              <input
+                type="text"
+                value={newTask}
+                onChange={e => setNewTask(e.target.value)}
+                placeholder={openTasks.length === 0 ? 'Wat is de eerstvolgende stap?' : 'Taak toevoegen...'}
+                className={`flex-1 text-[13px] px-2 py-1.5 rounded-md border border-border outline-none focus:border-stone/40 transition-colors ${
+                  openTasks.length === 0 ? 'bg-amber-50 border-amber-200' : 'bg-white'
+                }`}
+              />
+            </form>
+
+            {/* Sortable tasks */}
+            {project.tasks.length > 0 && (
+              <div>
+                <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
+                  Taken
+                </h4>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={project.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    {project.tasks.map(task => (
+                      <SortableTaskRow
+                        key={task.id}
+                        task={task}
+                        onToggle={() => toggleTask(task.id)}
+                        onDelete={() => deleteTask(task.id)}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
             )}
+
+            {/* Waiting-on list */}
+            {hasWaiting && (
+              <div className="space-y-1">
+                <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
+                  Wachten op
+                </h4>
+                {project.waitingOn!.map(w => {
+                  const days = daysSince(w.since)
+                  const status = getWaitingStatus(days)
+                  return (
+                    <div key={w.person} className="flex items-center gap-2 py-1">
+                      <span className="text-[13px] text-charcoal">{w.person}</span>
+                      <span className={`text-[11px] ${status === 'red' ? 'text-red-600' : status === 'amber' ? 'text-amber-600' : 'text-stone'}`}>
+                        {getWaitingLabel(days)}
+                      </span>
+                      <button
+                        onClick={() => resolveWaiting(w.person)}
+                        className="ml-auto text-[12px] text-green-600 hover:text-green-700 font-medium transition-colors"
+                      >
+                        Opgelost
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Move buttons */}
+            <div className="flex gap-2">
+              {project.status !== 'backlog' && (
+                <button
+                  onClick={() => handleMove('backlog')}
+                  className="text-[12px] px-3 py-1.5 rounded-md border border-border text-stone hover:bg-canvas transition-colors"
+                >
+                  &rarr; Backlog
+                </button>
+              )}
+              {project.status !== 'done' && (
+                <button
+                  onClick={() => handleMove('done')}
+                  className="text-[12px] px-3 py-1.5 rounded-md border border-green-200 text-green-700 hover:bg-green-50 transition-colors"
+                >
+                  &rarr; Done
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

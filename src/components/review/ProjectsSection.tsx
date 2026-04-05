@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useStore } from '../../store'
 import type { Project, ProjectStatus } from '../../types'
+import { daysSince } from '../../lib/utils'
 import ProjectReviewCard from './ProjectReviewCard'
 
 interface ProjectsSectionProps {
@@ -32,7 +33,12 @@ export default function ProjectsSection({
     }
     return STATUS_ORDER.filter((s) => map.has(s.key)).map((s) => ({
       ...s,
-      projects: map.get(s.key)!,
+      items: map.get(s.key)!
+        .sort((a, b) => {
+          const aDays = a.daysWorkedLog.length > 0 ? daysSince(a.daysWorkedLog[a.daysWorkedLog.length - 1]) : 999
+          const bDays = b.daysWorkedLog.length > 0 ? daysSince(b.daysWorkedLog[b.daysWorkedLog.length - 1]) : 999
+          return bDays - aDays  // stale first
+        }),
     }))
   }, [projects])
 
@@ -46,10 +52,10 @@ export default function ProjectsSection({
         <div key={group.key}>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-stone)] mb-2">
             {group.label}
-            <span className="ml-1.5 text-[var(--color-stone)]/60">{group.projects.length}</span>
+            <span className="ml-1.5 text-[var(--color-stone)]/60">{group.items.length}</span>
           </h3>
           <div className="space-y-2">
-            {group.projects.map((project) => (
+            {group.items.map((project) => (
               <ProjectReviewCard
                 key={project.id}
                 project={project}
