@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid'
-import type { DailyPlan, Task, PlanTier, PomodoroLogEntry } from '../types'
+import type { DailyPlan, Task, PlanTier, PomodoroLogEntry, PlanItem } from '../types'
 import type { StoreSet, StoreGet } from './types'
 import { ensureTodayPlan, ensureTomorrowPlan, getTodayString, makePlanActions } from './helpers'
 
@@ -22,6 +22,7 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     clearDeepBlock: todayActions.clearDeepBlock,
     completeDeepBlock: todayActions.completeDeepBlock,
     setBlockOrder: todayActions.setBlockOrder,
+    setItemOrder: todayActions.setItemOrder,
     addShortTask: todayActions.addShortTask,
     removeShortTask: todayActions.removeShortTask,
     addMaintenanceTask: todayActions.addMaintenanceTask,
@@ -103,11 +104,48 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
     removeTomorrowShortMeeting: tomorrowActions.removeShortMeeting,
     addTomorrowMaintenanceMeeting: tomorrowActions.addMaintenanceMeeting,
     removeTomorrowMaintenanceMeeting: tomorrowActions.removeMaintenanceMeeting,
+    setTomorrowBlockOrder: tomorrowActions.setBlockOrder,
+    setTomorrowItemOrder: tomorrowActions.setItemOrder,
 
     lockInTomorrow: () => {
       const state = get()
       const plan = ensureTomorrowPlan(state)
       set({ tomorrowPlan: { ...plan, isComplete: true, completedAt: new Date().toISOString() } })
+    },
+
+    lockInPlan: (target: 'today' | 'tomorrow', payload: {
+      deepProjectId: string
+      intention?: string
+      deepMeetingId?: string
+      shortTasks: string[]
+      shortProjects: string[]
+      shortMeetingIds: string[]
+      maintenanceTasks: string[]
+      maintenanceProjects: string[]
+      maintenanceMeetingIds: string[]
+      blockOrder: Array<'deep' | 'short' | 'maintenance'>
+      itemOrder: PlanItem[]
+    }) => {
+      const state = get()
+      const plan = target === 'today' ? ensureTodayPlan(state) : ensureTomorrowPlan(state)
+      const newPlan: DailyPlan = {
+        ...plan,
+        deepBlock: { projectId: payload.deepProjectId, intention: payload.intention },
+        deepMeetingId: payload.deepMeetingId,
+        shortTasks: payload.shortTasks,
+        shortProjects: payload.shortProjects,
+        shortMeetingIds: payload.shortMeetingIds,
+        maintenanceTasks: payload.maintenanceTasks,
+        maintenanceProjects: payload.maintenanceProjects,
+        maintenanceMeetingIds: payload.maintenanceMeetingIds,
+        blockOrder: payload.blockOrder,
+        itemOrder: payload.itemOrder,
+      }
+      if (target === 'today') {
+        set({ dailyPlan: newPlan })
+      } else {
+        set({ tomorrowPlan: { ...newPlan, isComplete: true, completedAt: new Date().toISOString() } })
+      }
     },
 
     clearTomorrowPlan: () => {

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Plus, Calendar, CheckSquare, FolderPlus, BookOpen, Cloud, LogOut, RotateCcw } from 'lucide-react'
+// Calendar import kept for Plan today/tomorrow actions
 import { useStore } from '../../store'
 
 interface SmartFabProps {
-  onOpenMeetings: () => void
   onAddTask: () => void
   onAddProject: () => void
   onOpenRecurringTasks: () => void
@@ -17,7 +17,6 @@ interface SmartFabProps {
 }
 
 export function SmartFab({
-  onOpenMeetings,
   onAddTask,
   onAddProject,
   onOpenRecurringTasks,
@@ -80,10 +79,22 @@ export function SmartFab({
     }
   }
 
+  function handleFabClick() {
+    if (focusLabel) {
+      showCitadelOverlay()
+    } else if (label === 'Plan today') {
+      onPlanToday()
+    } else if (label === 'Plan tomorrow?') {
+      onPlanTomorrow()
+    } else {
+      // meetingLabel active or no label: always open the menu
+      setOpen(o => !o)
+    }
+  }
+
   const actions = [
     { icon: <Calendar size={14} />, label: 'Plan today', action: onPlanToday },
     { icon: <Calendar size={14} />, label: 'Plan tomorrow', action: onPlanTomorrow },
-    { icon: <Calendar size={14} />, label: 'Meetings', action: onOpenMeetings },
     { icon: <CheckSquare size={14} />, label: 'New task', action: onAddTask },
     { icon: <RotateCcw size={14} />, label: 'Recurring tasks', action: onOpenRecurringTasks },
     { icon: <FolderPlus size={14} />, label: 'New project', action: onAddProject },
@@ -106,6 +117,8 @@ export function SmartFab({
       <div
         className="fixed right-6 z-50 flex flex-col items-end gap-2"
         style={{ bottom: 'calc(1.5rem + var(--safe-area-bottom, 0px))' }}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
       >
         {/* Action stack */}
         {open && (
@@ -159,7 +172,7 @@ export function SmartFab({
         <div>
           {/* Icon button */}
           <button
-            onClick={label && !meetingLabel ? () => setOpen(o => !o) : handlePrimaryClick}
+            onClick={handleFabClick}
             className="flex items-center justify-center w-12 h-12 rounded-full
               bg-charcoal text-canvas shadow-lg
               hover:bg-charcoal/80 transition-all duration-200"

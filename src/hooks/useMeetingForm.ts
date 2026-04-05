@@ -97,7 +97,7 @@ export function useMeetingForm(
       time,
       durationMinutes,
       location: location.trim() || undefined,
-      agendaItems: agendaItems.length > 0 ? agendaItems : undefined,
+      agendaItems: isRecurring ? undefined : (agendaItems.length > 0 ? agendaItems : undefined),
       context: context.trim() || undefined,
       projectId: projectId || undefined,
       isRecurring,
@@ -116,5 +116,7 @@ export function useMeetingForm(
     setAgendaItems, setContext, setProjectId, setIsRecurring, setRuleState, setLanguage,
   }
 
-  return { form, actions, buildMeetingData, isValid: title.trim().length > 0 }
+  const isValid = title.trim().length > 0 && (!isRecurring || projectId.length > 0)
+
+  return { form, actions, buildMeetingData, isValid }
 }

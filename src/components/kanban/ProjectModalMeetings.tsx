@@ -1,22 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
-import { format } from 'date-fns'
-import { ChevronDown, Calendar, Sparkles, Loader2, RotateCcw, ExternalLink } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
+import { nl } from 'date-fns/locale'
+import { ChevronDown, Calendar, Sparkles, Loader2, RotateCcw, Plus } from 'lucide-react'
 import { useStore } from '../../store'
 import { OUTCOME_CONFIG } from '../meetings/MeetingNotesDisplay'
-import { isDueToday, describeRule } from '../../lib/recurrence'
-import type { Meeting, RecurrenceRule } from '../../types'
-
-function getNextOccurrences(rule: RecurrenceRule, n: number, from: Date = new Date()): Date[] {
-  const results: Date[] = []
-  const d = new Date(from)
-  let tries = 0
-  while (results.length < n && tries < 365) {
-    if (isDueToday(rule, d)) results.push(new Date(d))
-    d.setDate(d.getDate() + 1)
-    tries++
-  }
-  return results
-}
+import { describeRule, getNextOccurrences, meetingEndMinutes } from '../../lib/recurrence'
+import { MeetingInlineCard } from '../meetings/MeetingInlineCard'
+import type { Meeting } from '../../types'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -173,28 +163,37 @@ function KeyDecisionsCard({ projectId, projectTitle, linkedMeetingsWithNotes }: 
   )
 }
 
-// ── B. Upcoming meetings row ──────────────────────────────────────────────────
+// ── B. Upcoming meetings — inline card wrappers ─────────────────────────────
 
-function UpcomingMeetingRow({ meeting }: { meeting: Meeting }) {
-  const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
+function UpcomingMeetingInlineCard({ meeting, defaultExpanded }: { meeting: Meeting; defaultExpanded?: boolean }) {
+  const startMeetingSession = useStore(s => s.startMeetingSession)
+  const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
+  const deleteMeeting = useStore(s => s.deleteMeeting)
+
   return (
-    <button
-      onClick={() => setOpenMeetingId(meeting.id)}
-      className="w-full flex items-center gap-3 py-1.5 text-left hover:bg-stone/5 rounded transition-colors group"
-    >
-      <span className="text-[11px] text-stone/40 flex-shrink-0 w-[42px]">{meeting.time}</span>
-      <span className="text-[11px] text-stone/35 flex-shrink-0 w-[72px]">{meeting.date}</span>
-      <span className="text-[12px] text-charcoal flex-1 min-w-0 truncate">{meeting.title}</span>
-      <ExternalLink size={10} className="text-stone/25 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </button>
+    <div className="mb-1.5">
+      <MeetingInlineCard
+        meeting={meeting}
+        defaultExpanded={defaultExpanded}
+        compact
+        onBeginMeeting={() => {
+          startMeetingSession(meeting.id)
+          setLiveMeetingOpen(true)
+        }}
+        onDelete={() => deleteMeeting(meeting.id)}
+      />
+    </div>
   )
 }
 
 function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
-  const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
   const meetings = useStore(s => s.meetings)
   const addMeeting = useStore(s => s.addMeeting)
   const spawnRecurringOccurrence = useStore(s => s.spawnRecurringOccurrence)
+  const startMeetingSession = useStore(s => s.startMeetingSession)
+  const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
+  const deleteMeeting = useStore(s => s.deleteMeeting)
+  const deleteRecurringMeeting = useStore(s => s.deleteRecurringMeeting)
   const rule = meeting.recurrenceRule
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
@@ -203,8 +202,7 @@ function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
     // If today's occurrence has already ended (start + duration < now), skip to tomorrow
     let from = new Date()
     if (meeting.time) {
-      const [h, m] = meeting.time.split(':').map(Number)
-      const endMinutes = h * 60 + m + (meeting.durationMinutes ?? 0)
+      const endMinutes = meetingEndMinutes(meeting.time, meeting.durationMinutes)
       const nowMinutes = from.getHours() * 60 + from.getMinutes()
       if (nowMinutes >= endMinutes) {
         from = new Date(from)
@@ -228,19 +226,6 @@ function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleOccurrenceClick(date: Date) {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    // Use the pre-spawned concrete instance (or spawn on click as fallback)
-    const existing = meetings.find(
-      m => !m.isRecurring && m.date === dateStr && m.recurringMeetingId === meeting.id
-    )
-    if (existing) { setOpenMeetingId(existing.id); return }
-    const id = dateStr === todayStr
-      ? spawnRecurringOccurrence(meeting.id)
-      : findOrCreateMeetingInstance(meeting, date, meetings, addMeeting)
-    setOpenMeetingId(id)
-  }
-
   // For each displayed date, find the concrete instance (if already spawned) to show its data
   function getInstanceForDate(date: Date): Meeting | undefined {
     const dateStr = format(date, 'yyyy-MM-dd')
@@ -255,35 +240,44 @@ function RecurringUpcomingBlock({ meeting }: { meeting: Meeting }) {
         {rule && <span className="text-[10px] text-stone/30 italic">· {describeRule(rule)}</span>}
       </div>
 
-      <div className="pl-3 border-l border-border/40">
+      <div className="pl-3 border-l border-border/40 space-y-1.5">
         {occurrences.map((date, i) => {
           const instance = getInstanceForDate(date)
-          const agendaCount = (instance?.agendaItems ?? meeting.agendaItems ?? []).length
+          const displayMeeting = instance ?? meeting
           return (
-            <button
+            <MeetingInlineCard
               key={i}
-              onClick={() => handleOccurrenceClick(date)}
-              className="w-full flex items-center gap-3 py-1.5 text-left hover:bg-stone/5 rounded transition-colors group"
-            >
-              <span className="text-[11px] text-stone/40 flex-shrink-0 w-[42px]">{meeting.time}</span>
-              <span className="text-[12px] text-charcoal/70 group-hover:text-charcoal transition-colors">{format(date, 'EEE d MMM')}</span>
-              {agendaCount > 0 && (
-                <span className="text-[10px] text-stone/30 flex-shrink-0 ml-auto">{agendaCount} items</span>
-              )}
-            </button>
+              meeting={displayMeeting}
+              compact
+              onBeginMeeting={() => {
+                // Ensure concrete instance exists, then begin
+                const dateStr = format(date, 'yyyy-MM-dd')
+                let id = instance?.id
+                if (!id) {
+                  id = dateStr === todayStr
+                    ? spawnRecurringOccurrence(meeting.id)
+                    : findOrCreateMeetingInstance(meeting, date, meetings, addMeeting)
+                }
+                startMeetingSession(id)
+                setLiveMeetingOpen(true)
+              }}
+              onDelete={() => {
+                if (instance) deleteMeeting(instance.id)
+              }}
+            />
           )
         })}
       </div>
 
-      <p className="mt-1.5 pl-3 text-[10px] text-stone/35">
-        Each occurrence has its own agenda ·{' '}
-        <button
-          onClick={() => setOpenMeetingId(meeting.id)}
-          className="underline underline-offset-2 hover:text-stone/60 transition-colors"
-        >
-          edit schedule
-        </button>
-      </p>
+      {/* Template card — edit the recurring schedule */}
+      <div className="mt-2 pl-3">
+        <MeetingInlineCard
+          meeting={meeting}
+          isTemplate
+          compact
+          onDelete={() => deleteRecurringMeeting(meeting.id)}
+        />
+      </div>
     </div>
   )
 }
@@ -393,14 +387,21 @@ function PastMeetingRow({ meeting }: { meeting: Meeting }) {
   const outcome = notes?.outcome ? OUTCOME_CONFIG[notes.outcome] : null
   const dateLabel = meeting.date ?? notes?.generatedAt.slice(0, 10) ?? ''
 
-  // No notes — just a dim row, not clickable
+  const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
+  const formattedDate = dateLabel ? format(parseISO(dateLabel), 'EEEE d MMM', { locale: nl }) : ''
+
+  // No notes — clickable row to open meeting for editing/rescheduling
   if (!notes) {
     return (
-      <div className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
-        <span className="text-[11px] text-stone/25 flex-shrink-0 w-[72px]">{dateLabel}</span>
+      <button
+        onClick={() => setOpenMeetingId(meeting.id)}
+        className="w-full flex items-center gap-3 py-2 border-b border-border/30 last:border-0
+          text-left hover:bg-stone/5 rounded transition-colors"
+      >
+        <span className="text-[11px] text-stone/25 flex-shrink-0 w-[90px]">{formattedDate}</span>
         <span className="text-[12px] text-stone/30 flex-1 min-w-0 truncate">{meeting.title}</span>
         <span className="text-[10px] text-stone/20 italic flex-shrink-0">no recording</span>
-      </div>
+      </button>
     )
   }
 
@@ -425,7 +426,7 @@ function PastMeetingRow({ meeting }: { meeting: Meeting }) {
           size={10}
           className={`text-stone/30 flex-shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}
         />
-        <span className="text-[11px] text-stone/40 flex-shrink-0 w-[64px]">{dateLabel}</span>
+        <span className="text-[11px] text-stone/40 flex-shrink-0 w-[90px]">{formattedDate}</span>
         <span className="text-[12px] text-charcoal flex-1 min-w-0 truncate">{meeting.title}</span>
         {outcome && !expanded && (
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${outcome.color}`}>
@@ -518,6 +519,20 @@ function PastMeetingRow({ meeting }: { meeting: Meeting }) {
   )
 }
 
+// ── Pure helpers ──────────────────────────────────────────────────────────────
+
+/** Returns true if the meeting's end time (start + duration) has already passed. */
+function isPastMeeting(m: Meeting, today: string, nowTime: string): boolean {
+  if (!m.date) return false
+  if (m.date < today) return true
+  if (m.date === today && m.time) {
+    const endMinutes = meetingEndMinutes(m.time, m.durationMinutes)
+    const [nowH, nowMin] = nowTime.split(':').map(Number)
+    return nowH * 60 + nowMin >= endMinutes
+  }
+  return false
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface ProjectModalMeetingsProps {
@@ -530,25 +545,13 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const projects = useStore(s => s.projects)
+  const addMeeting = useStore(s => s.addMeeting)
+  const [newMeetingId, setNewMeetingId] = useState<string | null>(null)
 
   const projectTitle = projects.find(p => p.id === projectId)?.title ?? 'Unknown project'
   const now = new Date()
   const today = format(now, 'yyyy-MM-dd')
   const nowTime = format(now, 'HH:mm')
-
-  // A meeting is considered past if its date+time (+ duration) have elapsed
-  function isPastMeeting(m: Meeting): boolean {
-    if (!m.date) return false
-    if (m.date < today) return true
-    if (m.date === today && m.time) {
-      const [h, min] = m.time.split(':').map(Number)
-      const endMinutes = h * 60 + min + (m.durationMinutes ?? 0)
-      const [nowH, nowMin] = nowTime.split(':').map(Number)
-      const nowMinutes = nowH * 60 + nowMin
-      return nowMinutes >= endMinutes
-    }
-    return false
-  }
 
   // All meetings linked to this project
   const allLinked = useMemo(() =>
@@ -565,7 +568,7 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
   // Upcoming one-off: not yet started (date > today, or date = today and time >= now)
   const upcomingMeetings = useMemo(() =>
     allLinked
-      .filter(m => m.date && !m.isRecurring && !isPastMeeting(m))
+      .filter(m => m.date && !m.isRecurring && !isPastMeeting(m, today, nowTime))
       .sort((a, b) => {
         if (a.date === b.date) return a.time.localeCompare(b.time)
         return a.date!.localeCompare(b.date!)
@@ -582,7 +585,7 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
   // Past: date < today, OR today but time already passed — sorted newest first
   const pastMeetings = useMemo(() =>
     allLinked
-      .filter(m => m.date && !m.isRecurring && isPastMeeting(m))
+      .filter(m => m.date && !m.isRecurring && isPastMeeting(m, today, nowTime))
       .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
     [allLinked, today, nowTime] // eslint-disable-line react-hooks/exhaustive-deps
   )
@@ -595,19 +598,55 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
 
   const hasUpcoming = upcomingMeetings.length > 0 || recurringLinked.length > 0
 
-  if (allLinked.length === 0) return null
+  // Consts for the "next up" / collapsible section
+  const nextMeeting = upcomingMeetings[0] ?? null
+  const collapsibleMeetings = upcomingMeetings.slice(1)
+  // Recurring blocks only go in the collapsible when there's already a one-off next meeting
+  const collapsibleRecurring = nextMeeting ? recurringLinked : []
+  const hasCollapsible = collapsibleMeetings.length > 0 || collapsibleRecurring.length > 0
+  // Each recurring block shows 5 occurrence rows
+  const collapsibleCount = collapsibleMeetings.length + collapsibleRecurring.length * 5
+
+  function handleNewMeeting() {
+    // Create a meeting pre-linked to this project and show it expanded inline
+    const id = addMeeting({
+      title: '',
+      time: '09:00',
+      durationMinutes: 30,
+      isRecurring: false,
+      projectId,
+    })
+    setNewMeetingId(id)
+  }
+
+  // Find the newly created meeting object (if any)
+  const newMeeting = newMeetingId
+    ? meetings.find(m => m.id === newMeetingId) ?? null
+    : null
 
   return (
     <div className="border-t border-border pt-4 mt-0">
       {/* Section header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Calendar size={12} className="text-stone/40" />
-        <span className="text-[11px] uppercase tracking-[0.08em] text-stone font-medium">
-          Meetings
-        </span>
-        <span className="text-[10px] text-stone/40 bg-stone/10 px-1.5 py-0.5 rounded-full">
-          {allLinked.length}
-        </span>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Calendar size={12} className="text-stone/40" />
+          <span className="text-[11px] uppercase tracking-[0.08em] text-stone font-medium">
+            Meetings
+          </span>
+          {allLinked.length > 0 && (
+            <span className="text-[10px] text-stone/40 bg-stone/10 px-1.5 py-0.5 rounded-full">
+              {allLinked.length}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleNewMeeting}
+          className="flex items-center gap-1 text-[10px] text-stone/40 hover:text-charcoal
+            transition-colors px-2 py-1 rounded border border-border hover:border-stone/30"
+        >
+          <Plus size={10} />
+          New
+        </button>
       </div>
 
       {/* A. Key Decisions */}
@@ -620,58 +659,54 @@ export function ProjectModalMeetings({ projectId }: ProjectModalMeetingsProps) {
       )}
 
       {/* B. Upcoming meetings + Agenda suggestions */}
-      {hasUpcoming && (() => {
-        const nextMeeting = upcomingMeetings[0] ?? null
-        const moreMeetings = upcomingMeetings.slice(1)
-        // Collapsible shows: remaining one-off meetings + all recurring blocks
-        // (recurring blocks only go in the collapsible when there's already a one-off next meeting)
-        const collapsibleMeetings = moreMeetings
-        const collapsibleRecurring = nextMeeting ? recurringLinked : []
-        const hasCollapsible = collapsibleMeetings.length > 0 || collapsibleRecurring.length > 0
-        const collapsibleCount = collapsibleMeetings.length + collapsibleRecurring.length
-
-        return (
-          <div className={linkedMeetingsWithNotes.length > 0 ? 'border-t border-border/40 pt-3 mt-3' : ''}>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1.5">
-              Next up
-            </div>
-
-            {/* The single next meeting */}
-            {nextMeeting && <UpcomingMeetingRow meeting={nextMeeting} />}
-
-            {/* If no one-off next meeting, show recurring blocks directly */}
-            {!nextMeeting && recurringLinked.map(m => (
-              <RecurringUpcomingBlock key={m.id} meeting={m} />
-            ))}
-
-            {/* Collapsible: remaining one-off + recurring (when a one-off is already shown) */}
-            {hasCollapsible && (
-              <div className="mt-1">
-                <button
-                  onClick={() => setMoreUpcomingExpanded(e => !e)}
-                  className="flex items-center gap-1.5 text-[11px] text-stone/40 hover:text-stone/70 transition-colors py-1"
-                >
-                  <ChevronDown
-                    size={11}
-                    className={`transition-transform ${moreUpcomingExpanded ? 'rotate-180' : ''}`}
-                  />
-                  {moreUpcomingExpanded ? 'Hide others' : `${collapsibleCount} more upcoming`}
-                </button>
-                {moreUpcomingExpanded && (
-                  <div className="animate-slide-up">
-                    {collapsibleMeetings.map(m => (
-                      <UpcomingMeetingRow key={m.id} meeting={m} />
-                    ))}
-                    {collapsibleRecurring.map(m => (
-                      <RecurringUpcomingBlock key={m.id} meeting={m} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+      {hasUpcoming && (
+        <div className={linkedMeetingsWithNotes.length > 0 ? 'border-t border-border/40 pt-3 mt-3' : ''}>
+          <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-1.5">
+            Next up
           </div>
-        )
-      })()}
+
+          {/* Newly created meeting — shown expanded at top */}
+          {newMeeting && (
+            <UpcomingMeetingInlineCard meeting={newMeeting} defaultExpanded />
+          )}
+
+          {/* The single next meeting */}
+          {nextMeeting && nextMeeting.id !== newMeetingId && (
+            <UpcomingMeetingInlineCard meeting={nextMeeting} />
+          )}
+
+          {/* If no one-off next meeting, show recurring blocks directly */}
+          {!nextMeeting && recurringLinked.map(m => (
+            <RecurringUpcomingBlock key={m.id} meeting={m} />
+          ))}
+
+          {/* Collapsible: remaining one-off + recurring (when a one-off is already shown) */}
+          {hasCollapsible && (
+            <div className="mt-1">
+              <button
+                onClick={() => setMoreUpcomingExpanded(e => !e)}
+                className="flex items-center gap-1.5 text-[11px] text-stone/40 hover:text-stone/70 transition-colors py-1"
+              >
+                <ChevronDown
+                  size={11}
+                  className={`transition-transform ${moreUpcomingExpanded ? 'rotate-180' : ''}`}
+                />
+                {moreUpcomingExpanded ? 'Hide others' : `${collapsibleCount} more upcoming`}
+              </button>
+              {moreUpcomingExpanded && (
+                <div className="animate-slide-up space-y-1.5">
+                  {collapsibleMeetings.filter(m => m.id !== newMeetingId).map(m => (
+                    <UpcomingMeetingInlineCard key={m.id} meeting={m} />
+                  ))}
+                  {collapsibleRecurring.map(m => (
+                    <RecurringUpcomingBlock key={m.id} meeting={m} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* C. Past meetings + Recent summary */}
       {pastMeetings.length > 0 && (

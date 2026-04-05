@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, ImagePlus, RefreshCw, Move } from 'lucide-react'
+import { X, ImagePlus, RefreshCw, Move, Settings, Link2, Check } from 'lucide-react'
+import { publishSharedProject, getShareUrl } from '../../lib/shareProject'
 import { fetchCoverImage, isProjectFetchInFlight } from '../../lib/artwork'
+import { auth } from '../../lib/firebase'
 import { useStore } from '../../store'
 import type { Project } from '../../types'
 
@@ -9,6 +11,11 @@ interface ProjectModalCoverProps {
   categoryConfig: { color: string; bg: string }
   onClose: () => void
   updateProject: (id: string, updates: Partial<Project>) => void
+  onGearClick?: () => void
+  gearOpen?: boolean
+  categoryLabel?: string
+  categoryColor?: string
+  categoryBg?: string
 }
 
 export function ProjectModalCover({
@@ -16,11 +23,22 @@ export function ProjectModalCover({
   categoryConfig,
   onClose,
   updateProject,
+  onGearClick,
+  gearOpen,
+  categoryLabel,
+  categoryColor,
+  categoryBg,
 }: ProjectModalCoverProps) {
   const [repositioning, setRepositioning] = useState(false)
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
   const [loadingImage, setLoadingImage] = useState(false)
   const [fetchFailed, setFetchFailed] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+  const [shareError, setShareError] = useState(false)
+  const meetings = useStore(s => s.meetings)
+  const recurringMeetings = useStore(s => s.recurringMeetings)
+  const projectMeetings = [...meetings, ...recurringMeetings].filter(m => m.projectId === project.id)
   const markArtworkLoading = useStore(s => s.markArtworkLoading)
   const unmarkArtworkLoading = useStore(s => s.unmarkArtworkLoading)
   const imgContainerRef = useRef<HTMLDivElement>(null)
@@ -103,7 +121,7 @@ export function ProjectModalCover({
       {project.coverImageUrl ? (
         <div
           ref={imgContainerRef}
-          className={`h-52 rounded-t-[10px] overflow-hidden relative
+          className={`h-48 rounded-t-[10px] overflow-hidden relative
             ${repositioning ? 'cursor-grab active:cursor-grabbing' : ''}`}
           onMouseDown={repositioning ? handleRepositionMouseDown : undefined}
         >
@@ -192,14 +210,73 @@ export function ProjectModalCover({
         </div>
       )}
 
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-3 right-3 p-1.5 rounded-full bg-black/30 text-white/80
-          hover:bg-black/50 hover:text-white transition-all backdrop-blur-sm z-10"
-      >
-        <X size={16} />
-      </button>
+      {/* Top-right buttons */}
+      <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+        {categoryLabel && (
+          <span
+            className="text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full backdrop-blur-sm"
+            style={{ background: categoryBg, color: categoryColor }}
+          >
+            {categoryLabel}
+          </span>
+        )}
+        <button
+          onClick={async (e) => {
+            e.stopPropagation()
+            if (sharing) return
+            if (!auth.currentUser) {
+              setShareError(true)
+              setTimeout(() => setShareError(false), 2500)
+              return
+            }
+            setSharing(true)
+            try {
+              const shareId = await publishSharedProject(project, projectMeetings, auth.currentUser.displayName ?? undefined)
+              // Persist the shareId on the project so future shares reuse the same URL
+              if (!project.shareId) {
+                updateProject(project.id, { shareId })
+              }
+              const url = getShareUrl(shareId)
+              await navigator.clipboard.writeText(url)
+              setShareCopied(true)
+              setTimeout(() => setShareCopied(false), 2000)
+            } catch (err) {
+              console.error('[share] failed:', err)
+              setShareError(true)
+              setTimeout(() => setShareError(false), 2500)
+            } finally {
+              setSharing(false)
+            }
+          }}
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm
+            ${shareCopied
+              ? 'bg-green-500/70 text-white'
+              : shareError
+                ? 'bg-red-500/70 text-white'
+                : 'bg-charcoal/30 text-white hover:bg-charcoal/50'}`}
+          title={shareCopied ? 'Link copied!' : shareError ? 'Sign in to share' : 'Copy share link'}
+        >
+          {shareCopied ? <Check size={14} /> : <Link2 size={14} />}
+        </button>
+        {onGearClick && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onGearClick() }}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all
+              ${gearOpen
+                ? 'bg-white/90 text-charcoal'
+                : 'bg-charcoal/30 backdrop-blur-sm text-white hover:bg-charcoal/50'}`}
+          >
+            <Settings size={15} />
+          </button>
+        )}
+        <button
+          onClick={onClose}
+          className="w-8 h-8 rounded-full flex items-center justify-center
+            bg-black/30 text-white/80 hover:bg-black/50 hover:text-white transition-all backdrop-blur-sm"
+        >
+          <X size={16} />
+        </button>
+      </div>
     </div>
   )
 }

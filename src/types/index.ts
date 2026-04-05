@@ -39,8 +39,22 @@ export interface Project {
   daysWorked: number
   daysWorkedLog: string[] // Array of date strings (YYYY-MM-DD)
   waitingOn?: WaitingOn[]
+  shareId?: string // stable share ID for public URL
   createdAt: string
   updatedAt: string
+}
+
+export interface SharedProjectSnapshot {
+  project: Project
+  meetings: Meeting[]
+  sharedAt: string
+  sharedBy?: string // user display name or email
+}
+
+export interface Subtask {
+  id: string
+  title: string
+  done: boolean
 }
 
 export interface Task {
@@ -55,6 +69,8 @@ export interface Task {
   bodyContent?: string  // BlockNote JSON — rich text notes for standalone tasks
   kanbanColumn?: ProjectStatus  // which kanban column this orphan task appears in
   waitingOn?: WaitingOn[]       // waiting-on entries (same as Project)
+  nextAction?: string           // the immediate next physical action to move this forward
+  subtasks?: Subtask[]
   createdAt: string
   completedAt?: string
   lastCompletedDate?: string  // YYYY-MM-DD — last date this recurring task was checked off
@@ -63,8 +79,10 @@ export interface Task {
 export interface AgendaItem {
   id: string
   title: string
+  description?: string  // optional context: what will be discussed
   durationMinutes?: number
   recurring?: boolean  // appears in every instance of a recurring meeting
+  owner?: string       // responsible person / name
 }
 
 export interface MeetingActionItem {
@@ -111,6 +129,7 @@ export interface Meeting {
   isRecurring: boolean
   recurrenceRule?: RecurrenceRule
   lastCompletedDate?: string // for recurring meetings (YYYY-MM-DD)
+  recurringMeetingId?: string // if set, this is a concrete occurrence of a recurring template
   createdAt: string
 }
 
@@ -120,6 +139,7 @@ export interface MeetingSession {
   completedItemIds: string[]
   secondsLeft: number | null   // null = this item has no duration
   isRunning: boolean
+  hasStarted: boolean
   startedAt: string
   lastTickAt: string
   isRecording: boolean
@@ -147,6 +167,7 @@ export interface DailyPlan {
   calendarEvents?: AssignedCalendarEvent[]
   pomodoroLog?: PomodoroLogEntry[]
   blockOrder?: Array<'deep' | 'short' | 'maintenance'>
+  itemOrder?: PlanItem[]
   isComplete: boolean
   completedAt?: string
 }
@@ -167,6 +188,13 @@ export interface AssignedCalendarEvent {
   event: CalendarEvent
   tier: TierAssignment
   suggestedTier: TierAssignment
+}
+
+// Free-order plan items
+export interface PlanItem {
+  id: string
+  type: 'project' | 'task' | 'meeting'
+  tier: 'deep' | 'short' | 'maintenance'
 }
 
 // Pomodoro tiers

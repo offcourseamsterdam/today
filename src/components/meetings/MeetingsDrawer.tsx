@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react'
-import { format } from 'date-fns'
-import { X, Plus, ChevronDown, RotateCcw, Calendar } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { format, parseISO, addDays, endOfWeek } from 'date-fns'
+import { X, Plus, Calendar, ChevronDown, Play } from 'lucide-react'
 import { useStore } from '../../store'
 import { MeetingRow } from './MeetingRow'
-import { describeRule } from '../../lib/recurrence'
 import type { Meeting } from '../../types'
 
 interface MeetingsDrawerProps {
@@ -15,21 +14,113 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
+  const addMeeting = useStore(s => s.addMeeting)
+  const startMeetingSession = useStore(s => s.startMeetingSession)
+
   const meetingSession = useStore(s => s.meetingSession)
   const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
   const deleteMeeting = useStore(s => s.deleteMeeting)
   const deleteRecurringMeeting = useStore(s => s.deleteRecurringMeeting)
-  const [showRecurring, setShowRecurring] = useState(false)
+  const spawnRecurringOccurrence = useStore(s => s.spawnRecurringOccurrence)
+  const [pastExpanded, setPastExpanded] = useState(false)
 
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
-  const todayMeetings = meetings.filter(m => !m.date || m.date === todayStr)
-  const sortedMeetings = [...todayMeetings].sort((a, b) => a.time.localeCompare(b.time))
-  const sortedRecurring = [...recurringMeetings].sort((a, b) => a.time.localeCompare(b.time))
+  const handleStartNow = useCallback(() => {
+    const now = new Date()
+    const id = addMeeting({
+      title: 'Quick meeting',
+      date: format(now, 'yyyy-MM-dd'),
+      time: format(now, 'HH:mm'),
+      durationMinutes: 30,
+      isRecurring: false,
+    })
+    startMeetingSession(id)
+    onClose()
+  }, [addMeeting, startMeetingSession, onClose])
 
-  const handleDelete = useCallback((meeting: Meeting, isRecurring: boolean) => {
-    if (isRecurring) deleteRecurringMeeting(meeting.id)
+  const today = new Date()
+  const todayStr = format(today, 'yyyy-MM-dd')
+  const tomorrowStr = format(addDays(today, 1), 'yyyy-MM-dd')
+  const thisWeekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+
+  const sortByTime = (a: Meeting, b: Meeting) => a.time.localeCompare(b.time)
+  const sortByDateThenTime = (a: Meeting, b: Meeting) =>
+    (a.date ?? '').localeCompare(b.date ?? '') || a.time.localeCompare(b.time)
+
+  const getDayLabel = (m: Meeting, overrideToday = false) => {
+    if (overrideToday || !m.date) return format(today, 'EEEE d MMM')
+    return format(parseISO(m.date), 'EEEE d MMM')
+  }
+
+  const { todayMeetings, todayTemplateIds, tomorrowMeetings, thisWeekMeetings, nextWeekMeetings, pastMeetings } = useMemo(() => {
+    // Templates that already have a concrete occurrence for today — hide the template
+    // Check both `recurringMeetingId` (new) and title+time match (old occurrences)
+    const spawnedTemplateIds = new Set<string>()
+    const todayOccurrences = meetings.filter(m => m.date === todayStr)
+    for (const occ of todayOccurrences) {
+      if (occ.recurringMeetingId) {
+        spawnedTemplateIds.add(occ.recurringMeetingId)
+      } else {
+        // Backward compat: match by title+time for old occurrences without recurringMeetingId
+        const match = recurringMeetings.find(t => t.title === occ.title && t.time === occ.time)
+        if (match) spawnedTemplateIds.add(match.id)
+      }
+    }
+    const visibleRecurring = recurringMeetings.filter(m => !spawnedTemplateIds.has(m.id))
+    const templateIds = new Set(recurringMeetings.map(m => m.id))
+    return {
+      todayMeetings: [
+        ...meetings.filter(m => !m.date || m.date === todayStr).sort(sortByTime),
+        ...visibleRecurring.sort(sortByTime),
+      ],
+      // Track which today-meetings are still recurring templates (not yet spawned)
+      todayTemplateIds: templateIds,
+      tomorrowMeetings: meetings.filter(m => m.date === tomorrowStr).sort(sortByTime),
+      thisWeekMeetings: meetings.filter(m => m.date && m.date > tomorrowStr && m.date <= thisWeekEnd).sort(sortByDateThenTime),
+      nextWeekMeetings: meetings.filter(m => m.date && m.date > thisWeekEnd).sort(sortByDateThenTime),
+      pastMeetings: meetings
+        .filter(m => m.date && m.date < todayStr)
+        .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.time.localeCompare(a.time)),
+    }
+  }, [meetings, recurringMeetings, todayStr, tomorrowStr, thisWeekEnd])
+
+  const hasAny =
+    todayMeetings.length > 0 ||
+    tomorrowMeetings.length > 0 ||
+    thisWeekMeetings.length > 0 ||
+    nextWeekMeetings.length > 0
+
+  const handleDelete = useCallback((meeting: Meeting) => {
+    if (meeting.isRecurring) deleteRecurringMeeting(meeting.id)
     else deleteMeeting(meeting.id)
   }, [deleteMeeting, deleteRecurringMeeting])
+
+  const renderSection = (label: string, items: Meeting[], overrideDayToToday = false, isToday = false) => {
+    if (items.length === 0) return null
+    return (
+      <div className="mb-5">
+        <div className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium mb-2">
+          {label}
+        </div>
+        {items.map(m => {
+          const isTemplate = isToday && todayTemplateIds.has(m.id)
+          return (
+            <MeetingRow
+              key={m.id}
+              meeting={m}
+              onEdit={() => setOpenMeetingId(m.id)}
+              onDelete={() => handleDelete(m)}
+              dayLabel={getDayLabel(m, overrideDayToToday || m.isRecurring)}
+              onStart={isTemplate ? () => {
+                const occurrenceId = spawnRecurringOccurrence(m.id)
+                startMeetingSession(occurrenceId)
+                onClose()
+              } : undefined}
+            />
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -54,6 +145,15 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleStartNow}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px]
+                bg-charcoal text-canvas text-[11px] font-medium
+                hover:bg-charcoal/80 transition-colors"
+            >
+              <Play size={10} />
+              Start now
+            </button>
+            <button
               onClick={() => setOpenMeetingId('new')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-border
                 text-[11px] text-stone hover:text-charcoal hover:border-stone/30 transition-all"
@@ -72,6 +172,7 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
+          {/* Live meeting banner */}
           {meetingSession && (() => {
             const allM = [...meetings, ...recurringMeetings]
             const activeMeeting = allM.find(m => m.id === meetingSession.meetingId)
@@ -90,7 +191,8 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
               </div>
             )
           })()}
-          {sortedMeetings.length === 0 && sortedRecurring.length === 0 ? (
+
+          {!hasAny && pastMeetings.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Calendar size={28} className="text-stone/20" />
               <p className="text-[13px] text-stone/40 text-center">
@@ -108,54 +210,40 @@ export function MeetingsDrawer({ open, onClose }: MeetingsDrawerProps) {
             </div>
           ) : (
             <>
-              {sortedMeetings.length > 0 && (
-                <div>
-                  {sortedMeetings.map(m => (
-                    <MeetingRow
-                      key={m.id}
-                      meeting={m}
-                      onEdit={() => setOpenMeetingId(m.id)}
-                      onDelete={() => handleDelete(m, false)}
-                    />
-                  ))}
-                </div>
-              )}
+              {renderSection('Today', todayMeetings, false, true)}
+              {renderSection('Tomorrow', tomorrowMeetings)}
+              {renderSection('This week', thisWeekMeetings)}
+              {renderSection('Next week', nextWeekMeetings)}
 
-              {/* Recurring meetings */}
-              {sortedRecurring.length > 0 && (
-                <div className="mt-4">
+              {/* Past meetings — collapsible */}
+              {pastMeetings.length > 0 && (
+                <div className="mt-2">
                   <button
-                    onClick={() => setShowRecurring(v => !v)}
-                    className="flex items-center gap-2 py-1 text-[10px] uppercase tracking-[0.08em]
-                      text-stone/40 hover:text-stone/60 transition-colors font-medium mb-2"
+                    onClick={() => setPastExpanded(v => !v)}
+                    className="flex items-center gap-2 w-full text-left mb-2 group"
                   >
-                    <RotateCcw size={10} />
-                    Recurring ({sortedRecurring.length})
+                    <span className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium">
+                      Past meetings
+                    </span>
+                    <span className="text-[10px] text-stone/30 bg-stone/10 rounded-full px-1.5 py-0.5 leading-none">
+                      {pastMeetings.length}
+                    </span>
                     <ChevronDown
                       size={10}
-                      className={`transition-transform ${showRecurring ? 'rotate-180' : ''}`}
+                      className={`text-stone/30 ml-auto transition-transform ${pastExpanded ? 'rotate-180' : ''}`}
                     />
                   </button>
-
-                  {showRecurring && (
+                  {pastExpanded && (
                     <div className="animate-slide-up">
-                      {sortedRecurring.map(m => (
-                        <div key={m.id} className="border-b border-border/30 last:border-0">
-                          <button
-                            onClick={() => setOpenMeetingId(m.id)}
-                            className="flex items-center gap-3 py-2.5 w-full text-left hover:bg-canvas/60 rounded-[4px] transition-colors -mx-1 px-1"
-                          >
-                            <span className="text-[11px] text-stone/50 w-[38px] text-right flex-shrink-0">
-                              {m.time}
-                            </span>
-                            <span className="text-[12px] text-charcoal/80 flex-1 truncate">
-                              {m.title}
-                            </span>
-                            <span className="text-[10px] text-stone/30 italic flex-shrink-0">
-                              {m.recurrenceRule ? describeRule(m.recurrenceRule) : ''}
-                            </span>
-                          </button>
-                        </div>
+                      {pastMeetings.map(m => (
+                        <MeetingRow
+                          key={m.id}
+                          meeting={m}
+                          onEdit={() => setOpenMeetingId(m.id)}
+                          onDelete={() => handleDelete(m)}
+                          dayLabel={getDayLabel(m)}
+                          defaultExpanded={!!m.meetingNotes}
+                        />
                       ))}
                     </div>
                   )}

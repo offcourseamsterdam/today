@@ -1,250 +1,512 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { format, addDays } from 'date-fns'
-import { X } from 'lucide-react'
-import { useAuth } from '../../hooks/useAuth'
+import { X, Plus, RotateCcw, AlertTriangle } from 'lucide-react'
+import {
+  DndContext,
+  DragOverlay,
+  useDroppable,
+  pointerWithin,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+  type DragOverEvent,
+  type CollisionDetection,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
 import { useStore } from '../../store'
 import { getTodayString, getTomorrowString } from '../../store/helpers'
 import { useTomorrowPlan } from '../../hooks/useTomorrowPlan'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
-import type { AssignedCalendarEvent } from '../../types'
-import { StepIndicator } from './StepIndicator'
-import { StepCalendar } from './StepCalendar'
-import { StepDeepBlock } from './StepDeepBlock'
-import { StepShortTasks } from './StepShortTasks'
-import { StepMaintenance } from './StepMaintenance'
+import { findTaskById } from '../../lib/taskLookup'
+import { deriveItemOrder, deriveBlockOrder } from '../../lib/planOrder'
+import type { Project, Meeting, PlanItem } from '../../types'
+import { InventoryPanel } from './InventoryPanel'
+import { PlanningDragOverlay } from './PlanningDragOverlay'
+import { SortablePlanItem } from './SortablePlanItem'
 
 interface PlanningModalProps {
   onClose: () => void
   day?: 'today' | 'tomorrow'
 }
 
+const collisionStrategy: CollisionDetection = (args) => {
+  const within = pointerWithin(args)
+  if (within.length > 0) return within
+  return closestCorners(args)
+}
+
+// ─── Drop zone for the plan list ────────────────────────────────
+function PlanDropZone({ children, isEmpty, isOver }: { children: React.ReactNode; isEmpty: boolean; isOver: boolean }) {
+  const { setNodeRef } = useDroppable({ id: 'plan-list' })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`space-y-2 min-h-[120px] rounded-[12px] transition-all duration-150
+        ${isOver ? 'bg-[#FAF9F7] ring-2 ring-[#2A2724]/10' : ''}
+        ${isEmpty && !isOver ? 'border-2 border-dashed border-[#E8E4DD] flex items-center justify-center' : ''}`}
+    >
+      {isEmpty && !isOver ? (
+        <div className="text-[12px] text-[#7A746A]/40 italic py-8">
+          Drag items here to plan your day
+        </div>
+      ) : (
+        children
+      )}
+    </div>
+  )
+}
+
 export function PlanningModal({ onClose, day = 'tomorrow' }: PlanningModalProps) {
-  const { calendarAccessToken, requestCalendarAccess } = useAuth()
+  // ─── Store ─────────────────────────────────────────────────────
+  const projects = useStore(s => s.projects)
+  const orphanTasks = useStore(s => s.orphanTasks)
+  const recurringTasks = useStore(s => s.recurringTasks)
+  const meetings = useStore(s => s.meetings)
+  const recurringMeetingsList = useStore(s => s.recurringMeetings)
+  const addOrphanTask = useStore(s => s.addOrphanTask)
+  const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
+  const getTomorrowRecurringTasks = useStore(s => s.getTomorrowRecurringTasks)
 
-  // Tomorrow plan actions
-  const setTomorrowDeepMeeting = useStore(s => s.setTomorrowDeepMeeting)
-  const addTomorrowShortMeeting = useStore(s => s.addTomorrowShortMeeting)
-  const addTomorrowMaintenanceMeeting = useStore(s => s.addTomorrowMaintenanceMeeting)
-  const {
-    tomorrowPlan,
-    setTomorrowDeepBlock,
-    clearTomorrowDeepBlock,
-    addTomorrowShortTask,
-    removeTomorrowShortTask,
-    addTomorrowMaintenanceTask,
-    removeTomorrowMaintenanceTask,
-    lockInTomorrow,
-    shortTaskIds: tomorrowShortIds,
-    maintenanceTaskIds: tomorrowMainIds,
-  } = useTomorrowPlan()
-
-  // Today plan actions
-  const {
-    dailyPlan,
-    setDeepBlock,
-    clearDeepBlock,
-    addShortTask,
-    removeShortTask,
-    addMaintenanceTask,
-    removeMaintenanceTask,
-    setDeepMeeting,
-    addShortMeeting,
-    addMaintenanceMeeting,
-    shortTaskIds: todayShortIds,
-    maintenanceTaskIds: todayMainIds,
-  } = useTodayPlan()
+  const { tomorrowPlan } = useTomorrowPlan()
+  const { dailyPlan } = useTodayPlan()
 
   const isToday = day === 'today'
   const activePlan = isToday ? dailyPlan : tomorrowPlan
-  const existingShortIds = isToday ? todayShortIds : tomorrowShortIds
-  const existingMainIds = isToday ? todayMainIds : tomorrowMainIds
 
-  const [step, setStep] = useState(1)
-  const [assignments, setAssignments] = useState<AssignedCalendarEvent[]>([])
-  const [deepProjectId, setDeepProjectId] = useState('')
+  // ─── Local State ───────────────────────────────────────────────
+  const [orderedItems, setOrderedItems] = useState<PlanItem[]>([])
   const [intention, setIntention] = useState('')
-  const [shortTaskIds, setShortTaskIds] = useState<string[]>([])
-  const [mainTaskIds, setMainTaskIds] = useState<string[]>([])
-  const [deepMeetingId, setDeepMeetingId] = useState<string | undefined>()
-  const [shortMeetingIds, setShortMeetingIds] = useState<string[]>([])
-  const [maintenanceMeetingIds, setMaintenanceMeetingIds] = useState<string[]>([])
+  const [showMobileInventory, setShowMobileInventory] = useState(false)
+  const [quickAdd, setQuickAdd] = useState('')
+
+  // Overdue recurring detection
+  const todayRecurring = getTodayRecurringTasks()
+  const planDayRecurring = day === 'tomorrow' ? getTomorrowRecurringTasks() : todayRecurring
+  const today = getTodayString()
+  const overdueRecurring = todayRecurring.filter(t => t.lastCompletedDate !== today)
+
+  const assignedIds = useMemo(() => new Set(orderedItems.map(i => i.id)), [orderedItems])
+  const overdueNotAdded = overdueRecurring.filter(t => !assignedIds.has(t.id))
+  const recurringNotAdded = planDayRecurring.filter(t => !assignedIds.has(t.id))
 
   // Pre-populate from existing plan on mount
   useEffect(() => {
     if (!activePlan) return
-    // Don't pre-populate from stale plans
     const expectedDate = isToday ? getTodayString() : getTomorrowString()
     if (activePlan.date !== expectedDate) return
 
-    setDeepProjectId(activePlan.deepBlock.projectId || '')
+    // Use itemOrder if available, otherwise derive from tier arrays
+    const items = activePlan.itemOrder ?? deriveItemOrder(activePlan)
+    setOrderedItems(items)
     setIntention(activePlan.deepBlock.intention || '')
-    setShortTaskIds([...existingShortIds])
-    setMainTaskIds([...existingMainIds])
-    setDeepMeetingId(activePlan.deepMeetingId)
-    setShortMeetingIds([...(activePlan.shortMeetingIds ?? [])])
-    setMaintenanceMeetingIds([...(activePlan.maintenanceMeetingIds ?? [])])
-  // Only run on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ─── DnD State ─────────────────────────────────────────────────
+  const [activeType, setActiveType] = useState<'project' | 'task' | 'meeting' | null>(null)
+  const [activeProject, setActiveProject] = useState<Project | null>(null)
+  const [activeTask, setActiveTask] = useState<{ task: any; projectTitle?: string } | null>(null)
+  const [activeMeeting, setActiveMeeting] = useState<Meeting | null>(null)
+  const [isOverPlanList, setIsOverPlanList] = useState(false)
+
+  const allMeetingsList = useMemo(() => [...meetings, ...recurringMeetingsList], [meetings, recurringMeetingsList])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   const dateLabel = isToday
     ? format(new Date(), 'EEEE d MMMM')
     : format(addDays(new Date(), 1), 'EEEE d MMMM')
 
-  const calendarDeepEvent = assignments.find(a => a.tier === 'deep') ?? null
-  const calendarShortEvents = assignments.filter(a => a.tier === 'short')
-  const calendarMaintEvents = assignments.filter(a => a.tier === 'maintenance')
+  // ─── Computed ──────────────────────────────────────────────────
+  const allAssignedIds = useMemo(() => {
+    return new Set(orderedItems.map(i => i.id))
+  }, [orderedItems])
+
+  const deepCount = useMemo(() => orderedItems.filter(i => i.tier === 'deep').length, [orderedItems])
+  const shortSlots = useMemo(() => orderedItems
+    .filter(i => i.tier === 'short')
+    .reduce((sum, i) => {
+      if (i.type === 'meeting') {
+        const m = allMeetingsList.find(x => x.id === i.id)
+        return sum + (m ? Math.ceil(m.durationMinutes / 60) : 1)
+      }
+      return sum + 1
+    }, 0), [orderedItems, allMeetingsList])
+
+  // ─── Helpers ───────────────────────────────────────────────────
+  function autoAssignTier(type: 'project' | 'task' | 'meeting'): 'deep' | 'short' | 'maintenance' {
+    if (type === 'project' && deepCount === 0) return 'deep'
+    if (type === 'task') return shortSlots < 3 ? 'short' : 'maintenance'
+    if (type === 'meeting') return shortSlots < 3 ? 'short' : 'maintenance'
+    return shortSlots < 3 ? 'short' : 'maintenance'
+  }
+
+  function handleTierChange(id: string, newTier: 'deep' | 'short' | 'maintenance') {
+    setOrderedItems(prev => {
+      // Check slot limits
+      if (newTier === 'deep') {
+        const item = prev.find(i => i.id === id)
+        if (item?.type === 'task') return prev // Tasks can't be deep
+        if (prev.filter(i => i.tier === 'deep' && i.id !== id).length >= 1) return prev
+      }
+      if (newTier === 'short') {
+        const currentShort = prev.filter(i => i.tier === 'short' && i.id !== id)
+        const usedSlots = currentShort.reduce((sum, i) => {
+          if (i.type === 'meeting') {
+            const m = allMeetingsList.find(x => x.id === i.id)
+            return sum + (m ? Math.ceil(m.durationMinutes / 60) : 1)
+          }
+          return sum + 1
+        }, 0)
+        if (usedSlots >= 3) return prev
+      }
+      return prev.map(i => i.id === id ? { ...i, tier: newTier } : i)
+    })
+  }
+
+  // ─── DnD Handlers ─────────────────────────────────────────────
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event
+    const data = active.data.current as { type: 'project' | 'task' | 'meeting'; id: string } | undefined
+    if (!data) return
+
+    setActiveType(data.type)
+    if (data.type === 'project') {
+      setActiveProject(projects.find(p => p.id === data.id) ?? null)
+    } else if (data.type === 'task') {
+      setActiveTask(findTaskById(data.id, projects, orphanTasks, recurringTasks))
+    } else if (data.type === 'meeting') {
+      setActiveMeeting(allMeetingsList.find(m => m.id === data.id) ?? null)
+    }
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const overId = event.over?.id as string | undefined
+    setIsOverPlanList(overId === 'plan-list' || (overId?.startsWith('plan-') ?? false))
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveType(null)
+    setActiveProject(null)
+    setActiveTask(null)
+    setActiveMeeting(null)
+    setIsOverPlanList(false)
+
+    if (!over) return
+
+    const activeIdStr = active.id as string
+    const overIdStr = over.id as string
+
+    // ─── Reorder within list ───
+    if (activeIdStr.startsWith('plan-') && overIdStr.startsWith('plan-')) {
+      const sortableIds = orderedItems.map(i => `plan-${i.id}`)
+      const oldIndex = sortableIds.indexOf(activeIdStr)
+      const newIndex = sortableIds.indexOf(overIdStr)
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        setOrderedItems(prev => arrayMove(prev, oldIndex, newIndex))
+      }
+      return
+    }
+
+    // ─── Drop from inventory onto plan list ───
+    const data = active.data.current as { type: 'project' | 'task' | 'meeting'; id: string } | undefined
+    if (!data) return
+
+    const { type, id } = data
+
+    // If dropped on plan-list or any plan-item, add to list
+    if (overIdStr === 'plan-list' || overIdStr.startsWith('plan-')) {
+      // Already in list? Skip
+      if (orderedItems.some(i => i.id === id)) return
+
+      const tier = autoAssignTier(type)
+      const newItem: PlanItem = { id, type, tier }
+
+      // If dropped on a specific item, insert after it
+      if (overIdStr.startsWith('plan-') && overIdStr !== 'plan-list') {
+        const targetId = overIdStr.replace('plan-', '')
+        const targetIndex = orderedItems.findIndex(i => i.id === targetId)
+        if (targetIndex !== -1) {
+          setOrderedItems(prev => {
+            const next = [...prev]
+            next.splice(targetIndex + 1, 0, newItem)
+            return next
+          })
+          return
+        }
+      }
+
+      // Append to end
+      setOrderedItems(prev => [...prev, newItem])
+      return
+    }
+
+    // If dropped back on inventory — remove from list
+    if (overIdStr === 'inventory' || overIdStr.startsWith('inventory')) {
+      setOrderedItems(prev => prev.filter(i => i.id !== id))
+    }
+  }
+
+  function handleRemoveItem(id: string) {
+    setOrderedItems(prev => prev.filter(i => i.id !== id))
+  }
+
+  // ─── Maintenance helpers ──────────────────────────────────────
+  function handleAutoPopulateRecurring() {
+    const newItems: PlanItem[] = recurringNotAdded.map(t => ({
+      id: t.id,
+      type: 'task' as const,
+      tier: 'maintenance' as const,
+    }))
+    setOrderedItems(prev => [...prev, ...newItems])
+  }
+
+  function handleCarryOverOverdue() {
+    const newItems: PlanItem[] = overdueNotAdded.map(t => ({
+      id: t.id,
+      type: 'task' as const,
+      tier: 'maintenance' as const,
+    }))
+    setOrderedItems(prev => [...prev, ...newItems])
+  }
+
+  function handleQuickAdd(e: React.FormEvent) {
+    e.preventDefault()
+    if (!quickAdd.trim()) return
+    const id = addOrphanTask(quickAdd.trim())
+    setOrderedItems(prev => [...prev, { id, type: 'task', tier: 'maintenance' }])
+    setQuickAdd('')
+  }
+
+  // ─── Lock In ──────────────────────────────────────────────────
+  const lockInPlan = useStore(s => s.lockInPlan)
 
   function handleLockIn() {
-    if (isToday) {
-      clearDeepBlock()
-      if (calendarDeepEvent) {
-        setDeepBlock(calendarDeepEvent.event.id, intention || undefined)
-      } else if (deepProjectId) {
-        setDeepBlock(deepProjectId, intention || undefined)
-      }
-      for (const id of existingShortIds) removeShortTask(id)
-      for (const id of shortTaskIds) addShortTask(id)
-      for (const id of existingMainIds) removeMaintenanceTask(id)
-      for (const id of mainTaskIds) addMaintenanceTask(id)
-      setDeepMeeting(deepMeetingId)
-      for (const id of shortMeetingIds) addShortMeeting(id)
-      for (const id of maintenanceMeetingIds) addMaintenanceMeeting(id)
-    } else {
-      clearTomorrowDeepBlock()
-      if (calendarDeepEvent) {
-        setTomorrowDeepBlock(calendarDeepEvent.event.id, intention || undefined)
-      } else if (deepProjectId) {
-        setTomorrowDeepBlock(deepProjectId, intention || undefined)
-      }
-      for (const id of existingShortIds) removeTomorrowShortTask(id)
-      for (const id of shortTaskIds) addTomorrowShortTask(id)
-      for (const id of existingMainIds) removeTomorrowMaintenanceTask(id)
-      for (const id of mainTaskIds) addTomorrowMaintenanceTask(id)
-      setTomorrowDeepMeeting(deepMeetingId)
-      for (const id of shortMeetingIds) addTomorrowShortMeeting(id)
-      for (const id of maintenanceMeetingIds) addTomorrowMaintenanceMeeting(id)
-      lockInTomorrow()
-    }
+    const deepProject = orderedItems.find(i => i.tier === 'deep' && i.type === 'project')
+    const deepMeeting = orderedItems.find(i => i.tier === 'deep' && i.type === 'meeting')
+    const blockOrder = deriveBlockOrder(orderedItems)
+
+    lockInPlan(isToday ? 'today' : 'tomorrow', {
+      deepProjectId: deepProject?.id ?? '',
+      intention: intention || undefined,
+      deepMeetingId: deepMeeting?.id,
+      shortTasks: orderedItems.filter(i => i.tier === 'short' && i.type === 'task').map(i => i.id),
+      shortProjects: orderedItems.filter(i => i.tier === 'short' && i.type === 'project').map(i => i.id),
+      shortMeetingIds: orderedItems.filter(i => i.tier === 'short' && i.type === 'meeting').map(i => i.id),
+      maintenanceTasks: orderedItems.filter(i => i.tier === 'maintenance' && i.type === 'task').map(i => i.id),
+      maintenanceProjects: orderedItems.filter(i => i.tier === 'maintenance' && i.type === 'project').map(i => i.id),
+      maintenanceMeetingIds: orderedItems.filter(i => i.tier === 'maintenance' && i.type === 'meeting').map(i => i.id),
+      blockOrder,
+      itemOrder: orderedItems,
+    })
+
     onClose()
   }
 
-  function handleNext() {
-    setStep(s => Math.min(s + 1, 4))
-  }
-
-  function handleBack() {
-    setStep(s => Math.max(s - 1, 1))
-  }
+  // ─── Render ────────────────────────────────────────────────────
+  const sortableIds = orderedItems.map(i => `plan-${i.id}`)
+  const hasOverdue = overdueNotAdded.length > 0
+  const isEmpty = orderedItems.length === 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal card */}
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-lg sm:mx-4 flex flex-col max-h-[92vh] sm:max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[#F0EEEB]">
-          <span className="font-serif text-[18px] text-[#2A2724]">
-            {isToday ? 'Plan today' : 'Plan tomorrow'}
-          </span>
-          <span className="text-[13px] text-[#7A746A] absolute left-1/2 -translate-x-1/2">
-            {dateLabel.toLowerCase()}
-          </span>
+    <div className="fixed inset-0 z-50 bg-[#FAF9F7] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 sm:px-8 py-4 border-b border-[#E8E4DD] bg-white flex-shrink-0">
+        <span className="font-serif text-[18px] text-[#2A2724]">
+          {isToday ? 'Plan today' : 'Plan tomorrow'}
+        </span>
+        <span className="text-[13px] text-[#7A746A] hidden sm:block absolute left-1/2 -translate-x-1/2">
+          {dateLabel.toLowerCase()}
+        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleLockIn}
+            className="flex items-center gap-2 px-5 py-2 rounded-[8px]
+              bg-[#2A2724] text-white text-[13px] font-medium
+              hover:bg-[#2A2724]/90 transition-all"
+          >
+            {isToday ? 'Lock in today' : 'Lock in tomorrow'}
+          </button>
           <button
             onClick={onClose}
             className="text-[#7A746A]/50 hover:text-[#7A746A] transition-colors p-1"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
+      </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-          <StepIndicator currentStep={step} />
+      {/* Body */}
+      <div className="flex-1 min-h-0 flex">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collisionStrategy}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          {/* Left column — flat plan list */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+            <div className="max-w-[640px] mx-auto space-y-4">
+              {/* Slot indicators */}
+              <div className="flex items-center gap-4 text-[11px] text-[#7A746A]/60">
+                <span className={deepCount >= 1 ? 'text-indigo-500' : ''}>
+                  Deep: {deepCount}/1
+                </span>
+                <span className={shortSlots >= 3 ? 'text-amber-500' : ''}>
+                  Short: {shortSlots}/3
+                </span>
+                <span>Maintenance: {orderedItems.filter(i => i.tier === 'maintenance').length}</span>
+              </div>
 
-          {step === 1 && (
-            <StepCalendar
-              assignments={assignments}
-              onAssignmentsChange={setAssignments}
-              accessToken={calendarAccessToken}
-              onRequestAccess={requestCalendarAccess}
+              {/* Overdue recurring banner */}
+              {hasOverdue && (
+                <div className="rounded-[8px] border border-amber-200 bg-amber-50 p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <AlertTriangle size={13} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-medium text-amber-800">
+                          {overdueNotAdded.length} recurring task{overdueNotAdded.length !== 1 ? 's' : ''} not done today
+                        </div>
+                        <div className="text-[11px] text-amber-600/80 mt-0.5">
+                          Carry them over to get back on track.
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleCarryOverOverdue}
+                      className="text-[11px] text-amber-700 border border-amber-300 rounded px-2 py-1
+                        hover:bg-amber-100 transition-colors whitespace-nowrap flex-shrink-0"
+                    >
+                      Carry all over
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Auto-populate recurring */}
+              {recurringNotAdded.length > 0 && (
+                <button
+                  onClick={handleAutoPopulateRecurring}
+                  className="flex items-center gap-1.5 text-[11px] text-[#7A746A]
+                    px-2.5 py-1.5 rounded border border-[#E8E4DD]
+                    hover:border-[#7A746A]/30 hover:text-[#2A2724] transition-all w-full justify-center"
+                >
+                  <RotateCcw size={11} />
+                  Add {recurringNotAdded.length} {day === 'tomorrow' ? "tomorrow's" : "today's"} recurring
+                </button>
+              )}
+
+              {/* Sortable plan list */}
+              <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+                <PlanDropZone isEmpty={isEmpty} isOver={isOverPlanList}>
+                  {orderedItems.map(item => (
+                    <SortablePlanItem
+                      key={item.id}
+                      item={item}
+                      intention={item.tier === 'deep' ? intention : undefined}
+                      onIntentionChange={item.tier === 'deep' ? setIntention : undefined}
+                      onRemove={handleRemoveItem}
+                      onTierChange={handleTierChange}
+                    />
+                  ))}
+                </PlanDropZone>
+              </SortableContext>
+
+              {/* Quick-add maintenance task */}
+              <form onSubmit={handleQuickAdd} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={quickAdd}
+                  onChange={e => setQuickAdd(e.target.value)}
+                  placeholder="Add maintenance task..."
+                  className="flex-1 px-3 py-2 rounded-[6px] border border-[#E8E4DD] bg-[#FAF9F7]
+                    text-[12px] text-[#2A2724] placeholder:text-[#7A746A]/40
+                    outline-none focus:border-[#2A2724]/30 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={!quickAdd.trim()}
+                  className="px-3 py-2 rounded-[6px] border border-[#E8E4DD]
+                    text-[12px] text-[#7A746A] hover:border-[#2A2724]/30 hover:text-[#2A2724]
+                    transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Right column — inventory (desktop) */}
+          <div className="hidden sm:block w-[340px] border-l border-[#E8E4DD] px-5 py-6 overflow-y-auto flex-shrink-0">
+            <InventoryPanel allAssignedIds={allAssignedIds} day={day} />
+          </div>
+
+          {/* Mobile FAB */}
+          <button
+            onClick={() => setShowMobileInventory(true)}
+            className="sm:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#2A2724] text-white
+              shadow-lg flex items-center justify-center z-10
+              hover:bg-[#2A2724]/90 active:scale-95 transition-all"
+          >
+            <Plus size={24} />
+          </button>
+
+          {/* Mobile bottom sheet */}
+          {showMobileInventory && (
+            <div className="sm:hidden fixed inset-0 z-20">
+              <div
+                className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                onClick={() => setShowMobileInventory(false)}
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-[#FAF9F7] rounded-t-2xl shadow-xl
+                max-h-[60vh] flex flex-col animate-[slide-up_200ms_ease-out]">
+                {/* Sheet handle */}
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-10 h-1 rounded-full bg-[#E8E4DD]" />
+                </div>
+                <div className="flex-1 overflow-y-auto px-5 pb-6">
+                  <InventoryPanel allAssignedIds={allAssignedIds} day={day} />
+                </div>
+                {/* Mobile lock-in */}
+                <div className="p-4 border-t border-[#E8E4DD]">
+                  <button
+                    onClick={handleLockIn}
+                    className="w-full py-3 rounded-[8px] bg-[#2A2724] text-white text-[13px] font-medium
+                      hover:bg-[#2A2724]/90 transition-all"
+                  >
+                    {isToday ? 'Lock in today' : 'Lock in tomorrow'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Drag Overlay */}
+          <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-out' }}>
+            <PlanningDragOverlay
+              activeType={activeType}
+              project={activeProject}
+              task={activeTask}
+              meeting={activeMeeting}
             />
-          )}
-
-          {step === 2 && (
-            <StepDeepBlock
-              projectId={deepProjectId}
-              intention={intention}
-              onProjectChange={id => { setDeepProjectId(id); if (id) setDeepMeetingId(undefined) }}
-              onIntentionChange={setIntention}
-              calendarDeepEvent={calendarDeepEvent}
-              deepMeetingId={deepMeetingId}
-              onSetDeepMeeting={id => { setDeepMeetingId(id); if (id) setDeepProjectId('') }}
-            />
-          )}
-
-          {step === 3 && (
-            <StepShortTasks
-              taskIds={shortTaskIds}
-              onTaskIdsChange={setShortTaskIds}
-              calendarShortEvents={calendarShortEvents}
-              meetingIds={shortMeetingIds}
-              onAddMeeting={id => setShortMeetingIds(prev => [...prev, id])}
-              onRemoveMeeting={id => setShortMeetingIds(prev => prev.filter(m => m !== id))}
-            />
-          )}
-
-          {step === 4 && (
-            <StepMaintenance
-              taskIds={mainTaskIds}
-              onTaskIdsChange={setMainTaskIds}
-              calendarMaintEvents={calendarMaintEvents}
-              meetingIds={maintenanceMeetingIds}
-              onAddMeeting={id => setMaintenanceMeetingIds(prev => [...prev, id])}
-              onRemoveMeeting={id => setMaintenanceMeetingIds(prev => prev.filter(m => m !== id))}
-              day={day}
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-[#F0EEEB] flex justify-between items-center">
-          {step > 1 ? (
-            <button
-              onClick={handleBack}
-              className="text-[13px] text-[#7A746A] hover:text-[#2A2724] transition-colors px-2 py-1"
-            >
-              ← Back
-            </button>
-          ) : (
-            <div />
-          )}
-
-          {step < 4 ? (
-            <button
-              onClick={handleNext}
-              className="flex items-center gap-1 px-4 py-2 rounded-[8px]
-                bg-[#2A2724] text-white text-[13px] font-medium
-                hover:bg-[#2A2724]/90 transition-all"
-            >
-              Next →
-            </button>
-          ) : (
-            <button
-              onClick={handleLockIn}
-              className="flex items-center gap-2 px-5 py-2 rounded-[8px]
-                bg-[#2A2724] text-white text-[13px] font-medium
-                hover:bg-[#2A2724]/90 transition-all"
-            >
-              {isToday ? 'Lock in today' : 'Lock in tomorrow'}
-            </button>
-          )}
-        </div>
+          </DragOverlay>
+        </DndContext>
       </div>
     </div>
   )

@@ -193,3 +193,22 @@ export function getMostRecentOccurrenceDate(rule: RecurrenceRule, today: Date): 
     default: return null
   }
 }
+
+/** Returns minutes since midnight for a "HH:mm" time string plus an optional duration. */
+export function meetingEndMinutes(time: string, durationMinutes = 0): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m + durationMinutes
+}
+
+/** Returns the next `n` dates (starting from `from`) on which `rule` fires. */
+export function getNextOccurrences(rule: RecurrenceRule, n: number, from: Date = new Date()): Date[] {
+  const results: Date[] = []
+  const d = new Date(from)
+  let tries = 0
+  while (results.length < n && tries < 365) {
+    if (isDueToday(rule, d)) results.push(new Date(d))
+    d.setDate(d.getDate() + 1)
+    tries++
+  }
+  return results
+}

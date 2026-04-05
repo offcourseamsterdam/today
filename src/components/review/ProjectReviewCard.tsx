@@ -76,16 +76,16 @@ export default function ProjectReviewCard({
   }
 
   return (
-    <div className="border border-[#E8E4DD] rounded-lg bg-white">
+    <div className="border border-border rounded-lg bg-white">
       {/* Collapsed row */}
       <button
         onClick={() => setExpanded((prev) => !prev)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[#FAF9F7] transition-colors rounded-lg"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-canvas transition-colors rounded-lg"
       >
         {expanded ? (
-          <ChevronDown size={16} className="text-[#7A746A] shrink-0" />
+          <ChevronDown size={16} className="text-stone shrink-0" />
         ) : (
-          <ChevronRight size={16} className="text-[#7A746A] shrink-0" />
+          <ChevronRight size={16} className="text-stone shrink-0" />
         )}
 
         <span
@@ -94,7 +94,7 @@ export default function ProjectReviewCard({
           {STATUS_LABEL[project.status]}
         </span>
 
-        <span className="text-[14px] font-medium text-[#2A2724] truncate">
+        <span className="text-[14px] font-medium text-charcoal truncate">
           {project.title}
         </span>
 
@@ -102,7 +102,7 @@ export default function ProjectReviewCard({
           {hasWaiting && (
             <Clock size={14} className="text-amber-500" />
           )}
-          <span className="text-[12px] text-[#7A746A]">
+          <span className="text-[12px] text-stone">
             {openTasks.length} open
           </span>
         </span>
@@ -110,11 +110,11 @@ export default function ProjectReviewCard({
 
       {/* Expanded panel */}
       {expanded && (
-        <div className="px-4 pb-4 pt-1 space-y-4 border-t border-[#F0EEEB]">
+        <div className="px-4 pb-4 pt-1 space-y-4 border-t border-border-light">
           {/* Tasks checklist */}
           {project.tasks.length > 0 && (
             <div className="space-y-1">
-              <h4 className="text-[11px] font-medium uppercase tracking-wide text-[#7A746A] mb-2">
+              <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
                 Taken
               </h4>
               {project.tasks.map((task) => (
@@ -139,15 +139,15 @@ export default function ProjectReviewCard({
                   <span
                     className={`text-[13px] flex-1 ${
                       task.status === 'done'
-                        ? 'line-through text-[#7A746A]'
-                        : 'text-[#2A2724]'
+                        ? 'line-through text-stone'
+                        : 'text-charcoal'
                     }`}
                   >
                     {task.title}
                   </span>
                   <button
                     onClick={() => deleteTask(task.id)}
-                    className="opacity-0 group-hover:opacity-100 text-[#7A746A] hover:text-red-500 transition-all"
+                    className="opacity-0 group-hover:opacity-100 text-stone hover:text-red-500 transition-all"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -159,7 +159,7 @@ export default function ProjectReviewCard({
           {/* Waiting-on list */}
           {hasWaiting && (
             <div className="space-y-1">
-              <h4 className="text-[11px] font-medium uppercase tracking-wide text-[#7A746A] mb-2">
+              <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
                 Wachten op
               </h4>
               {project.waitingOn!.map((w) => {
@@ -170,7 +170,7 @@ export default function ProjectReviewCard({
                     key={w.person}
                     className="flex items-center gap-2 py-1"
                   >
-                    <span className="text-[13px] text-[#2A2724]">
+                    <span className="text-[13px] text-charcoal">
                       {w.person}
                     </span>
                     <span
@@ -179,7 +179,7 @@ export default function ProjectReviewCard({
                           ? 'text-red-600'
                           : status === 'amber'
                             ? 'text-amber-600'
-                            : 'text-[#7A746A]'
+                            : 'text-stone'
                       }`}
                     >
                       {getWaitingLabel(days)}
@@ -197,27 +197,34 @@ export default function ProjectReviewCard({
           )}
 
           {/* Next action input */}
-          <div>
-            <label className="text-[11px] font-medium uppercase tracking-wide text-[#7A746A] block mb-1">
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            if (!nextAction.trim()) return
+            updateProject(project.id, {
+              tasks: [{ id: crypto.randomUUID(), title: nextAction.trim(), status: 'backlog' as const, isRecurring: false, isUncomfortable: false, createdAt: new Date().toISOString() }, ...project.tasks],
+            })
+            setNextAction('')
+          }}>
+            <label className="text-[11px] font-medium uppercase tracking-wide text-stone block mb-1">
               Eerste volgende actie?
             </label>
             <input
               type="text"
               value={nextAction}
               onChange={(e) => setNextAction(e.target.value)}
-              placeholder="Wat is de eerstvolgende stap?"
-              className={`w-full text-[13px] px-3 py-2 rounded-md border border-[#E8E4DD] outline-none focus:ring-1 focus:ring-blue-300 ${
+              placeholder="Wat is de eerstvolgende stap? (Enter om toe te voegen)"
+              className={`w-full text-[13px] px-3 py-2 rounded-md border border-border outline-none focus:ring-1 focus:ring-blue-300 ${
                 openTasks.length === 0 ? 'bg-amber-50' : 'bg-white'
               }`}
             />
-          </div>
+          </form>
 
           {/* Move buttons */}
           <div className="flex gap-2">
             {project.status !== 'backlog' && (
               <button
                 onClick={() => handleMove('backlog')}
-                className="text-[12px] px-3 py-1.5 rounded-md border border-[#E8E4DD] text-[#7A746A] hover:bg-[#FAF9F7] transition-colors"
+                className="text-[12px] px-3 py-1.5 rounded-md border border-border text-stone hover:bg-canvas transition-colors"
               >
                 &rarr; Backlog
               </button>

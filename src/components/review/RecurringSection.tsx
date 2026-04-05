@@ -26,7 +26,7 @@ function ruleToFormState(rule: RecurrenceRule): RecurrenceFormState {
   }
 }
 
-export function RecurringSection({ onDeactivated: _onDeactivated }: RecurringSectionProps) {
+export function RecurringSection({ onDeactivated }: RecurringSectionProps) {
   const recurringTasks = useStore(s => s.recurringTasks)
   const updateRecurringTask = useStore(s => s.updateRecurringTask)
   const deleteRecurringTask = useStore(s => s.deleteRecurringTask)
@@ -64,6 +64,7 @@ export function RecurringSection({ onDeactivated: _onDeactivated }: RecurringSec
   function handleDelete(taskId: string) {
     if (confirmDeleteId === taskId) {
       deleteRecurringTask(taskId)
+      onDeactivated()
       setConfirmDeleteId(null)
       if (expandedId === taskId) setExpandedId(null)
     } else {

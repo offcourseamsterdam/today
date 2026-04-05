@@ -18,13 +18,14 @@ interface KanbanColumnProps {
   onOrphanDelete: (taskId: string) => void
   onOrphanAssignProject: (taskId: string, projectId: string) => void
   onOrphanOpenNotes: (task: Task) => void
+  onOrphanUpdate: (taskId: string, updates: Partial<Task>) => void
   allProjects: Project[]
   dragPreview?: { activeId: string; afterItemId: string | null; height: number; beforeFirst?: boolean }
 }
 
 export function KanbanColumn({
   id, title, projects, orphanTasks, limit, combinedCount, onProjectClick,
-  onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, allProjects,
+  onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, onOrphanUpdate, allProjects,
   dragPreview,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id })
@@ -74,6 +75,7 @@ export function KanbanColumn({
             onDelete={() => onOrphanDelete(task.id)}
             onAssignProject={projectId => onOrphanAssignProject(task.id, projectId)}
             onOpenNotes={() => onOrphanOpenNotes(task)}
+            onUpdate={updates => onOrphanUpdate(task.id, updates)}
           />
         ))}
 

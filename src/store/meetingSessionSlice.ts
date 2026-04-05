@@ -22,28 +22,11 @@ export function makeMeetingSessionActions(set: StoreSet, get: StoreGet) {
     },
     endMeetingSession: () => set({ meetingSession: null, isLiveMeetingOpen: false }),
     endAndRedirectMeeting: (meetingId: string) => {
-      const state = get()
-      const allMeetings = [...state.meetings, ...state.recurringMeetings]
-      const meeting = allMeetings.find(m => m.id === meetingId)
-
-      // End the session
-      set({ meetingSession: null, isLiveMeetingOpen: false, openMeetingId: null })
-
-      if (meeting?.projectId) {
-        const projectExists = state.projects.some(p => p.id === meeting.projectId)
-        if (projectExists) {
-          // Redirect to project modal — Meetings tab, row auto-expanded
-          set({
-            openProjectId: meeting.projectId,
-            projectModalDefaultTab: 'meetings',
-            justEndedMeetingId: meetingId,
-          })
-          return
-        }
-      }
-
-      // Standalone meeting — navigate to Meetings page
+      // End the session and navigate to Meetings inbox with the ended meeting selected
       set({
+        meetingSession: null,
+        isLiveMeetingOpen: false,
+        openMeetingId: null,
         activeView: 'meetings',
         justEndedMeetingId: meetingId,
       })

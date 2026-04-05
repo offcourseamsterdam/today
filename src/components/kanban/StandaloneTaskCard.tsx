@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { FolderOpen } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -12,20 +12,37 @@ interface StandaloneTaskCardProps {
   onDelete: () => void
   onAssignProject: (projectId: string) => void
   onOpenNotes?: () => void
+  onUpdate?: (updates: Partial<Task>) => void
   isDragOverlay?: boolean
 }
 
-export function StandaloneTaskCard({
+export const StandaloneTaskCard = memo(function StandaloneTaskCard({
   task,
   projects,
   onComplete,
   onDelete,
   onAssignProject,
   onOpenNotes,
+  onUpdate,
   isDragOverlay = false,
 }: StandaloneTaskCardProps) {
   const [showPicker, setShowPicker] = useState(false)
+  const [editingNextAction, setEditingNextAction] = useState(false)
+  const [nextActionDraft, setNextActionDraft] = useState('')
+  const nextActionRef = useRef<HTMLInputElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
+
+  function startEditNextAction() {
+    setNextActionDraft(task.nextAction ?? '')
+    setEditingNextAction(true)
+    setTimeout(() => nextActionRef.current?.focus(), 0)
+  }
+
+  function commitNextAction() {
+    const value = nextActionDraft.trim()
+    onUpdate?.({ nextAction: value || undefined })
+    setEditingNextAction(false)
+  }
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -84,6 +101,48 @@ export function StandaloneTaskCard({
             ))}
           </div>
         )}
+
+        {/* Next action */}
+        {onUpdate && (
+          <div className="mt-1">
+            {editingNextAction ? (
+              <input
+                ref={nextActionRef}
+                type="text"
+                value={nextActionDraft}
+                onChange={e => setNextActionDraft(e.target.value)}
+                onBlur={commitNextAction}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { e.preventDefault(); commitNextAction() }
+                  if (e.key === 'Escape') { setEditingNextAction(false) }
+                }}
+                onPointerDown={e => e.stopPropagation()}
+                placeholder="Next action..."
+                className="w-full bg-transparent text-[11px] text-stone/70 placeholder:text-stone/30
+                  outline-none border-b border-stone/20 py-0.5 transition-colors"
+              />
+            ) : task.nextAction ? (
+              <button
+                onPointerDown={e => e.stopPropagation()}
+                onClick={startEditNextAction}
+                className="flex items-center gap-1 text-left group/na"
+              >
+                <span className="text-[10px] text-stone/30 flex-shrink-0">→</span>
+                <span className="text-[11px] text-stone/60 hover:text-stone transition-colors leading-snug">
+                  {task.nextAction}
+                </span>
+              </button>
+            ) : (
+              <button
+                onPointerDown={e => e.stopPropagation()}
+                onClick={startEditNextAction}
+                className="text-[11px] text-stone/30 hover:text-stone/50 transition-colors italic"
+              >
+                no next action
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Assign to project */}
@@ -134,4 +193,4 @@ export function StandaloneTaskCard({
       </button>
     </div>
   )
-}
+})

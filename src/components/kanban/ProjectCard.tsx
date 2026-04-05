@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { CategoryBadge } from '../ui/CategoryBadge'
@@ -15,7 +16,7 @@ interface ProjectCardProps {
   isDragOverlay?: boolean
 }
 
-export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProps) {
+export const ProjectCard = memo(function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProps) {
   const {
     attributes,
     listeners,
@@ -191,4 +192,4 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
       </div>
     </div>
   )
-}
+})

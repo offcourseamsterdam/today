@@ -1,5 +1,5 @@
 import { format, addDays } from 'date-fns'
-import type { Settings, DailyPlan } from '../types'
+import type { Settings, DailyPlan, PlanItem } from '../types'
 import type { VandaagState, StoreGet } from './types'
 
 export const defaultSettings: Settings = {
@@ -154,6 +154,9 @@ export function makePlanActions(
     },
     setBlockOrder: (order: Array<'deep' | 'short' | 'maintenance'>) => {
       setPlan({ ...ensurePlan(get()), blockOrder: order })
+    },
+    setItemOrder: (items: PlanItem[]) => {
+      setPlan({ ...ensurePlan(get()), itemOrder: items })
     },
   }
 }

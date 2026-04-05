@@ -1,26 +1,28 @@
 // src/components/meetings/LiveNotesLog.tsx
 import { useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
+import { useStore } from '../../store'
 import type { Meeting, MeetingSession } from '../../types'
 
 interface LiveNotesLogProps {
   meeting: Meeting
   session: MeetingSession
+  isRecording: boolean
 }
 
-export function LiveNotesLog({ meeting, session }: LiveNotesLogProps) {
+export function LiveNotesLog({ meeting, session, isRecording }: LiveNotesLogProps) {
   const processingItemIds = session.processingItemIds
+  const processingItemPhases = useStore(s => s.processingItemPhases)
   const bottomRef = useRef<HTMLDivElement>(null)
   const items = meeting.agendaItems ?? []
-  const completedItems = items.filter(i => session.completedItemIds.includes(i.id))
   const agendaItemNotes = meeting.meetingNotes?.agendaItemNotes ?? []
 
-  // Auto-scroll to bottom when new notes arrive
+  // Auto-scroll to bottom when new notes arrive or current item changes
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [agendaItemNotes.length, processingItemIds.length])
+  }, [agendaItemNotes.length, processingItemIds.length, session.currentItemIndex])
 
-  if (completedItems.length === 0 && processingItemIds.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="text-[12px] text-stone/40 text-center leading-relaxed max-w-[200px]">
@@ -32,27 +34,44 @@ export function LiveNotesLog({ meeting, session }: LiveNotesLogProps) {
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-      {completedItems.map(item => {
+      {items.map((item, idx) => {
+        const isCompleted = session.completedItemIds.includes(item.id)
+        const isCurrent = idx === session.currentItemIndex && session.hasStarted
+        const isUpcoming = !isCompleted && !isCurrent
         const notes = agendaItemNotes.find(n => n.agendaItemId === item.id)
         const isProcessing = processingItemIds.includes(item.id)
+        const phase = processingItemPhases[item.id]
 
         return (
-          <div key={item.id} className="space-y-2">
+          <div key={item.id} className={`space-y-2 ${isUpcoming ? 'opacity-35' : ''}`}>
             {/* Item header */}
             <div className="flex items-center gap-2">
-              <div className="w-[6px] h-[6px] rounded-full bg-stone/30 flex-shrink-0" />
-              <h3 className="text-[12px] font-medium text-charcoal/70 uppercase tracking-[0.06em]">
+              {isCurrent && isRecording ? (
+                <span className="w-[6px] h-[6px] rounded-full bg-red-400 animate-pulse flex-shrink-0" />
+              ) : isCompleted ? (
+                <span className="w-[6px] h-[6px] rounded-full bg-stone/30 flex-shrink-0" />
+              ) : (
+                <span className="w-[6px] h-[6px] rounded-full border border-stone/25 flex-shrink-0" />
+              )}
+              <h3 className={`text-[12px] font-medium uppercase tracking-[0.06em] ${
+                isCurrent ? 'text-charcoal' : 'text-charcoal/60'
+              }`}>
                 {item.title}
               </h3>
+              {isCurrent && isRecording && (
+                <span className="text-[10px] text-red-400/70 font-normal normal-case tracking-normal">recording</span>
+              )}
             </div>
 
+            {/* Processing spinner */}
             {isProcessing && (
               <div className="flex items-center gap-2 pl-4 text-[12px] text-stone/50">
                 <Loader2 size={11} className="animate-spin" />
-                <span>Summarising…</span>
+                <span>{phase === 'transcribing' ? 'Transcribing…' : 'Summarising…'}</span>
               </div>
             )}
 
+            {/* Notes */}
             {notes && !isProcessing && (
               <div className="pl-4 space-y-2">
                 {notes.summary && (

@@ -41,8 +41,7 @@ export function MeetingsPage() {
   // Begin meeting handler for detail panel
   function handleBeginMeeting() {
     if (!selectedMeeting) return
-    const isRecurring = recurringMeetings.some(r => r.id === selectedMeeting.id)
-    if (isRecurring) {
+    if (isRecurringTemplate) {
       const occId = spawnRecurringOccurrence(selectedMeeting.id)
       startMeetingSession(occId)
     } else {
@@ -54,8 +53,7 @@ export function MeetingsPage() {
   // Delete handler for detail panel
   function handleDelete() {
     if (!selectedMeeting) return
-    const isRecurring = recurringMeetings.some(r => r.id === selectedMeeting.id)
-    if (isRecurring) {
+    if (isRecurringTemplate) {
       deleteRecurringMeeting(selectedMeeting.id)
     } else {
       deleteMeeting(selectedMeeting.id)

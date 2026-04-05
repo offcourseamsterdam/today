@@ -146,7 +146,10 @@ export function HistoryColumn() {
   const pastMeetings = useMemo(() =>
     meetings
       .filter(m => m.date && m.date <= today)
-      .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
+      .sort((a, b) =>
+        (b.date ?? '').localeCompare(a.date ?? '') ||
+        (b.time ?? '').localeCompare(a.time ?? '')
+      ),
     [meetings, today]
   )
 

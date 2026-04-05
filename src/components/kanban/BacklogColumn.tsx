@@ -68,13 +68,14 @@ interface BacklogColumnProps {
   onOrphanDelete: (taskId: string) => void
   onOrphanAssignProject: (taskId: string, projectId: string) => void
   onOrphanOpenNotes: (task: Task) => void
+  onOrphanUpdate: (taskId: string, updates: Partial<Task>) => void
   allProjects: Project[]
   backlogDragPreview?: { section: 'not_yet' | 'maybe'; afterItemId: string | null; height: number }
 }
 
 export function BacklogColumn({
   projects, orphanTasks, onProjectClick,
-  onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, allProjects,
+  onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, onOrphanUpdate, allProjects,
   backlogDragPreview,
 }: BacklogColumnProps) {
   const notYetProjects = projects.filter(p => (p.backlogSection ?? 'not_yet') === 'not_yet')
@@ -104,6 +105,7 @@ export function BacklogColumn({
                   onDelete={() => onOrphanDelete(task.id)}
                   onAssignProject={projectId => onOrphanAssignProject(task.id, projectId)}
                   onOpenNotes={() => onOrphanOpenNotes(task)}
+                  onUpdate={updates => onOrphanUpdate(task.id, updates)}
                 />
               ))}
             </div>

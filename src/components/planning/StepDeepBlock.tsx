@@ -6,6 +6,8 @@ import { CATEGORY_CONFIG } from '../../types'
 import type { AssignedCalendarEvent } from '../../types'
 import { CategoryBadge } from '../ui/CategoryBadge'
 
+const DEEP_BLOCK_MINUTES = 180 // 3 × 60 min sessions
+
 interface StepDeepBlockProps {
   projectId: string
   intention: string
@@ -14,11 +16,19 @@ interface StepDeepBlockProps {
   calendarDeepEvent: AssignedCalendarEvent | null
   deepMeetingId?: string
   onSetDeepMeeting: (id: string | undefined) => void
+  onAddOverflowToShort?: (meetingId: string) => void
 }
 
 function formatTimeRange(start: string, end: string): string {
   const fmt = (iso: string) => format(new Date(iso), 'HH:mm')
   return `${fmt(start)} – ${fmt(end)}`
+}
+
+function formatDuration(m: number): string {
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  return r ? `${h}h${r}` : `${h}h`
 }
 
 export function StepDeepBlock({
@@ -29,12 +39,14 @@ export function StepDeepBlock({
   calendarDeepEvent,
   deepMeetingId,
   onSetDeepMeeting,
+  onAddOverflowToShort,
 }: StepDeepBlockProps) {
   const projects = useStore(s => s.projects)
   const inProgressProjects = projects.filter(p => p.status === 'in_progress')
   const allMeetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const [showMeetingPicker, setShowMeetingPicker] = useState(false)
+  const [overflowDismissed, setOverflowDismissed] = useState(false)
 
   const allMeetingsList = [...allMeetings, ...recurringMeetings]
     .sort((a, b) => a.time.localeCompare(b.time))
@@ -44,6 +56,10 @@ export function StepDeepBlock({
     : null
 
   const availableMeetings = allMeetingsList.filter(m => m.id !== deepMeetingId)
+
+  const overflowMinutes = selectedMeeting && selectedMeeting.durationMinutes > DEEP_BLOCK_MINUTES
+    ? selectedMeeting.durationMinutes - DEEP_BLOCK_MINUTES
+    : 0
 
   return (
     <div className="space-y-4">
@@ -87,12 +103,41 @@ export function StepDeepBlock({
               {selectedMeeting.durationMinutes}m
             </span>
             <button
-              onClick={() => onSetDeepMeeting(undefined)}
+              onClick={() => { onSetDeepMeeting(undefined); setOverflowDismissed(false) }}
               className="text-[#7A746A]/30 hover:text-[#7A746A] transition-colors ml-1"
             >
               <X size={13} />
             </button>
           </div>
+
+          {/* Overflow banner */}
+          {overflowMinutes > 0 && !overflowDismissed && (
+            <div className="mt-2 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2.5 flex items-start gap-2.5">
+              <span className="text-amber-500 text-[13px] leading-none flex-shrink-0 mt-0.5">⚠</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] text-[#2A2724]/80 leading-snug">
+                  This meeting is <strong>{formatDuration(selectedMeeting!.durationMinutes)}</strong> — {formatDuration(overflowMinutes)} longer than your deep block (3h).
+                  Add the overflow to Short tasks?
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => { onAddOverflowToShort?.(selectedMeeting!.id); setOverflowDismissed(true) }}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-[4px] bg-[#2A2724] text-white hover:bg-[#2A2724]/80 transition-colors"
+                  >
+                    Yes, extend into Short
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverflowDismissed(true)}
+                    className="text-[11px] text-[#7A746A] hover:text-[#2A2724] transition-colors px-1"
+                  >
+                    No thanks
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { useStore } from '../../store'
-import { DeepBlock } from './DeepBlock'
-import { ShortTasks } from './ShortTasks'
-import { MaintenanceTier } from './MaintenanceTier'
-import { MeetingModal } from '../meetings/MeetingModal'
+import { DailyPlanList } from './DailyPlanList'
 import { getTodayQuote } from '../../lib/quotes'
 import type { PlanTier } from '../../types'
 
@@ -27,7 +24,6 @@ interface VandaagViewProps {
 
 export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleCollapse, onPeekTomorrow, onOpenMeetings }: VandaagViewProps) {
   const dailyPlan = useStore(s => s.dailyPlan)
-  const setBlockOrder = useStore(s => s.setBlockOrder)
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
   const projects = useStore(s => s.projects)
   const getMissionCriticalStats = useStore(s => s.getMissionCriticalStats)
@@ -40,17 +36,6 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
 
   const hasDeepBlock = !!deepBlockProjectId
   const quote = getTodayQuote()
-
-  const DEFAULT_ORDER: Array<'deep' | 'short' | 'maintenance'> = ['deep', 'short', 'maintenance']
-  const blockOrder = dailyPlan?.blockOrder ?? DEFAULT_ORDER
-
-  function swapBlocks(i: number, direction: -1 | 1) {
-    const j = i + direction
-    if (j < 0 || j >= blockOrder.length) return
-    const next = [...blockOrder]
-    ;[next[i], next[j]] = [next[j], next[i]]
-    setBlockOrder(next)
-  }
 
   // Stats
   const { missionCriticalDays, uncomfortableDone } = getMissionCriticalStats()
@@ -184,56 +169,10 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
         </div>
       )}
 
-      {/* Expanded: three tiers in a horizontal row */}
+      {/* Expanded: vertical sortable plan list */}
       {!collapsed && (
         <>
-          {/* Gentle note when deep block is not first */}
-          {blockOrder[0] !== 'deep' && (
-            <p className="text-[11px] text-stone/60 italic font-serif mb-3 px-0.5">
-              Starting elsewhere today — sometimes the day just turns out differently.
-            </p>
-          )}
-
-          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3 sm:gap-4">
-            {blockOrder.map((block, i) => (
-              <div key={block} className="relative group/tier h-full [&>*]:h-full">
-                {/* Swap arrows — visible on hover */}
-                <div className="absolute top-2 right-2 z-10 flex gap-0.5
-                  opacity-100 sm:opacity-0 sm:group-hover/tier:opacity-100 transition-opacity">
-                  {i > 0 && (
-                    <button
-                      onClick={() => swapBlocks(i, -1)}
-                      className="w-5 h-5 flex items-center justify-center rounded
-                        text-stone/30 hover:text-stone/70 hover:bg-border transition-colors"
-                      title="Move left"
-                    >
-                      <ChevronLeft size={12} />
-                    </button>
-                  )}
-                  {i < blockOrder.length - 1 && (
-                    <button
-                      onClick={() => swapBlocks(i, 1)}
-                      className="w-5 h-5 flex items-center justify-center rounded
-                        text-stone/30 hover:text-stone/70 hover:bg-border transition-colors"
-                      title="Move right"
-                    >
-                      <ChevronRight size={12} />
-                    </button>
-                  )}
-                </div>
-
-                {block === 'deep' && (
-                  <DeepBlock onEnterCitadel={() => onEnterCitadel()} onOpenMeetings={onOpenMeetings} />
-                )}
-                {block === 'short' && (
-                  <ShortTasks onEnterCitadel={ctx => onEnterCitadel(ctx)} onOpenMeetings={onOpenMeetings} />
-                )}
-                {block === 'maintenance' && (
-                  <MaintenanceTier onEnterCitadel={ctx => onEnterCitadel(ctx)} onOpenMeetings={onOpenMeetings} />
-                )}
-              </div>
-            ))}
-          </div>
+          <DailyPlanList onEnterCitadel={onEnterCitadel} onOpenMeetings={onOpenMeetings} />
 
           {/* Stats */}
           {(missionCriticalDays > 0 || uncomfortableDone > 0) && (
@@ -275,8 +214,6 @@ export function VandaagView({ onEnterCitadel, onDayDone, collapsed, onToggleColl
         </>
       )}
 
-      {/* Meeting modal — always mounted for access from any state */}
-      <MeetingModal />
     </div>
   )
 }

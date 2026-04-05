@@ -1,33 +1,16 @@
 // src/components/meetings/UpcomingColumn.tsx
 import { useMemo } from 'react'
 import { format, addDays, endOfWeek } from 'date-fns'
-import { Plus } from 'lucide-react'
+import { Plus, RotateCcw } from 'lucide-react'
 import { useStore } from '../../store'
-import { isDueToday } from '../../lib/recurrence'
+import { isDueToday, meetingEndMinutes } from '../../lib/recurrence'
+import { MeetingInlineCard } from './MeetingInlineCard'
 import type { Meeting } from '../../types'
 
-function MeetingItem({ meeting, onOpen }: { meeting: Meeting; onOpen: () => void }) {
-  return (
-    <button
-      onClick={onOpen}
-      className="w-full flex items-center gap-2.5 py-2 px-2 text-left hover:bg-stone/5
-        rounded-[6px] transition-colors group"
-    >
-      <span className="text-[11px] text-stone/40 flex-shrink-0 w-[38px]">{meeting.time}</span>
-      <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">{meeting.title}</span>
-      {meeting.durationMinutes && (
-        <span className="text-[10px] text-stone/30 flex-shrink-0">
-          {meeting.durationMinutes < 60 ? `${meeting.durationMinutes}m` : `${meeting.durationMinutes / 60}h`}
-        </span>
-      )}
-    </button>
-  )
-}
-
-function Section({ label, meetings: items, onOpen }: {
+function Section({ label, meetings: items, renderCard }: {
   label: string
   meetings: Meeting[]
-  onOpen: (id: string) => void
+  renderCard: (m: Meeting) => React.ReactNode
 }) {
   if (items.length === 0) return null
   return (
@@ -35,9 +18,11 @@ function Section({ label, meetings: items, onOpen }: {
       <div className="text-[10px] uppercase tracking-[0.08em] text-stone/35 font-medium mb-1 px-2">
         {label}
       </div>
-      {items.map(m => (
-        <MeetingItem key={m.id} meeting={m} onOpen={() => onOpen(m.id)} />
-      ))}
+      <div className="space-y-1.5">
+        {items.map(m => (
+          <div key={m.id}>{renderCard(m)}</div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -47,6 +32,10 @@ export function UpcomingColumn() {
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const setOpenMeetingId = useStore(s => s.setOpenMeetingId)
   const spawnRecurringOccurrence = useStore(s => s.spawnRecurringOccurrence)
+  const startMeetingSession = useStore(s => s.startMeetingSession)
+  const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
+  const deleteMeeting = useStore(s => s.deleteMeeting)
+  const deleteRecurringMeeting = useStore(s => s.deleteRecurringMeeting)
 
   const now = new Date()
   const todayStr = format(now, 'yyyy-MM-dd')
@@ -57,18 +46,12 @@ export function UpcomingColumn() {
   function isPast(m: Meeting): boolean {
     if (!m.date) return false
     if (m.date < todayStr) return true
-    if (m.date === todayStr && m.time < nowTime) return true
-    return false
-  }
-
-  function handleOpen(id: string) {
-    const isRecurring = recurringMeetings.some(m => m.id === id)
-    if (isRecurring) {
-      const occId = spawnRecurringOccurrence(id)
-      setOpenMeetingId(occId)
-    } else {
-      setOpenMeetingId(id)
+    if (m.date === todayStr && m.time) {
+      const endMinutes = meetingEndMinutes(m.time, m.durationMinutes)
+      const [h, min] = nowTime.split(':').map(Number)
+      return h * 60 + min >= endMinutes
     }
+    return false
   }
 
   function isRecurringStillUpcoming(m: Meeting): boolean {
@@ -102,6 +85,41 @@ export function UpcomingColumn() {
 
   const hasAnything = todayItems.length + tomorrowItems.length + thisWeekItems.length + laterItems.length > 0
 
+  function makeBeginHandler(m: Meeting): () => void {
+    const isRecurring = recurringMeetings.some(r => r.id === m.id)
+    return () => {
+      if (isRecurring) {
+        const occId = spawnRecurringOccurrence(m.id)
+        startMeetingSession(occId)
+      } else {
+        startMeetingSession(m.id)
+      }
+      setLiveMeetingOpen(true)
+    }
+  }
+
+  function makeDeleteHandler(m: Meeting): () => void {
+    const isRecurring = recurringMeetings.some(r => r.id === m.id)
+    return () => {
+      if (isRecurring) {
+        deleteRecurringMeeting(m.id)
+      } else {
+        deleteMeeting(m.id)
+      }
+    }
+  }
+
+  function renderUpcomingCard(m: Meeting) {
+    return (
+      <MeetingInlineCard
+        meeting={m}
+        onBeginMeeting={makeBeginHandler(m)}
+        onDelete={makeDeleteHandler(m)}
+        compact
+      />
+    )
+  }
+
   return (
     <div className="flex flex-col h-full border-r border-border">
       <div className="px-6 py-5 border-b border-border/60 flex items-center justify-between">
@@ -117,13 +135,35 @@ export function UpcomingColumn() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        {!hasAnything && (
+        {!hasAnything && recurringMeetings.length === 0 && (
           <p className="text-[12px] text-stone/30 italic px-2 py-8 text-center">No upcoming meetings</p>
         )}
-        <Section label="Today" meetings={todayItems} onOpen={handleOpen} />
-        <Section label="Tomorrow" meetings={tomorrowItems} onOpen={handleOpen} />
-        <Section label="This week" meetings={thisWeekItems} onOpen={handleOpen} />
-        <Section label="Later" meetings={laterItems} onOpen={handleOpen} />
+        <Section label="Today" meetings={todayItems} renderCard={renderUpcomingCard} />
+        <Section label="Tomorrow" meetings={tomorrowItems} renderCard={renderUpcomingCard} />
+        <Section label="This week" meetings={thisWeekItems} renderCard={renderUpcomingCard} />
+        <Section label="Later" meetings={laterItems} renderCard={renderUpcomingCard} />
+
+        {/* Recurring templates — manage schedules */}
+        {recurringMeetings.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-border/40">
+            <div className="text-[10px] uppercase tracking-[0.08em] text-stone/35 font-medium mb-1 px-2 flex items-center gap-1.5">
+              <RotateCcw size={9} />
+              Recurring
+            </div>
+            <div className="space-y-1.5">
+              {recurringMeetings.map(m => (
+                <MeetingInlineCard
+                  key={m.id}
+                  meeting={m}
+                  isTemplate
+                  onBeginMeeting={makeBeginHandler(m)}
+                  onDelete={() => deleteRecurringMeeting(m.id)}
+                  compact
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

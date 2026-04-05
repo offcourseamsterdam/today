@@ -36,7 +36,21 @@
       "Bash(sed -i '' 's/· wachtend/· waiting for/g' src/components/kanban/SwapModal.tsx)",
       "Bash(sed -i '' 's/Pauzeren/Pause/g' src/components/kanban/SwapModal.tsx)",
       "Bash(sed -i '' 's/Annuleer/Cancel/g' src/components/kanban/SwapModal.tsx)",
-      "Bash(find '/Users/beer/Vandaag App/src/components' -name \"*.tsx\" -exec wc -l {} +)"
+      "Bash(find '/Users/beer/Vandaag App/src/components' -name \"*.tsx\" -exec wc -l {} +)",
+      "Bash(vercel --prod)",
+      "WebSearch",
+      "Bash(printf \"production\\\\n\")",
+      "Bash(grep -E '\"\"openai\"\"|\"\"@vercel/node\"\"' package.json)",
+      "Bash(grep '\"\"dotenv\"\"' package.json)",
+      "Bash(node -e \"require\\(''dotenv''\\)\")",
+      "Bash(xargs kill:*)",
+      "Bash(node -e \"console.log\\(process.version\\); const f = new File\\([Buffer.from\\(''test''\\)], ''test.webm'', {type: ''audio/webm''}\\); console.log\\(''File works, size:'', f.size\\)\")",
+      "Bash(node -e \"const OpenAI = require\\(''openai''\\); console.log\\(''SDK version:'', require\\(''openai/package.json''\\).version\\); console.log\\(''toFile exists:'', typeof OpenAI.toFile\\)\")",
+      "Bash(node -e \"import\\(''''openai''''\\).then\\(m => console.log\\(Object.keys\\(m\\)\\)\\)\")",
+      "Bash(node --input-type=module -e \":*)",
+      "Bash(sed -i '' 's/relative w-\\\\[280px\\\\] h-\\\\[280px\\\\] mb-12/relative w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] mb-12/' src/components/vandaag/CitadelMode.tsx)",
+      "Bash(sed -i '' 's/sm:max-w-2xl sm:max-h-\\\\[90vh\\\\] max-h-\\\\[92vh\\\\]/sm:max-w-2xl max-h-[92vh]/' src/components/kanban/ProjectModal.tsx)",
+      "Bash(npx vite:*)"
     ]
   }
 }

@@ -3,7 +3,6 @@ import { useStore } from '../store'
 
 /**
  * Bundles all tomorrow-plan state + actions into one hook.
- * PlanningMode currently has 13 useStore calls; this reduces it to ~4.
  */
 export function useTomorrowPlan() {
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
@@ -13,10 +12,15 @@ export function useTomorrowPlan() {
   const removeTomorrowShortTask = useStore(s => s.removeTomorrowShortTask)
   const addTomorrowMaintenanceTask = useStore(s => s.addTomorrowMaintenanceTask)
   const removeTomorrowMaintenanceTask = useStore(s => s.removeTomorrowMaintenanceTask)
+  const addTomorrowShortProject = useStore(s => s.addTomorrowShortProject)
+  const removeTomorrowShortProject = useStore(s => s.removeTomorrowShortProject)
+  const addTomorrowMaintenanceProject = useStore(s => s.addTomorrowMaintenanceProject)
+  const removeTomorrowMaintenanceProject = useStore(s => s.removeTomorrowMaintenanceProject)
   const addTomorrowMeeting = useStore(s => s.addTomorrowMeeting)
   const removeTomorrowMeeting = useStore(s => s.removeTomorrowMeeting)
   const lockInTomorrow = useStore(s => s.lockInTomorrow)
   const clearTomorrowPlan = useStore(s => s.clearTomorrowPlan)
+  const setTomorrowBlockOrder = useStore(s => s.setTomorrowBlockOrder)
 
   const shortTaskIds = useMemo(() => tomorrowPlan?.shortTasks ?? [], [tomorrowPlan])
   const maintenanceTaskIds = useMemo(() => tomorrowPlan?.maintenanceTasks ?? [], [tomorrowPlan])
@@ -33,9 +37,14 @@ export function useTomorrowPlan() {
     removeTomorrowShortTask,
     addTomorrowMaintenanceTask,
     removeTomorrowMaintenanceTask,
+    addTomorrowShortProject,
+    removeTomorrowShortProject,
+    addTomorrowMaintenanceProject,
+    removeTomorrowMaintenanceProject,
     addTomorrowMeeting,
     removeTomorrowMeeting,
     lockInTomorrow,
     clearTomorrowPlan,
+    setTomorrowBlockOrder,
   }
 }

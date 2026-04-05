@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -105,9 +105,10 @@ export function KanbanBoard({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  const visibleProjects = selectedContextId
-    ? projects.filter(p => p.contextIds?.includes(selectedContextId))
-    : projects
+  const visibleProjects = useMemo(
+    () => selectedContextId ? projects.filter(p => p.contextIds?.includes(selectedContextId)) : projects,
+    [projects, selectedContextId]
+  )
 
   const getProjectsByStatus = useCallback(
     (status: ProjectStatus) => visibleProjects.filter(p => p.status === status),
@@ -115,7 +116,10 @@ export function KanbanBoard({
   )
 
   // Active (non-done, non-dropped) orphan tasks routed to their column
-  const activeOrphans = orphanTasks.filter(t => t.status !== 'dropped' && t.status !== 'done')
+  const activeOrphans = useMemo(
+    () => orphanTasks.filter(t => t.status !== 'dropped' && t.status !== 'done'),
+    [orphanTasks]
+  )
   const getOrphansByColumn = useCallback(
     (col: ProjectStatus) => activeOrphans.filter(t => getOrphanColumn(t) === col),
     [activeOrphans]
@@ -305,8 +309,8 @@ export function KanbanBoard({
     ? projects.find(p => p.id === selectedProject.id) || null
     : null
 
-  // Shared orphan handlers for all columns
-  const orphanHandlers = {
+  // Shared orphan handlers for all columns — memoized to avoid re-renders
+  const orphanHandlers = useMemo(() => ({
     onOrphanComplete: (taskId: string) => updateOrphanTask(taskId, {
       status: 'done',
       completedAt: new Date().toISOString(),
@@ -314,8 +318,9 @@ export function KanbanBoard({
     onOrphanDelete: (taskId: string) => deleteOrphanTask(taskId),
     onOrphanAssignProject: (taskId: string, projectId: string) => moveOrphanTaskToProject(taskId, projectId),
     onOrphanOpenNotes: (task: Task) => setSelectedOrphanTask(task),
+    onOrphanUpdate: (taskId: string, updates: Partial<Task>) => updateOrphanTask(taskId, updates),
     allProjects: projects,
-  }
+  }), [projects, updateOrphanTask, deleteOrphanTask, moveOrphanTaskToProject])
 
   return (
     <>

@@ -29,7 +29,7 @@ export function Toast() {
   return (
     <div
       className="fixed top-5 left-1/2 z-50 w-[320px]"
-      style={{ animation: 'slide-down 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both' }}
+      style={{ animation: 'slide-down-centered 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both' }}
     >
       <div
         className="bg-card border border-border rounded-[12px] overflow-hidden"

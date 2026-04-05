@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { useStore } from '../store'
 import { loadUserData, saveUserData, type SyncData } from '../lib/firestore'
+import { publishSharedProjectWithMerge } from '../lib/shareProject'
 
 // Key used to track when we last successfully wrote to Firestore
 const LOCAL_SYNC_KEY = 'vandaag-synced-at'
@@ -19,6 +20,19 @@ function extractSyncData(): SyncData {
     tomorrowPlan: s.tomorrowPlan,
     personalRules: s.personalRules,
     syncedAt: new Date().toISOString(),
+  }
+}
+
+/** Best-effort update of all publicly shared project docs (fire & forget) */
+function syncSharedProjects(displayName?: string) {
+  const s = useStore.getState()
+  const allMeetings = [...s.meetings, ...s.recurringMeetings]
+  for (const project of s.projects) {
+    if (!project.shareId) continue
+    const projectMeetings = allMeetings.filter(m => m.projectId === project.id)
+    publishSharedProjectWithMerge(project, projectMeetings, displayName).catch(() => {
+      // silent — best-effort background sync
+    })
   }
 }
 
@@ -97,6 +111,8 @@ export function useFirestoreSync(user: User | null): SyncStatus {
         const data = extractSyncData()
         await saveUserData(uid, data)
         localStorage.setItem(LOCAL_SYNC_KEY, data.syncedAt)
+        // Auto-update any publicly shared project docs
+        syncSharedProjects(user.displayName ?? undefined)
         setStatus('synced')
       }, 3000)
     })

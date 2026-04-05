@@ -144,3 +144,94 @@ export function getRandomQuote(seed?: number): BurkemanQuote {
     : Math.floor(Math.random() * BURKEMAN_QUOTES.length)
   return BURKEMAN_QUOTES[index]
 }
+
+// ── Wind-down quotes (shown after 4 PM) ─────────────────────────────────────
+
+export const WIND_DOWN_QUOTES: BurkemanQuote[] = [
+  {
+    text: 'Stop when your daily time is up, even when you\u2019re bursting with energy and feel as though you could carry on.',
+    source: 'Four Thousand Weeks',
+  },
+  {
+    text: 'Three or four hours of daily creative work is about the most you can expect from yourself.',
+    source: 'Four Thousand Weeks',
+  },
+  {
+    text: 'You\u2019ll do more meaningful work by setting firm boundaries on your working day.',
+    source: 'Four Thousand Weeks',
+  },
+  {
+    text: 'In order to most fully inhabit the only life you ever get, you have to refrain from using every spare hour for personal growth.',
+    source: 'Four Thousand Weeks',
+  },
+  {
+    text: 'The world is already full of people who work endlessly and never feel they\u2019ve done enough.',
+    source: 'Four Thousand Weeks',
+  },
+  {
+    text: 'Patience becomes a form of power. In a world geared for hurry, the capacity to resist the urge to hurry is a superpower.',
+    source: 'Four Thousand Weeks',
+  },
+  {
+    text: 'In an age of instrumentalization, the hobbyist is a subversive: she insists that some things are worth doing for themselves alone.',
+    source: 'Four Thousand Weeks',
+  },
+  {
+    text: 'Once you stop struggling to get on top of everything, you\u2019re rewarded with the time, energy and psychological freedom to accomplish the most of which anyone could be capable.',
+    source: 'Meditations for Mortals',
+  },
+  {
+    text: 'Rest is not idleness. To lie sometimes on the grass under trees on a summer\u2019s day is by no means a waste of time.',
+    source: 'John Lubbock',
+  },
+  {
+    text: 'Almost everything will work again if you unplug it for a few minutes \u2014 including you.',
+    source: 'Anne Lamott',
+  },
+  {
+    text: 'The time to relax is when you don\u2019t have time for it.',
+    source: 'Sydney J. Harris',
+  },
+  {
+    text: 'It is not enough to be busy. The question is: what are we busy about?',
+    source: 'Henry David Thoreau',
+  },
+  {
+    text: 'A field that has rested gives a beautiful crop.',
+    source: 'Ovid',
+  },
+  {
+    text: 'Each night, when I go to sleep, I die. And the next morning, when I wake up, I am reborn.',
+    source: 'Mahatma Gandhi',
+  },
+  {
+    text: 'Drink your tea slowly and reverently, as if it is the axis on which the world earth revolves.',
+    source: 'Thich Nhat Hanh',
+  },
+  {
+    text: 'The sprint mentality feels productive in the moment, but the body keeps the score. Consistency is kinder.',
+  },
+  {
+    text: 'What you do every day matters more than what you do once in a while. Small, steady effort compounds.',
+    source: 'Gretchen Rubin',
+  },
+  {
+    text: 'Slow is smooth, and smooth is fast. Rushing creates the very friction it tries to escape.',
+  },
+  {
+    text: 'True stillness is not absence of movement. It is the movement of a calm mind at rest in its own depth.',
+    source: 'Thich Nhat Hanh',
+  },
+  {
+    text: 'We do not stop resting because we grow weary. We grow weary because we stop resting.',
+  },
+]
+
+// Get a wind-down quote based on day of year (different rotation than main quotes)
+export function getWindDownQuote(): BurkemanQuote {
+  const dayOfYear = Math.floor(
+    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
+  )
+  // Offset by 7 so it doesn't overlap with the main quote rotation
+  return WIND_DOWN_QUOTES[(dayOfYear + 7) % WIND_DOWN_QUOTES.length]
+}

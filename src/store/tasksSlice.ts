@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid'
 import { format, addDays } from 'date-fns'
-import type { Task, RecurrenceRule } from '../types'
+import type { Task, Subtask, RecurrenceRule } from '../types'
 import type { StoreSet, StoreGet } from './types'
 import { isDueToday } from '../lib/recurrence'
 
@@ -49,6 +49,18 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
       }
     },
 
+    reorderProjectTasks: (projectId: string, taskIds: string[]) => {
+      set(state => ({
+        projects: state.projects.map(p =>
+          p.id !== projectId ? p : {
+            ...p,
+            tasks: taskIds.map(id => p.tasks.find(t => t.id === id)!).filter(Boolean),
+            updatedAt: new Date().toISOString(),
+          }
+        ),
+      }))
+    },
+
     deleteTask: (taskId: string, projectId?: string) => {
       if (projectId) {
         set(state => ({
@@ -59,6 +71,62 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
           ),
         }))
       }
+    },
+
+    // ── Subtask actions ───────────────────────────────────────────
+    addSubtask: (projectId: string, taskId: string, title: string): string => {
+      const id = uuid()
+      const subtask: Subtask = { id, title, done: false }
+      set(state => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? {
+                ...p,
+                tasks: p.tasks.map(t =>
+                  t.id === taskId ? { ...t, subtasks: [...(t.subtasks ?? []), subtask] } : t
+                ),
+                updatedAt: new Date().toISOString(),
+              }
+            : p
+        ),
+      }))
+      return id
+    },
+
+    toggleSubtask: (projectId: string, taskId: string, subtaskId: string) => {
+      set(state => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? {
+                ...p,
+                tasks: p.tasks.map(t =>
+                  t.id === taskId
+                    ? { ...t, subtasks: (t.subtasks ?? []).map(s => s.id === subtaskId ? { ...s, done: !s.done } : s) }
+                    : t
+                ),
+                updatedAt: new Date().toISOString(),
+              }
+            : p
+        ),
+      }))
+    },
+
+    deleteSubtask: (projectId: string, taskId: string, subtaskId: string) => {
+      set(state => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? {
+                ...p,
+                tasks: p.tasks.map(t =>
+                  t.id === taskId
+                    ? { ...t, subtasks: (t.subtasks ?? []).filter(s => s.id !== subtaskId) }
+                    : t
+                ),
+                updatedAt: new Date().toISOString(),
+              }
+            : p
+        ),
+      }))
     },
 
     addOrphanTask: (title: string): string => {

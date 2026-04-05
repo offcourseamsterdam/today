@@ -70,6 +70,8 @@ function devApiPlugin(): Plugin {
             handler = await import('./api/done-reflection')
           } else if (route === 'project-decisions') {
             handler = await import('./api/project-decisions')
+          } else if (route === 'recent-meeting-summary') {
+            handler = await import('./api/recent-meeting-summary')
           } else {
             res.writeHead(404)
             res.end('Not found')
@@ -93,5 +95,17 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), devApiPlugin()],
   server: {
     host: '127.0.0.1',
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'vendor-editor': ['@blocknote/core', '@blocknote/react', '@blocknote/mantine', '@mantine/core', '@mantine/hooks'],
+          'vendor-dates': ['date-fns'],
+        },
+      },
+    },
   },
 })

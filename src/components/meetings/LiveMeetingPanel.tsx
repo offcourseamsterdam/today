@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Square, SkipForward, Pause, Play, MicOff, RotateCw, ChevronDown, ChevronRight } from 'lucide-react'
+import { Square, SkipForward, Pause, Play, MicOff, RotateCw, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { useStore } from '../../store'
 import { useRecording } from '../../hooks/useRecording'
 import { AudioLevelBars } from './AudioLevelBars'
@@ -102,10 +102,16 @@ export function LiveMeetingPanel() {
   const meetingSession = useStore(s => s.meetingSession)
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
-  const endMeetingSession = useStore(s => s.endMeetingSession)
+  const endAndRedirectMeeting = useStore(s => s.endAndRedirectMeeting)
   const pauseMeetingSession = useStore(s => s.pauseMeetingSession)
   const resumeMeetingSession = useStore(s => s.resumeMeetingSession)
   const advanceMeetingItem = useStore(s => s.advanceMeetingItem)
+  const processingMeetingId = useStore(s => s.processingMeetingId)
+  const processingPhase = useStore(s => s.processingPhase)
+  const processingError = useStore(s => s.processingError)
+  const processingItemPhases = useStore(s => s.processingItemPhases)
+  const processingItemErrors = useStore(s => s.processingItemErrors)
+  const setProcessingError = useStore(s => s.setProcessingError)
 
   const meeting = meetingSession
     ? [...meetings, ...recurringMeetings].find(m => m.id === meetingSession.meetingId)
@@ -173,13 +179,46 @@ export function LiveMeetingPanel() {
             {formatSeconds(elapsed)}
           </span>
           <button
-            onClick={endMeetingSession}
+            onClick={() => endAndRedirectMeeting(meetingSession.meetingId)}
             className="text-[10px] text-stone/40 hover:text-red-400 transition-colors"
           >
             End
           </button>
         </div>
       </div>
+
+      {/* Post-meeting processing status */}
+      {processingMeetingId && (
+        <div className="flex items-center gap-2 text-[11px] text-stone/60 bg-stone/5 rounded-[6px] px-3 py-2">
+          <span className="w-3 h-3 border border-stone/30 border-t-stone/70 rounded-full animate-spin flex-shrink-0" />
+          <div className="flex items-center gap-1.5">
+            <span className={processingPhase === 'transcribing' ? 'text-charcoal font-medium' : 'text-stone/40'}>
+              Transcribing
+            </span>
+            <span className="text-stone/20">→</span>
+            <span className={processingPhase === 'summarizing' ? 'text-charcoal font-medium' : 'text-stone/40'}>
+              Summarizing
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Processing error */}
+      {processingError && !processingMeetingId && (
+        <div className="flex items-start gap-2 text-[11px] text-red-500/80 bg-red-50/60 rounded-[6px] px-3 py-2">
+          <AlertCircle size={12} className="flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="font-medium">Processing failed</span>
+            <span className="text-red-400/80 ml-1.5">{processingError}</span>
+          </div>
+          <button
+            onClick={() => setProcessingError(null)}
+            className="text-red-400/60 hover:text-red-500 transition-colors flex-shrink-0"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Progress — only when there are agenda items */}
       {hasItems && (
@@ -233,7 +272,13 @@ export function LiveMeetingPanel() {
                   {isProcessing && (
                     <span className="flex items-center gap-1 text-[10px] text-stone/40">
                       <span className="w-2.5 h-2.5 border border-stone/30 border-t-stone/60 rounded-full animate-spin" />
-                      Summarizing
+                      {processingItemPhases[item.id] === 'transcribing' ? 'Transcribing…' : 'Summarizing…'}
+                    </span>
+                  )}
+                  {!isProcessing && processingItemErrors[item.id] && (
+                    <span className="flex items-center gap-1 text-[10px] text-red-400" title={processingItemErrors[item.id]}>
+                      <AlertCircle size={10} />
+                      Failed
                     </span>
                   )}
                 </div>
@@ -264,7 +309,7 @@ export function LiveMeetingPanel() {
         )}
 
         <button
-          onClick={hasItems ? advanceMeetingItem : endMeetingSession}
+          onClick={hasItems ? advanceMeetingItem : () => endAndRedirectMeeting(meetingSession.meetingId)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px]
             bg-charcoal text-canvas text-[11px] font-medium
             hover:bg-charcoal/80 transition-colors"

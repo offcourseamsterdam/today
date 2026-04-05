@@ -96,7 +96,21 @@ function AgendaItemRow({
             focus:border-stone/20 transition-colors py-0.5"
         />
 
-        {/* Row 2: duration + owner + actions */}
+        {/* Row 2: description (optional, shown when focused or has content) */}
+        <textarea
+          value={item.description ?? ''}
+          onChange={e => onChange(item.id, { description: e.target.value || undefined })}
+          placeholder="What will be discussed... (optional)"
+          rows={1}
+          tabIndex={-1}
+          className="w-full bg-transparent text-[11px] text-stone/50 placeholder:text-stone/20
+            outline-none border-b border-transparent focus:border-stone/15 transition-colors
+            resize-none py-0.5 mt-0.5 leading-relaxed
+            opacity-0 focus:opacity-100 group-hover:opacity-100
+            [&:not(:placeholder-shown)]:opacity-100"
+        />
+
+        {/* Row 3: duration + owner + actions */}
         <div className="flex items-center gap-1 mt-1">
           {/* Duration chips */}
           <button

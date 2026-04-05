@@ -1,5 +1,5 @@
 // src/components/vandaag/CitadelTaskPanel.tsx
-import { useMemo } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -17,7 +17,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Plus } from 'lucide-react'
 import { useStore } from '../../store'
 import { useTaskToggle } from '../../hooks/useTaskToggle'
 import type { Project, Task } from '../../types'
@@ -98,7 +98,19 @@ function CitadelDoneTaskRow({ task, onToggle }: { task: Task; onToggle: (id: str
 
 export function CitadelTaskPanel({ project }: { project: Project }) {
   const reorderProjectTasks = useStore(s => s.reorderProjectTasks)
+  const addTask = useStore(s => s.addTask)
   const toggleTask = useTaskToggle()
+  const [newTitle, setNewTitle] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleAddTask(e: React.FormEvent) {
+    e.preventDefault()
+    const title = newTitle.trim()
+    if (!title) return
+    addTask(title, project.id)
+    setNewTitle('')
+    inputRef.current?.focus()
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -140,7 +152,7 @@ export function CitadelTaskPanel({ project }: { project: Project }) {
       <div className="flex-1 overflow-y-auto py-2">
         {project.tasks.length === 0 ? (
           <p className="text-[12px] text-citadel-text/20 italic px-5 py-4">
-            No tasks in this project
+            No tasks yet
           </p>
         ) : (
           <>
@@ -163,6 +175,30 @@ export function CitadelTaskPanel({ project }: { project: Project }) {
           </>
         )}
       </div>
+
+      {/* Add task */}
+      <form
+        onSubmit={handleAddTask}
+        className="px-4 py-3 border-t border-citadel-text/10 flex items-center gap-2"
+      >
+        <button
+          type="submit"
+          className="w-5 h-5 rounded-full border border-citadel-text/20 flex items-center justify-center
+            text-citadel-text/25 hover:text-citadel-text/50 hover:border-citadel-text/40
+            flex-shrink-0 transition-all"
+        >
+          <Plus size={10} />
+        </button>
+        <input
+          ref={inputRef}
+          type="text"
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
+          placeholder="Add a task..."
+          className="flex-1 bg-transparent text-[13px] text-citadel-text/60 placeholder:text-citadel-text/20
+            outline-none border-none leading-snug"
+        />
+      </form>
     </div>
   )
 }

@@ -82,8 +82,8 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <CheckCircle className="text-green-600 mb-3" size={40} strokeWidth={1.5} />
-        <p className="font-[Fraunces] text-lg text-[#2A2724]">Inbox leeg</p>
-        <p className="text-sm text-[#7A746A] mt-1">Geen losse taken om te verwerken.</p>
+        <p className="font-serif text-lg text-charcoal">Inbox leeg</p>
+        <p className="text-sm text-stone mt-1">Geen losse taken om te verwerken.</p>
       </div>
     )
   }
@@ -93,8 +93,8 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <CheckCircle className="text-green-600 mb-3" size={40} strokeWidth={1.5} />
-        <p className="font-[Fraunces] text-lg text-[#2A2724]">Inbox leeg</p>
-        <p className="text-sm text-[#7A746A] mt-1">
+        <p className="font-serif text-lg text-charcoal">Inbox leeg</p>
+        <p className="text-sm text-stone mt-1">
           {toProjectCount > 0 && `${toProjectCount} naar project`}
           {toProjectCount > 0 && keptCount > 0 && ', '}
           {keptCount > 0 && `${keptCount} behouden`}
@@ -105,26 +105,27 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
     )
   }
 
-  // Task was deleted externally (edge case) — skip it
-  if (!currentTask) {
-    markProcessed(currentId!)
-    return null
-  }
+  // Task was deleted externally (edge case) — skip it via effect
+  useEffect(() => {
+    if (currentId && !currentTask) {
+      markProcessed(currentId)
+    }
+  }, [currentId, currentTask, markProcessed])
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">
       {/* Counter */}
-      <p className="text-xs font-medium tracking-wide uppercase text-[#7A746A]">
+      <p className="text-xs font-medium tracking-wide uppercase text-stone">
         {processedCount + 1} van {total}
       </p>
 
       {/* Card */}
-      <div className="w-full max-w-md bg-white border border-[#E8E4DD] rounded-[10px] px-6 py-5 shadow-sm">
-        <h3 className="font-[Fraunces] text-lg text-[#2A2724] leading-snug">
+      <div className="w-full max-w-md bg-white border border-border rounded-[10px] px-6 py-5 shadow-sm">
+        <h3 className="font-serif text-lg text-charcoal leading-snug">
           {currentTask.title}
         </h3>
         {currentTask.createdAt && (
-          <p className="text-xs text-[#7A746A] mt-1.5">
+          <p className="text-xs text-stone mt-1.5">
             Aangemaakt {new Date(currentTask.createdAt).toLocaleDateString('nl-NL', {
               day: 'numeric', month: 'short', year: 'numeric',
             })}
@@ -139,8 +140,8 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
           <button
             onClick={() => setShowProjectPicker(prev => !prev)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg
-                       border border-[#E8E4DD] bg-white text-[#2A2724]
-                       hover:bg-[#F0EEEB] transition-colors cursor-pointer"
+                       border border-border bg-white text-charcoal
+                       hover:bg-border-light transition-colors cursor-pointer"
           >
             <FolderInput size={15} />
             Naar project
@@ -149,9 +150,9 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
 
           {showProjectPicker && (
             <div className="absolute top-full left-0 mt-1.5 w-64 max-h-60 overflow-y-auto
-                            bg-white border border-[#E8E4DD] rounded-lg shadow-lg z-20">
+                            bg-white border border-border rounded-lg shadow-lg z-20">
               {projects.length === 0 ? (
-                <p className="px-3 py-2.5 text-sm text-[#7A746A]">Geen projecten</p>
+                <p className="px-3 py-2.5 text-sm text-stone">Geen projecten</p>
               ) : (
                 projects
                   .filter(p => p.status !== 'done')
@@ -160,8 +161,8 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
                     <button
                       key={p.id}
                       onClick={() => handleMoveToProject(p.id)}
-                      className="w-full text-left px-3 py-2 text-sm text-[#2A2724]
-                                 hover:bg-[#FAF9F7] transition-colors cursor-pointer"
+                      className="w-full text-left px-3 py-2 text-sm text-charcoal
+                                 hover:bg-canvas transition-colors cursor-pointer"
                     >
                       {p.title}
                     </button>
@@ -175,8 +176,8 @@ export default function InboxSection({ onStats }: InboxSectionProps) {
         <button
           onClick={handleKeep}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg
-                     border border-[#E8E4DD] bg-white text-[#2A2724]
-                     hover:bg-[#F0EEEB] transition-colors cursor-pointer"
+                     border border-border bg-white text-charcoal
+                     hover:bg-border-light transition-colors cursor-pointer"
         >
           <Check size={15} />
           Houden
