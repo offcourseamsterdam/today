@@ -10,8 +10,10 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react'
-import InboxSection from './InboxSection'
+import InboxSection, { type InboxActions } from './InboxSection'
 import ProjectsSection from './ProjectsSection'
+import { useStore } from '../../store'
+import { useReviewKeyboard } from '../../hooks/useReviewKeyboard'
 import { RecurringSection } from './RecurringSection'
 import { SummarySection, type ReviewStats } from './SummarySection'
 
@@ -54,6 +56,33 @@ export function WeeklyReviewPage() {
     projects: null,
     recurring: null,
     summary: null,
+  })
+
+  const inboxActionsRef = useRef<InboxActions | null>(null)
+  const [focusedProjectIndex, setFocusedProjectIndex] = useState(0)
+  const [expandedProjectIndices, setExpandedProjectIndices] = useState<Set<number>>(new Set())
+
+  const projects = useStore(s => s.projects)
+  const projectCount = projects.length
+
+  const toggleProjectExpanded = useCallback((index: number) => {
+    setExpandedProjectIndices(prev => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+  }, [])
+
+  useReviewKeyboard({
+    activeSection,
+    setActiveSection,
+    sectionRefs: sectionRefs.current,
+    inboxActionsRef,
+    focusedProjectIndex,
+    setFocusedProjectIndex,
+    projectCount,
+    toggleProjectExpanded,
   })
 
   const markSectionDone = useCallback(
@@ -272,6 +301,7 @@ export function WeeklyReviewPage() {
                     <div className="pt-4">
                       {section.id === 'inbox' && (
                         <InboxSection
+                          actionsRef={inboxActionsRef}
                           onStats={handleInboxStats}
                           onAllProcessed={() => {
                             setTimeout(() => markSectionDone('inbox'), 800)
