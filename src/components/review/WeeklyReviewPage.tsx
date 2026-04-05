@@ -60,7 +60,7 @@ export function WeeklyReviewPage() {
 
   const inboxActionsRef = useRef<InboxActions | null>(null)
   const [focusedProjectIndex, setFocusedProjectIndex] = useState(0)
-  const [expandedProjectIndices, setExpandedProjectIndices] = useState<Set<number>>(new Set())
+  const [, setExpandedProjectIndices] = useState<Set<number>>(new Set())
 
   const projects = useStore(s => s.projects)
   const projectCount = projects.length
