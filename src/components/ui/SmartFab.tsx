@@ -30,8 +30,7 @@ export function SmartFab({
 }: SmartFabProps) {
   const dailyPlan = useStore(s => s.dailyPlan)
   const tomorrowPlan = useStore(s => s.tomorrowPlan)
-  const focusSession = useStore(s => s.focusSession)
-  const showCitadelOverlay = useStore(s => s.showCitadelOverlay)
+  const inlineTimer = useStore(s => s.inlineTimer)
   const meetingSession = useStore(s => s.meetingSession)
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
@@ -50,8 +49,8 @@ export function SmartFab({
   const isTomorrowPlanned = !!(tomorrowPlan?.isComplete)
   const isAfterThree = hour >= 15
 
-  const focusLabel = focusSession
-    ? `${focusSession.projectTitle || focusSession.taskTitle} · Back to focus`
+  const focusLabel = inlineTimer?.isRunning
+    ? `${inlineTimer.linkedItemTitle ?? 'Timer'} · Focus active`
     : null
 
   const activeMeeting = meetingSession
@@ -67,7 +66,7 @@ export function SmartFab({
 
   function handlePrimaryClick() {
     if (focusLabel) {
-      showCitadelOverlay()
+      // Timer is running — no overlay to show, just scroll to timer
     } else if (meetingLabel) {
       onBackToMeeting()
     } else if (label === 'Plan today') {
@@ -81,7 +80,7 @@ export function SmartFab({
 
   function handleFabClick() {
     if (focusLabel) {
-      showCitadelOverlay()
+      // Timer is running inline — no action needed
     } else if (label === 'Plan today') {
       onPlanToday()
     } else if (label === 'Plan tomorrow?') {
@@ -145,7 +144,7 @@ export function SmartFab({
           <button
             onClick={handlePrimaryClick}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-[10px]
-              bg-card border border-border
+              bg-card/90 backdrop-blur-sm border border-border
               shadow-[0_4px_20px_rgba(42,39,36,0.10)]
               hover:shadow-[0_4px_28px_rgba(42,39,36,0.15)]
               hover:border-stone/30

@@ -267,10 +267,10 @@ function DeepBlockComplete({ projectTitle }: { projectTitle: string }) {
 }
 
 function FocusTimeButton({ projectId, onStartFocus }: { projectId: string; onStartFocus: () => void }) {
-  const focusSession = useStore(s => s.focusSession)
+  const inlineTimer = useStore(s => s.inlineTimer)
   const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog) ?? EMPTY_LOG
 
-  const info = getFocusTimeLabel(projectId, 'deep', focusSession, pomodoroLog)
+  const info = getFocusTimeLabel(projectId, inlineTimer, pomodoroLog)
 
   return (
     <button

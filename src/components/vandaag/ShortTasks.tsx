@@ -31,7 +31,7 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
   } = useTodayPlan()
   const showToast = useStore(s => s.showToast)
   const toggleTask = useTaskToggle(showToast)
-  const focusSession = useStore(s => s.focusSession)
+  const inlineTimer = useStore(s => s.inlineTimer)
   const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog) ?? EMPTY_LOG
 
 
@@ -131,7 +131,7 @@ export function ShortTasks({ onEnterCitadel, onOpenMeetings }: ShortTasksProps) 
                 onOpenProject={setOpenProjectId}
               />
               {onEnterCitadel && (() => {
-                const info = getFocusTimeLabel(taskId, 'short', focusSession, pomodoroLog)
+                const info = getFocusTimeLabel(taskId, inlineTimer, pomodoroLog)
                 return (
                   <button
                     onClick={() => {

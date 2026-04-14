@@ -6,6 +6,7 @@ import { Search, Plus, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react
 import { useStore } from '../../store'
 import { searchMeeting } from '../../lib/meetingSearch'
 import { isDueToday, meetingEndMinutes, describeRule } from '../../lib/recurrence'
+import { formatDuration, formatTimeShort } from '../../lib/formatting'
 import type { Meeting } from '../../types'
 
 interface MeetingListColumnProps {
@@ -18,18 +19,6 @@ interface MeetingListColumnProps {
 }
 
 /* ── tiny helpers ─────────────────────────────────────────── */
-
-function formatTimeShort(time: string): string {
-  const [h, m] = time.split(':')
-  return `${h}:${m}`
-}
-
-function formatDuration(mins: number): string {
-  if (mins < 60) return `${mins}m`
-  const h = Math.floor(mins / 60)
-  const r = mins % 60
-  return r ? `${h}h${r}` : `${h}h`
-}
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text

@@ -168,6 +168,7 @@ export interface DailyPlan {
   pomodoroLog?: PomodoroLogEntry[]
   blockOrder?: Array<'deep' | 'short' | 'maintenance'>
   itemOrder?: PlanItem[]
+  completedItemIds?: string[]  // plan item IDs marked "done for the day" (visual only)
   isComplete: boolean
   completedAt?: string
 }
@@ -182,7 +183,8 @@ export interface CalendarEvent {
   isAllDay: boolean
 }
 
-export type TierAssignment = 'deep' | 'short' | 'maintenance' | 'unassigned'
+export type Tier = 'deep' | 'short' | 'maintenance'
+export type TierAssignment = Tier | 'unassigned'
 
 export interface AssignedCalendarEvent {
   event: CalendarEvent
@@ -207,22 +209,22 @@ export interface PomodoroLogEntry {
   totalMinutesWorked: number
 }
 
-export interface FocusSession {
-  tier: PlanTier
-  taskId: string
-  taskTitle: string
-  projectTitle?: string
-  intention?: string
-  projectId?: string
-  startedAt: string
-  lastTickAt: string
+export type InlineTimerMode = 'short' | 'long'
+
+export interface InlineTimerState {
+  mode: InlineTimerMode
   secondsLeft: number
   isRunning: boolean
   isBreak: boolean
   sessionsCompleted: number
+  linkedItemId?: string
+  linkedItemTitle?: string
+  linkedProjectTitle?: string
+  linkedProjectId?: string
+  startedAt: string
+  lastTickAt: string
   workMinutes: number
   breakMinutes: number
-  targetSessions: number
 }
 
 export interface LifeWeeks {

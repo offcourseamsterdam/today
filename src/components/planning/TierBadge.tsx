@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-
-type Tier = 'deep' | 'short' | 'maintenance'
+import type { Tier } from '../../types'
 
 interface TierBadgeProps {
   tier: Tier

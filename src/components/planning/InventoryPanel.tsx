@@ -138,9 +138,9 @@ export function InventoryPanel({ allAssignedIds, day = 'today' }: InventoryPanel
   const inProgressProjects = useMemo(() => projects.filter(p => p.status === 'in_progress'), [projects])
   const availableTasks = useMemo(() => getAvailableTasks(projects, orphanTasks, []), [projects, orphanTasks])
 
-  // Only meetings scheduled for the plan day
+  // Meetings scheduled for the plan day (including undated meetings treated as today)
   const allMeetingsList = useMemo(() => {
-    const dated = meetings.filter(m => m.date === planDate)
+    const dated = meetings.filter(m => m.date === planDate || !m.date)
     const recurring = recurringMeetings.filter(m => m.recurrenceRule && isDueToday(m.recurrenceRule, planDateObj))
     return [...dated, ...recurring].sort((a, b) => a.time.localeCompare(b.time))
   }, [meetings, recurringMeetings, planDate]) // eslint-disable-line react-hooks/exhaustive-deps

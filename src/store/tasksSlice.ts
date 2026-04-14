@@ -148,6 +148,10 @@ export function makeTaskActions(set: StoreSet, get: StoreGet) {
       set(state => ({ orphanTasks: state.orphanTasks.filter(t => t.id !== taskId) }))
     },
 
+    restoreOrphanTask: (task: Task) => {
+      set(state => ({ orphanTasks: [...state.orphanTasks, task] }))
+    },
+
     moveOrphanTaskToProject: (taskId: string, projectId: string) => {
       const state = get()
       const task = state.orphanTasks.find(t => t.id === taskId)

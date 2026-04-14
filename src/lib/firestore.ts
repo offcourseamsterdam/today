@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
+import { deepClean } from './utils'
 import type { Project, Task, Meeting, Settings, DailyPlan } from '../types'
 
 export interface SyncData {
@@ -13,11 +14,6 @@ export interface SyncData {
   tomorrowPlan: DailyPlan | null
   personalRules: string[]
   syncedAt: string
-}
-
-// Strip undefined values — Firestore does not accept undefined
-function deepClean<T>(val: T): T {
-  return JSON.parse(JSON.stringify(val, (_, v) => (v === undefined ? null : v)))
 }
 
 /**

@@ -172,6 +172,21 @@ export function makeDailyPlanActions(set: StoreSet, get: StoreGet) {
       set({ dailyPlan: { ...plan, pomodoroLog: updatedLog } })
     },
 
+    togglePlanItemCompletion: (itemId: string) => {
+      const plan = get().dailyPlan
+      if (!plan) return
+      const completed = plan.completedItemIds ?? []
+      const isCompleted = completed.includes(itemId)
+      set({
+        dailyPlan: {
+          ...plan,
+          completedItemIds: isCompleted
+            ? completed.filter(id => id !== itemId)
+            : [...completed, itemId],
+        },
+      })
+    },
+
     loadTomorrowPlanIfReady: (): boolean => {
       const state = get()
       const today = getTodayString()

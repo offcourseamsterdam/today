@@ -10,7 +10,7 @@ import { VandaagView } from './components/vandaag/VandaagView'
 import { PlanningMode } from './components/vandaag/PlanningMode'
 import { SmartFab } from './components/ui/SmartFab'
 import { WindDownBanner } from './components/ui/WindDownBanner'
-import { CitadelMode } from './components/vandaag/CitadelMode'
+import { VandaagDarkContext } from './components/vandaag/VandaagDarkContext'
 import { EnoughScreen } from './components/vandaag/EnoughScreen'
 import { NewDayScreen } from './components/vandaag/NewDayScreen'
 import { TomorrowPeek } from './components/vandaag/TomorrowPeek'
@@ -42,15 +42,11 @@ function App() {
   const greetedDate = useStore(s => s.greetedDate)
   const setGreetedDate = useStore(s => s.setGreetedDate)
   const dailyPlan = useStore(s => s.dailyPlan)
-  const focusSession = useStore(s => s.focusSession)
-  const showCitadel = useStore(s => s.showCitadel)
-  const tickFocusSession = useStore(s => s.tickFocusSession)
+  const inlineTimer = useStore(s => s.inlineTimer)
+  const tickInlineTimer = useStore(s => s.tickInlineTimer)
   const meetingSession = useStore(s => s.meetingSession)
   const setLiveMeetingOpen = useStore(s => s.setLiveMeetingOpen)
   const tickMeetingSession = useStore(s => s.tickMeetingSession)
-  const hideCitadelOverlay = useStore(s => s.hideCitadelOverlay)
-  const endFocusSession = useStore(s => s.endFocusSession)
-  const startFocusSession = useStore(s => s.startFocusSession)
   const [showEnough, setShowEnough] = useState(false)
   const [vandaagCollapsed, setVandaagCollapsed] = useState(false)
   const [kanbanCollapsed, setKanbanCollapsed] = useState(false)
@@ -59,6 +55,7 @@ function App() {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [showAddProjectModal, setShowAddProjectModal] = useState(false)
   const [showRecurringDrawer, setShowRecurringDrawer] = useState(false)
+  const [planningDay, setPlanningDay] = useState<'today' | 'tomorrow'>('tomorrow')
   const [hour, setHour] = useState(() => new Date().getHours())
 
   // Track today's date string — updates if the tab is kept open past midnight
@@ -80,12 +77,14 @@ function App() {
     refreshDailyPlan()
   }, [todayStr, refreshDailyPlan])
 
-  // Global focus session tick — runs while any session is active
+  // Global inline timer tick — runs while timer is active
   useEffect(() => {
-    if (!focusSession?.isRunning) return
-    const id = setInterval(() => tickFocusSession(), 1000)
+    if (!inlineTimer?.isRunning) return
+    const id = setInterval(() => tickInlineTimer(), 1000)
     return () => clearInterval(id)
-  }, [focusSession?.isRunning, tickFocusSession])
+  }, [inlineTimer?.isRunning, tickInlineTimer])
+
+  const isDarkMode = !!inlineTimer?.isRunning
 
   // Global meeting session tick
   useEffect(() => {
@@ -93,6 +92,18 @@ function App() {
     const id = setInterval(() => tickMeetingSession(), 1000)
     return () => clearInterval(id)
   }, [meetingSession?.isRunning, meetingSession?.secondsLeft, tickMeetingSession])
+
+  // Clear stale meeting sessions from previous days
+  const endAndRedirectMeeting = useStore(s => s.endAndRedirectMeeting)
+  useEffect(() => {
+    if (!meetingSession) return
+    const meetings = useStore.getState().meetings
+    const recurringMeetings = useStore.getState().recurringMeetings
+    const meeting = [...meetings, ...recurringMeetings].find(m => m.id === meetingSession.meetingId)
+    if (meeting?.date && meeting.date < todayStr) {
+      endAndRedirectMeeting(meetingSession.meetingId)
+    }
+  }, [todayStr]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const showNewDay = greetedDate !== todayStr
 
@@ -108,17 +119,7 @@ function App() {
     return (
       <NewDayScreen
         onStart={() => setGreetedDate(todayStr)}
-        onPlan={() => { setGreetedDate(todayStr); setActiveView('planning') }}
-      />
-    )
-  }
-
-  // Citadel Mode — full-screen dark focus overlay
-  if (showCitadel && focusSession) {
-    return (
-      <CitadelMode
-        onExit={hideCitadelOverlay}
-        onEndSession={endFocusSession}
+        onPlan={() => { setGreetedDate(todayStr); setPlanningDay('today'); setActiveView('planning') }}
       />
     )
   }
@@ -137,7 +138,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas overflow-x-hidden">
+    <div className={`min-h-screen overflow-x-hidden transition-colors duration-500 ${isDarkMode ? 'bg-citadel-bg' : 'bg-canvas'}`}>
       {/* Header */}
       <header className="max-w-[1400px] mx-auto px-4 pt-5 pb-4 sm:px-6 sm:pt-8 sm:pb-6 flex justify-between items-start">
         <div className="flex items-center gap-3">
@@ -210,13 +211,13 @@ function App() {
         >
           <TomorrowPeek
             onClose={() => setShowTomorrowPeek(false)}
-            onEdit={() => { setShowTomorrowPeek(false); setActiveView('planning') }}
+            onEdit={() => { setShowTomorrowPeek(false); setPlanningDay('tomorrow'); setActiveView('planning') }}
           />
         </div>
       </>
 
       {/* Wind-down banner — after 4 PM, no active sessions */}
-      {hour >= 16 && !focusSession && !meetingSession && !dailyPlan?.isComplete && (
+      {hour >= 16 && !inlineTimer?.isRunning && !meetingSession && !dailyPlan?.isComplete && (
         <WindDownBanner onEnough={() => setShowEnough(true)} />
       )}
 
@@ -226,7 +227,7 @@ function App() {
         onAddProject={() => setShowAddProjectModal(true)}
         onOpenRecurringTasks={() => setShowRecurringDrawer(true)}
         onPlanToday={() => setShowPlanTodayModal(true)}
-        onPlanTomorrow={() => setActiveView('planning')}
+        onPlanTomorrow={() => { setPlanningDay('tomorrow'); setActiveView('planning') }}
         onMyRules={() => setActiveView('philosophy')}
         onSignIn={signIn}
         onSignOut={signOut}
@@ -252,11 +253,12 @@ function App() {
       <Toast />
 
       {/* Main content */}
-      <main className="px-4 pb-28 sm:px-6 sm:pb-12">
+      <VandaagDarkContext.Provider value={isDarkMode}>
+      <main className={`px-4 pb-28 sm:px-6 sm:pb-12 transition-colors duration-500 ${isDarkMode ? 'bg-citadel-bg' : ''}`}>
         {activeView === 'philosophy' ? (
           <Suspense fallback={null}><PhilosophyPage onBack={() => setActiveView('vandaag')} /></Suspense>
         ) : activeView === 'planning' ? (
-          <PlanningMode onExit={() => setActiveView('vandaag')} />
+          <PlanningMode onExit={() => setActiveView('vandaag')} day={planningDay} />
         ) : activeView === 'meetings' ? (
           <Suspense fallback={null}><MeetingsPage /></Suspense>
         ) : activeView === 'review' ? (
@@ -265,23 +267,6 @@ function App() {
           <>
             <VandaagView
               onOpenMeetings={() => setActiveView('meetings')}
-              onEnterCitadel={(ctx) => {
-                if (ctx) {
-                  startFocusSession(ctx)
-                } else {
-                  // Deep block entry — derive context from store
-                  const projectId = dailyPlan?.deepBlock.projectId ?? ''
-                  const project = projects.find(p => p.id === projectId)
-                  startFocusSession({
-                    tier: 'deep',
-                    taskId: projectId,
-                    taskTitle: project?.title ?? 'Deep Work',
-                    projectTitle: project?.title,
-                    intention: dailyPlan?.deepBlock.intention,
-                    projectId,
-                  })
-                }
-              }}
               onDayDone={() => setShowEnough(true)}
               collapsed={vandaagCollapsed}
               onToggleCollapse={() => setVandaagCollapsed(v => !v)}
@@ -298,6 +283,7 @@ function App() {
           </>
         )}
       </main>
+      </VandaagDarkContext.Provider>
     </div>
   )
 }

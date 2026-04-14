@@ -67,8 +67,8 @@ export function MeetingsPage() {
         className="flex gap-0 border border-border rounded-[12px] overflow-hidden shadow-sm"
         style={{ minHeight: 'calc(100vh - 180px)' }}
       >
-        {/* Left: Meeting list (35%) — canvas background, right border */}
-        <div className="w-[35%] flex-shrink-0 flex flex-col min-h-0 bg-canvas border-r border-border">
+        {/* Left: Meeting list — canvas background, right border */}
+        <div className="w-[38%] flex-shrink-0 flex flex-col min-h-0 bg-canvas border-r border-border">
           <MeetingListColumn
             selectedMeetingId={selectedMeetingId}
             onSelectMeeting={setSelectedMeetingId}

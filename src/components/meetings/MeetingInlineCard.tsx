@@ -4,17 +4,11 @@ import { useMeetingForm } from '../../hooks/useMeetingForm'
 import { AgendaItemEditor } from './AgendaItemEditor'
 import { RecurrenceFrequencyPicker, type RecurrenceFormState } from '../ui/RecurrenceFrequencyPicker'
 import { describeRule } from '../../lib/recurrence'
+import { formatDuration } from '../../lib/formatting'
 import { useStore } from '../../store'
 import type { Meeting } from '../../types'
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120] as const
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return m > 0 ? `${h}h ${m}m` : `${h}h`
-}
 
 interface MeetingInlineCardProps {
   meeting: Meeting

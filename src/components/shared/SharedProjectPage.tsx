@@ -29,18 +29,18 @@ export function SharedProjectPage({ shareId }: SharedProjectPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F7] flex items-center justify-center">
-        <Loader2 size={20} className="animate-spin text-[#7A746A]/50" />
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <Loader2 size={20} className="animate-spin text-stone/50" />
       </div>
     )
   }
 
   if (error || !snapshot) {
     return (
-      <div className="min-h-screen bg-[#FAF9F7] flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center space-y-3">
-          <p className="text-[15px] text-[#2A2724]/70">{error ?? 'Not found'}</p>
-          <a href="/" className="text-[12px] text-[#7A746A] hover:text-[#2A2724] transition-colors">
+          <p className="text-[15px] text-charcoal/70">{error ?? 'Not found'}</p>
+          <a href="/" className="text-[12px] text-stone hover:text-charcoal transition-colors">
             Go to Vandaag
           </a>
         </div>
@@ -84,7 +84,7 @@ function SharedProjectView({ snapshot, shareId }: { snapshot: SharedProjectSnaps
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#FAF9F7]">
+    <div className="min-h-screen bg-canvas">
       {/* Cover */}
       {project.coverImageUrl && (
         <div className="w-full max-w-3xl mx-auto">
@@ -108,25 +108,25 @@ function SharedProjectView({ snapshot, shareId }: { snapshot: SharedProjectSnaps
         >
           {cat.label}
         </span>
-        <h1 className="text-[28px] sm:text-[34px] font-serif text-[#2A2724] leading-tight mb-6">
+        <h1 className="text-[28px] sm:text-[34px] font-serif text-charcoal leading-tight mb-6">
           {project.title}
         </h1>
 
         {/* Next meeting — prominent + editable */}
         {nextMeeting && (
-          <div className="rounded-[12px] border border-[#E8E4DD] bg-white px-5 py-4 mb-6">
+          <div className="rounded-[12px] border border-border bg-white px-5 py-4 mb-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-[0.08em] text-[#7A746A]/60 font-medium">
+              <p className="text-[10px] uppercase tracking-[0.08em] text-stone/60 font-medium">
                 Next meeting
               </p>
               <SaveIndicator status={saveStatus} />
             </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-[17px] font-serif text-[#2A2724] leading-tight mb-1">
+                <h2 className="text-[17px] font-serif text-charcoal leading-tight mb-1">
                   {nextMeeting.title}
                 </h2>
-                <div className="flex items-center gap-3 text-[12px] text-[#7A746A]">
+                <div className="flex items-center gap-3 text-[12px] text-stone">
                   {nextMeeting.date && (
                     <span className="flex items-center gap-1">
                       <Calendar size={11} />
@@ -141,7 +141,7 @@ function SharedProjectView({ snapshot, shareId }: { snapshot: SharedProjectSnaps
                     </span>
                   )}
                   {nextMeeting.location && (
-                    <span className="text-[#7A746A]/60">{nextMeeting.location}</span>
+                    <span className="text-stone/60">{nextMeeting.location}</span>
                   )}
                 </div>
               </div>
@@ -149,13 +149,13 @@ function SharedProjectView({ snapshot, shareId }: { snapshot: SharedProjectSnaps
 
             {/* Meeting context/description */}
             {nextMeeting.context && (
-              <p className="mt-3 text-[12px] text-[#7A746A]/60 leading-relaxed">
+              <p className="mt-3 text-[12px] text-stone/60 leading-relaxed">
                 {nextMeeting.context}
               </p>
             )}
 
             {/* Editable agenda */}
-            <div className="mt-4 border-t border-[#F0EEEB] pt-3">
+            <div className="mt-4 border-t border-border-light pt-3">
               <AgendaItemEditor
                 items={nextMeeting.agendaItems ?? []}
                 onChange={(items) => handleAgendaChange(nextMeeting.id, items)}
@@ -166,8 +166,8 @@ function SharedProjectView({ snapshot, shareId }: { snapshot: SharedProjectSnaps
 
         {/* More upcoming — expandable with editors */}
         {upcoming.length > 1 && (
-          <div className="mb-6 border-t border-[#E8E4DD] pt-5">
-            <p className="text-[11px] uppercase tracking-[0.08em] text-[#7A746A]/60 font-medium mb-3">
+          <div className="mb-6 border-t border-border pt-5">
+            <p className="text-[11px] uppercase tracking-[0.08em] text-stone/60 font-medium mb-3">
               Also upcoming
             </p>
             <div className="space-y-px">
@@ -185,8 +185,8 @@ function SharedProjectView({ snapshot, shareId }: { snapshot: SharedProjectSnaps
 
         {/* Past meetings */}
         {past.length > 0 && (
-          <div className="border-t border-[#E8E4DD] pt-5">
-            <p className="text-[11px] uppercase tracking-[0.08em] text-[#7A746A]/60 font-medium mb-3">
+          <div className="border-t border-border pt-5">
+            <p className="text-[11px] uppercase tracking-[0.08em] text-stone/60 font-medium mb-3">
               Past meetings
             </p>
             <div className="space-y-px">
@@ -198,15 +198,15 @@ function SharedProjectView({ snapshot, shareId }: { snapshot: SharedProjectSnaps
         )}
 
         {localMeetings.length === 0 && (
-          <p className="text-[13px] text-[#7A746A]/40 italic py-4">No meetings yet.</p>
+          <p className="text-[13px] text-stone/40 italic py-4">No meetings yet.</p>
         )}
 
         {/* Footer */}
-        <div className="mt-12 pt-5 border-t border-[#E8E4DD] flex items-center justify-between">
-          <p className="text-[11px] text-[#7A746A]/40">
+        <div className="mt-12 pt-5 border-t border-border flex items-center justify-between">
+          <p className="text-[11px] text-stone/40">
             Shared {new Date(sharedAt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
-          <a href="/" className="text-[11px] text-[#7A746A]/40 hover:text-[#2A2724] transition-colors">
+          <a href="/" className="text-[11px] text-stone/40 hover:text-charcoal transition-colors">
             Vandaag
           </a>
         </div>
@@ -221,7 +221,7 @@ function SaveIndicator({ status }: { status: string }) {
   if (status === 'idle') return null
   return (
     <span className={`text-[10px] flex items-center gap-1 transition-opacity ${
-      status === 'saved' ? 'text-green-600/60' : status === 'error' ? 'text-red-500/60' : 'text-[#7A746A]/40'
+      status === 'saved' ? 'text-green-600/60' : status === 'error' ? 'text-red-500/60' : 'text-stone/40'
     }`}>
       {status === 'saving' && <><Loader2 size={9} className="animate-spin" /> Saving...</>}
       {status === 'saved' && 'Saved'}
@@ -244,31 +244,31 @@ function UpcomingRow({
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="border-b border-[#F0EEEB] last:border-0">
+    <div className="border-b border-border-light last:border-0">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#7A746A]/5 rounded transition-colors"
+        className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-stone/5 rounded transition-colors"
       >
-        <span className="text-[#7A746A]/50 flex-shrink-0 w-[90px] text-[12px]">
+        <span className="text-stone/50 flex-shrink-0 w-[90px] text-[12px]">
           {meeting.date ? format(parseISO(meeting.date), 'd MMM') : '—'}
           {meeting.time ? ` · ${meeting.time}` : ''}
         </span>
-        <span className="text-[13px] text-[#2A2724] flex-1 min-w-0 truncate">{meeting.title}</span>
-        <span className="text-[10px] text-[#7A746A]/30 flex-shrink-0">
+        <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">{meeting.title}</span>
+        <span className="text-[10px] text-stone/30 flex-shrink-0">
           {(meeting.agendaItems ?? []).length > 0 && `${meeting.agendaItems!.length} items`}
         </span>
-        <ChevronDown size={12} className={`text-[#7A746A]/30 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} className={`text-stone/30 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <div className="pb-4 pl-2 pr-2">
           {meeting.context && (
-            <p className="text-[12px] text-[#7A746A]/60 leading-relaxed mb-3">
+            <p className="text-[12px] text-stone/60 leading-relaxed mb-3">
               {meeting.context}
             </p>
           )}
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] uppercase tracking-[0.08em] text-[#7A746A]/40 font-medium">Agenda</p>
+            <p className="text-[10px] uppercase tracking-[0.08em] text-stone/40 font-medium">Agenda</p>
             <SaveIndicator status={saveStatus} />
           </div>
           <AgendaItemEditor
@@ -285,7 +285,7 @@ function UpcomingRow({
 
 const OUTCOME_LABEL: Record<string, { label: string; color: string }> = {
   productive: { label: 'Productive', color: 'text-green-600' },
-  inconclusive: { label: 'Inconclusive', color: 'text-[#7A746A]' },
+  inconclusive: { label: 'Inconclusive', color: 'text-stone' },
   'needs-followup': { label: 'Needs follow-up', color: 'text-blue-500' },
 }
 
@@ -295,28 +295,28 @@ function PastMeetingRow({ meeting }: { meeting: Meeting }) {
   const outcome = notes?.outcome ? OUTCOME_LABEL[notes.outcome] : null
 
   return (
-    <div className="border-b border-[#F0EEEB] last:border-0">
+    <div className="border-b border-border-light last:border-0">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 py-3 text-left hover:bg-[#7A746A]/5 rounded transition-colors"
+        className="w-full flex items-center gap-3 py-3 text-left hover:bg-stone/5 rounded transition-colors"
       >
-        <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 ${notes ? 'bg-[#7A746A]/30' : 'bg-transparent border border-[#7A746A]/20'}`} />
-        <span className="text-[11px] text-[#7A746A]/40 flex-shrink-0 w-[64px]">
+        <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 ${notes ? 'bg-stone/30' : 'bg-transparent border border-stone/20'}`} />
+        <span className="text-[11px] text-stone/40 flex-shrink-0 w-[64px]">
           {meeting.date ? format(parseISO(meeting.date), 'd MMM') : '—'}
         </span>
-        <span className="text-[13px] text-[#2A2724] flex-1 min-w-0 truncate">{meeting.title}</span>
+        <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">{meeting.title}</span>
         {outcome && (
           <span className={`text-[10px] flex-shrink-0 font-medium ${outcome.color}`}>{outcome.label}</span>
         )}
         {!notes && (
-          <span className="text-[10px] text-[#7A746A]/25 italic flex-shrink-0">no notes</span>
+          <span className="text-[10px] text-stone/25 italic flex-shrink-0">no notes</span>
         )}
       </button>
 
       {open && notes && (
         <div className="pb-4 pl-[22px] pr-2 space-y-3">
           {notes.summary && (
-            <p className="text-[13px] text-[#2A2724]/65 leading-relaxed">{notes.summary}</p>
+            <p className="text-[13px] text-charcoal/65 leading-relaxed">{notes.summary}</p>
           )}
 
           {/* Per agenda-item notes */}
@@ -324,20 +324,20 @@ function PastMeetingRow({ meeting }: { meeting: Meeting }) {
             <div className="space-y-3">
               {notes.agendaItemNotes!.map(itemNote => (
                 <div key={itemNote.agendaItemId}>
-                  <div className="text-[10px] font-medium text-[#7A746A]/50 uppercase tracking-[0.06em] mb-1">
+                  <div className="text-[10px] font-medium text-stone/50 uppercase tracking-[0.06em] mb-1">
                     {itemNote.agendaItemTitle}
                   </div>
                   {itemNote.summary && (
-                    <p className="text-[12px] text-[#2A2724]/65 leading-relaxed mb-1">{itemNote.summary}</p>
+                    <p className="text-[12px] text-charcoal/65 leading-relaxed mb-1">{itemNote.summary}</p>
                   )}
                   {(itemNote.decisions ?? []).map((d, i) => (
-                    <div key={i} className="flex items-start gap-1.5 text-[12px] text-[#2A2724]/65">
+                    <div key={i} className="flex items-start gap-1.5 text-[12px] text-charcoal/65">
                       <span className="text-green-600 mt-0.5 flex-shrink-0">✔</span>
                       <span>{d}</span>
                     </div>
                   ))}
                   {(itemNote.actionItems ?? []).map((a, i) => (
-                    <div key={i} className="flex items-start gap-1.5 text-[12px] text-[#2A2724]/65">
+                    <div key={i} className="flex items-start gap-1.5 text-[12px] text-charcoal/65">
                       <span className="text-amber-500 mt-0.5 flex-shrink-0">→</span>
                       <span>{a.description}</span>
                       {a.assignee && (
@@ -356,13 +356,13 @@ function PastMeetingRow({ meeting }: { meeting: Meeting }) {
           {(notes.agendaItemNotes ?? []).length === 0 && (
             <>
               {(notes.decisions ?? []).map((d, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[12px] text-[#2A2724]/65">
+                <div key={i} className="flex items-start gap-1.5 text-[12px] text-charcoal/65">
                   <span className="text-green-600 mt-0.5 flex-shrink-0">✔</span>
                   <span>{d}</span>
                 </div>
               ))}
               {(notes.actionItems ?? []).map((a, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[12px] text-[#2A2724]/65">
+                <div key={i} className="flex items-start gap-1.5 text-[12px] text-charcoal/65">
                   <span className="text-amber-500 mt-0.5 flex-shrink-0">→</span>
                   <span>{a.description}</span>
                 </div>

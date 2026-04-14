@@ -84,28 +84,28 @@ export function StepCalendar({
   if (!accessToken && !fetched) {
     return (
       <div className="flex flex-col items-center gap-4 py-8 text-center">
-        <div className="w-10 h-10 rounded-full bg-[#F0EEEB] flex items-center justify-center">
-          <Calendar size={18} className="text-[#7A746A]" />
+        <div className="w-10 h-10 rounded-full bg-border-light flex items-center justify-center">
+          <Calendar size={18} className="text-stone" />
         </div>
         <div>
-          <div className="font-serif text-[15px] text-[#2A2724] mb-1">
+          <div className="font-serif text-[15px] text-charcoal mb-1">
             See tomorrow's meetings
           </div>
-          <div className="text-[13px] text-[#7A746A]">
+          <div className="text-[13px] text-stone">
             Connect Google Calendar to automatically plan around your schedule.
           </div>
         </div>
         <button
           onClick={handleConnect}
           className="flex items-center gap-2 px-4 py-2 rounded-[8px]
-            border border-[#E8E4DD] text-[13px] text-[#2A2724]
-            hover:border-[#2A2724]/30 hover:bg-[#FAF9F7] transition-all"
+            border border-border text-[13px] text-charcoal
+            hover:border-charcoal/30 hover:bg-canvas transition-all"
         >
           <Calendar size={14} />
           Connect Google Calendar
         </button>
         <button
-          className="text-[12px] text-[#7A746A]/50 hover:text-[#7A746A] transition-colors"
+          className="text-[12px] text-stone/50 hover:text-stone transition-colors"
           onClick={() => setFetched(true)}
         >
           Skip for now →
@@ -117,8 +117,8 @@ export function StepCalendar({
   if (loading) {
     return (
       <div className="flex flex-col items-center gap-3 py-10 text-center">
-        <Loader2 size={20} className="text-[#7A746A] animate-spin" />
-        <span className="text-[13px] text-[#7A746A]">Loading tomorrow's calendar…</span>
+        <Loader2 size={20} className="text-stone animate-spin" />
+        <span className="text-[13px] text-stone">Loading tomorrow's calendar…</span>
       </div>
     )
   }
@@ -127,11 +127,11 @@ export function StepCalendar({
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
         <AlertCircle size={18} className="text-red-400" />
-        <span className="text-[13px] text-[#7A746A]">{error}</span>
+        <span className="text-[13px] text-stone">{error}</span>
         {accessToken && (
           <button
             onClick={() => loadEvents(accessToken)}
-            className="text-[12px] text-[#2A2724] underline underline-offset-2"
+            className="text-[12px] text-charcoal underline underline-offset-2"
           >
             Retry
           </button>
@@ -143,33 +143,33 @@ export function StepCalendar({
   if (assignments.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-8 text-center">
-        <Calendar size={18} className="text-[#7A746A]/40" />
-        <span className="text-[13px] text-[#7A746A]">No events found for tomorrow.</span>
-        <span className="text-[12px] text-[#7A746A]/50">You can skip this step.</span>
+        <Calendar size={18} className="text-stone/40" />
+        <span className="text-[13px] text-stone">No events found for tomorrow.</span>
+        <span className="text-[12px] text-stone/50">You can skip this step.</span>
       </div>
     )
   }
 
   return (
     <div className="space-y-2">
-      <div className="text-[11px] uppercase tracking-wider text-[#7A746A]/60 mb-3">
+      <div className="text-[11px] uppercase tracking-wider text-stone/60 mb-3">
         Assign each meeting to a tier
       </div>
       {assignments.map(({ event, tier }) => (
         <div
           key={event.id}
-          className="rounded-[8px] border border-[#E8E4DD] bg-white p-3"
+          className="rounded-[8px] border border-border bg-white p-3"
         >
           <div className="flex items-start justify-between gap-2 mb-2.5">
             <div>
-              <div className="text-[13px] font-medium text-[#2A2724] leading-snug">
+              <div className="text-[13px] font-medium text-charcoal leading-snug">
                 {event.title}
               </div>
-              <div className="text-[11px] text-[#7A746A] mt-0.5">
+              <div className="text-[11px] text-stone mt-0.5">
                 {formatTime(event.start)} – {formatTime(event.end)}
               </div>
             </div>
-            <span className="text-[10px] text-[#7A746A]/60 bg-[#F0EEEB] rounded-full px-2 py-0.5 flex-shrink-0 mt-0.5">
+            <span className="text-[10px] text-stone/60 bg-border-light rounded-full px-2 py-0.5 flex-shrink-0 mt-0.5">
               {event.durationMinutes} min
             </span>
           </div>
@@ -180,8 +180,8 @@ export function StepCalendar({
                 onClick={() => handleTierChange(event.id, pill.tier)}
                 className={`text-[11px] px-2.5 py-1 rounded-full transition-all ${
                   tier === pill.tier
-                    ? 'bg-[#2A2724] text-white'
-                    : 'bg-[#F0EEEB] text-[#7A746A] hover:bg-[#E8E4DD]'
+                    ? 'bg-charcoal text-white'
+                    : 'bg-border-light text-stone hover:bg-border'
                 }`}
               >
                 {pill.label}

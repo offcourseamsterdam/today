@@ -40,6 +40,7 @@ export function useReviewKeyboard(config: UseReviewKeyboardConfig) {
         switch (e.key.toLowerCase()) {
           case 'p': e.preventDefault(); actions.toggleProjectPicker(); return
           case 'h': e.preventDefault(); actions.keep(); return
+          case 'f': e.preventDefault(); actions.done(); return
           case 'd': e.preventDefault(); actions.delete(); return
           case 's': e.preventDefault(); actions.skip(); return
           case 'z':

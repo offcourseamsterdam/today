@@ -4,24 +4,16 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, X, Clock, Play } from 'lucide-react'
 import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
-import type { PlanItem, PlanTier } from '../../types'
+import type { PlanItem } from '../../types'
 import { findTaskById } from '../../lib/taskLookup'
 import { TaskCheckbox } from '../ui/TaskCheckbox'
 import { TierBadge } from '../planning/TierBadge'
 import { getFocusTimeLabel } from '../../lib/focusTime'
 import { MeetingInlineCard } from '../meetings/MeetingInlineCard'
-
-interface CitadelContext {
-  tier: PlanTier
-  taskId: string
-  taskTitle: string
-  projectTitle?: string
-  projectId?: string
-}
+import { useVandaagDark } from './VandaagDarkContext'
 
 interface SortableVandaagItemProps {
   item: PlanItem
-  onEnterCitadel: (ctx?: CitadelContext) => void
   onOpenMeetings?: () => void
   onRemove: (id: string) => void
   onTierChange: (id: string, newTier: 'deep' | 'short' | 'maintenance') => void
@@ -29,7 +21,7 @@ interface SortableVandaagItemProps {
 }
 
 export function SortableVandaagItem({
-  item, onEnterCitadel, onOpenMeetings, onRemove, onTierChange, toggleTask,
+  item, onOpenMeetings, onRemove, onTierChange, toggleTask,
 }: SortableVandaagItemProps) {
   const projects = useStore(s => s.projects)
   const orphanTasks = useStore(s => s.orphanTasks)
@@ -37,8 +29,12 @@ export function SortableVandaagItem({
   const meetings = useStore(s => s.meetings)
   const recurringMeetings = useStore(s => s.recurringMeetings)
   const setOpenProjectId = useStore(s => s.setOpenProjectId)
-  const focusSession = useStore(s => s.focusSession)
+  const inlineTimer = useStore(s => s.inlineTimer)
+  const startInlineTimer = useStore(s => s.startInlineTimer)
   const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog) ?? []
+  const completedItemIds = useStore(s => s.dailyPlan?.completedItemIds) ?? []
+  const togglePlanItemCompletion = useStore(s => s.togglePlanItemCompletion)
+  const dark = useVandaagDark()
 
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
@@ -59,27 +55,44 @@ export function SortableVandaagItem({
   const [meetingExpanded, setMeetingExpanded] = useState(false)
 
   const isDeep = item.tier === 'deep'
+  const isItemCompleted = completedItemIds.includes(item.id)
+  const isActiveTimerItem = inlineTimer?.linkedItemId === item.id
 
   // Focus time info (for tasks and projects)
   const focusInfo = (item.type === 'task' || item.type === 'project')
-    ? getFocusTimeLabel(item.id, item.tier, focusSession, pomodoroLog)
+    ? getFocusTimeLabel(item.id, inlineTimer, pomodoroLog)
     : null
+
+  function handleStartTimer() {
+    if (item.type === 'project' && project) {
+      startInlineTimer('short', item.id, project.title, project.title, project.id)
+    } else if (item.type === 'task' && taskResult) {
+      startInlineTimer('short', item.id, taskResult.task.title, taskResult.projectTitle, taskResult.task.projectId)
+    }
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`rounded-[8px] border bg-card transition-all duration-150 group
-        ${isDragging ? 'shadow-lg scale-[1.02] z-10 opacity-80 border-charcoal/30' : 'border-border/50'}
-        ${isDeep ? 'border-charcoal/15' : ''}`}
+      className={`rounded-[8px] border transition-all duration-300 group
+        ${isDragging ? 'shadow-lg scale-[1.02] z-10 opacity-80' : ''}
+        ${isActiveTimerItem
+          ? dark
+            ? 'border-citadel-accent/30 bg-citadel-accent/5'
+            : 'border-indigo-200 bg-indigo-50/50'
+          : dark
+            ? 'bg-citadel-text/[0.03] border-citadel-text/8'
+            : `bg-card border-border/50 ${isDeep ? 'border-charcoal/15' : ''}`
+        }`}
     >
       <div className="flex items-center gap-2 px-3 py-2.5">
         {/* Grip handle */}
         <div
           {...listeners}
-          className="cursor-grab active:cursor-grabbing text-stone/25 hover:text-stone/50
-            transition-colors touch-none flex-shrink-0"
+          className={`cursor-grab active:cursor-grabbing transition-colors touch-none flex-shrink-0
+            ${dark ? 'text-citadel-text/15 hover:text-citadel-text/30' : 'text-stone/25 hover:text-stone/50'}`}
         >
           <GripVertical size={14} />
         </div>
@@ -94,6 +107,12 @@ export function SortableVandaagItem({
         {/* ── Project content ── */}
         {item.type === 'project' && project && (
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <TaskCheckbox
+              size="sm"
+              checked={isItemCompleted}
+              onChange={() => togglePlanItemCompletion(item.id)}
+              color={CATEGORY_CONFIG[project.category].color}
+            />
             {isDeep && project.coverImageUrl ? (
               <div className="w-8 h-8 rounded-[5px] overflow-hidden flex-shrink-0">
                 <img src={project.coverImageUrl} alt="" className="w-full h-full object-cover" />
@@ -108,7 +127,10 @@ export function SortableVandaagItem({
               onClick={() => setOpenProjectId(project.id)}
               className="flex-1 min-w-0 text-left"
             >
-              <span className={`text-charcoal truncate block ${isDeep ? 'text-[14px] font-medium' : 'text-[13px]'}`}>
+              <span className={`truncate block ${isDeep ? 'text-[14px] font-medium' : 'text-[13px]'}
+                ${isItemCompleted
+                  ? dark ? 'text-citadel-text/25 line-through' : 'text-stone/40 line-through'
+                  : dark ? 'text-citadel-text' : 'text-charcoal'}`}>
                 {project.title}
               </span>
             </button>
@@ -127,11 +149,13 @@ export function SortableVandaagItem({
                 : undefined}
             />
             <span className={`text-[13px] flex-1 min-w-0 truncate
-              ${taskResult.task.status === 'done' ? 'text-stone/40 line-through' : 'text-charcoal'}`}>
+              ${taskResult.task.status === 'done'
+                ? dark ? 'text-citadel-text/25 line-through' : 'text-stone/40 line-through'
+                : dark ? 'text-citadel-text' : 'text-charcoal'}`}>
               {taskResult.task.title}
             </span>
             {taskResult.projectTitle && (
-              <span className="text-[10px] text-stone/40 flex-shrink-0 truncate max-w-[100px]">
+              <span className={`text-[10px] flex-shrink-0 truncate max-w-[100px] ${dark ? 'text-citadel-text/20' : 'text-stone/40'}`}>
                 {taskResult.projectTitle}
               </span>
             )}
@@ -144,43 +168,39 @@ export function SortableVandaagItem({
             onClick={() => setMeetingExpanded(prev => !prev)}
             className="flex items-center gap-2 flex-1 min-w-0 text-left"
           >
-            <Clock size={12} className="text-stone/50 flex-shrink-0" />
-            <span className="text-[11px] text-stone/50 flex-shrink-0">{meeting.time}</span>
-            <span className="text-[13px] text-charcoal flex-1 min-w-0 truncate">{meeting.title}</span>
-            <span className="text-[10px] text-stone/30 flex-shrink-0">
+            <Clock size={12} className={dark ? 'text-citadel-text/30' : 'text-stone/50'} />
+            <span className={`text-[11px] flex-shrink-0 ${dark ? 'text-citadel-text/30' : 'text-stone/50'}`}>{meeting.time}</span>
+            <span className={`text-[13px] flex-1 min-w-0 truncate ${dark ? 'text-citadel-text' : 'text-charcoal'}`}>{meeting.title}</span>
+            <span className={`text-[10px] flex-shrink-0 ${dark ? 'text-citadel-text/20' : 'text-stone/30'}`}>
               {meeting.durationMinutes < 60 ? `${meeting.durationMinutes}m` : `${meeting.durationMinutes / 60}h`}
             </span>
           </button>
         )}
 
-        {/* Focus time button */}
+        {/* Focus time / play button */}
         {focusInfo && !focusInfo.isComplete && (
           <button
-            onClick={() => {
-              if (item.type === 'project' && project) {
-                onEnterCitadel(isDeep ? undefined : { tier: item.tier, taskId: item.id, taskTitle: project.title, projectId: project.id })
-              } else if (item.type === 'task' && taskResult) {
-                onEnterCitadel({ tier: item.tier, taskId: item.id, taskTitle: taskResult.task.title, projectTitle: taskResult.projectTitle, projectId: taskResult.task.projectId })
-              }
-            }}
+            onClick={handleStartTimer}
             className={`flex items-center gap-1 text-[10px] flex-shrink-0 transition-all rounded-full px-2 py-0.5
               ${focusInfo.isActive
-                ? 'bg-indigo-100 text-indigo-700'
-                : 'opacity-0 group-hover:opacity-60 text-stone/50 hover:text-charcoal hover:bg-border/50'}`}
+                ? dark
+                  ? 'bg-citadel-accent/20 text-citadel-accent'
+                  : 'bg-indigo-100 text-indigo-700'
+                : `opacity-0 group-hover:opacity-60 ${dark ? 'text-citadel-text/40 hover:text-citadel-text hover:bg-citadel-text/10' : 'text-stone/50 hover:text-charcoal hover:bg-border/50'}`}`}
           >
             <Play size={8} />
             <span className="hidden sm:inline">{focusInfo.isActive ? focusInfo.label : 'Focus'}</span>
           </button>
         )}
         {focusInfo?.isComplete && (
-          <span className="text-[10px] text-green-600/60 flex-shrink-0">✓ Done</span>
+          <span className={`text-[10px] flex-shrink-0 ${dark ? 'text-citadel-accent/50' : 'text-green-600/60'}`}>✓ Done</span>
         )}
 
         {/* Remove button */}
         <button
           onClick={() => onRemove(item.id)}
-          className="text-stone/20 hover:text-stone/60 transition-colors flex-shrink-0
-            opacity-0 group-hover:opacity-100"
+          className={`transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100
+            ${dark ? 'text-citadel-text/15 hover:text-citadel-text/40' : 'text-stone/20 hover:text-stone/60'}`}
         >
           <X size={13} />
         </button>

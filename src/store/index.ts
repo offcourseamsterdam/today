@@ -11,7 +11,7 @@ import { makeDailyPlanActions } from './plansSlice'
 import { makeSettingsActions } from './settingsSlice'
 import { makeMeetingActions } from './meetingsSlice'
 import { makeCalendarActions } from './calendarSlice'
-import { makeFocusActions } from './focusSlice'
+import { makeInlineTimerActions } from './inlineTimerSlice'
 import { makeMeetingSessionActions } from './meetingSessionSlice'
 
 function createSeedMeetings(): { meetings: Meeting[]; recurringMeetings: Meeting[] } {
@@ -89,8 +89,7 @@ export const useStore = create<VandaagState>()(
       activeView: 'vandaag',
       greetedDate: null,
       artworkLoadingIds: [],
-      focusSession: null,
-      showCitadel: false,
+      inlineTimer: null,
       meetingSession: null,
       processingMeetingId: null,
       processingPhase: null,
@@ -195,7 +194,7 @@ export const useStore = create<VandaagState>()(
       ...makeMeetingActions(set, get),
       ...makeSettingsActions(set, get),
       ...makeCalendarActions(set, get),
-      ...makeFocusActions(set, get),
+      ...makeInlineTimerActions(set, get),
       ...makeMeetingSessionActions(set, get),
 
       // Selectors
@@ -231,7 +230,7 @@ export const useStore = create<VandaagState>()(
         tomorrowPlan: state.tomorrowPlan,
         personalRules: state.personalRules,
         greetedDate: state.greetedDate,
-        focusSession: state.focusSession,
+        inlineTimer: state.inlineTimer,
         meetingSession: state.meetingSession,
       }),
     }

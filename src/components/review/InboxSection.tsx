@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo, useImperativeHandle } from 'react'
-import { FolderInput, Check, Trash2, CheckCircle, ChevronDown, SkipForward, Undo2 } from 'lucide-react'
+import { FolderInput, Check, CheckCircle2, Trash2, CheckCircle, ChevronDown, SkipForward, Undo2 } from 'lucide-react'
 import { useStore } from '../../store'
 import type { Task } from '../../types'
 
@@ -12,11 +12,13 @@ type UndoEntry =
   | { type: 'keep'; taskId: string }
   | { type: 'delete'; taskId: string; taskSnapshot: Task }
   | { type: 'skip'; taskId: string }
+  | { type: 'done'; taskId: string }
 
 export interface InboxActions {
   skip: () => void
   keep: () => void
   delete: () => void
+  done: () => void
   undo: () => void
   toggleProjectPicker: () => void
 }
@@ -37,6 +39,7 @@ export default function InboxSection({ onStats, onAllProcessed, actionsRef }: In
   const deleteOrphanTask = useStore(s => s.deleteOrphanTask)
   const addTask = useStore(s => s.addTask)
   const restoreOrphanTask = useStore(s => s.restoreOrphanTask)
+  const updateOrphanTask = useStore(s => s.updateOrphanTask)
   const updateProject = useStore(s => s.updateProject)
 
   const [processedIds, setProcessedIds] = useState<Set<string>>(new Set())
@@ -52,8 +55,8 @@ export default function InboxSection({ onStats, onAllProcessed, actionsRef }: In
   const [keptCount, setKeptCount] = useState(0)
   const [deletedCount, setDeletedCount] = useState(0)
 
-  // Snapshot the initial orphan IDs so newly-added orphans don't appear mid-review
-  const [initialIds] = useState(() => orphanTasks.map(t => t.id))
+  // Snapshot the initial orphan IDs — exclude done tasks (they stay in the list but skip the review)
+  const [initialIds] = useState(() => orphanTasks.filter(t => t.status !== 'done').map(t => t.id))
 
   // Remaining: unskipped first, then skipped at end
   const remaining = useMemo(() => {
@@ -137,6 +140,15 @@ export default function InboxSection({ onStats, onAllProcessed, actionsRef }: In
     })
   }, [currentTask, isAnimating, pushUndo])
 
+  const handleDone = useCallback(() => {
+    if (!currentTask || isAnimating) return
+    animateAndExecute('right', () => {
+      updateOrphanTask(currentTask.id, { status: 'done', completedAt: new Date().toISOString() })
+      markProcessed(currentTask.id)
+      pushUndo({ type: 'done', taskId: currentTask.id })
+    })
+  }, [currentTask, isAnimating, updateOrphanTask, markProcessed, pushUndo])
+
   const handleUndo = useCallback(() => {
     const entry = undoStack.current.pop()
     setUndoStackLen(undoStack.current.length)
@@ -178,6 +190,15 @@ export default function InboxSection({ onStats, onAllProcessed, actionsRef }: In
         setDeletedCount(c => Math.max(0, c - 1))
         break
       }
+      case 'done': {
+        updateOrphanTask(entry.taskId, { status: 'backlog', completedAt: undefined })
+        setProcessedIds(prev => {
+          const next = new Set(prev)
+          next.delete(entry.taskId)
+          return next
+        })
+        break
+      }
       case 'skip': {
         setSkippedQueue(prev => prev.filter(id => id !== entry.taskId))
         break
@@ -193,6 +214,7 @@ export default function InboxSection({ onStats, onAllProcessed, actionsRef }: In
     skip: handleSkip,
     keep: handleKeep,
     delete: handleDelete,
+    done: handleDone,
     undo: handleUndo,
     toggleProjectPicker: () => setShowProjectPicker(v => !v),
   }))
@@ -365,6 +387,19 @@ export default function InboxSection({ onStats, onAllProcessed, actionsRef }: In
           Houden
         </button>
 
+        {/* Afvinken (mark done) */}
+        <button
+          disabled={isAnimating}
+          onClick={handleDone}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg
+                     border border-green-200 bg-white text-green-700
+                     hover:bg-green-50 transition-colors cursor-pointer
+                     disabled:opacity-40 disabled:pointer-events-none"
+        >
+          <CheckCircle2 size={15} />
+          Afvinken
+        </button>
+
         {/* Overslaan */}
         <button
           disabled={isAnimating}
@@ -397,6 +432,8 @@ export default function InboxSection({ onStats, onAllProcessed, actionsRef }: In
         <span><kbd className="bg-stone/5 px-1.5 py-0.5 rounded font-mono text-stone/50">P</kbd> Project</span>
         <span>·</span>
         <span><kbd className="bg-stone/5 px-1.5 py-0.5 rounded font-mono text-stone/50">H</kbd> Houden</span>
+        <span>·</span>
+        <span><kbd className="bg-stone/5 px-1.5 py-0.5 rounded font-mono text-stone/50">F</kbd> Afvinken</span>
         <span>·</span>
         <span><kbd className="bg-stone/5 px-1.5 py-0.5 rounded font-mono text-stone/50">D</kbd> Verwijderen</span>
         <span>·</span>

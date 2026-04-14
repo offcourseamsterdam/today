@@ -4,14 +4,12 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { X, GripVertical, RotateCcw, Clock, AlertTriangle } from 'lucide-react'
 import { useStore } from '../../store'
-import { CATEGORY_CONFIG, type Project } from '../../types'
+import { CATEGORY_CONFIG, type Project, type Tier } from '../../types'
 import { CategoryBadge } from '../ui/CategoryBadge'
 import { findTaskById } from '../../lib/taskLookup'
 
-type TierId = 'deep' | 'short' | 'maintenance'
-
 interface TierDropZoneProps {
-  tierId: TierId
+  tierId: Tier
   // Deep block
   deepProjectId?: string
   deepMeetingId?: string

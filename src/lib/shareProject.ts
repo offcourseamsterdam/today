@@ -10,14 +10,11 @@
 
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { db } from './firebase'
+import { deepClean } from './utils'
 import type { Project, Meeting, AgendaItem, SharedProjectSnapshot } from '../types'
 
 export function generateShareId(): string {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 10)
-}
-
-function deepClean<T>(val: T): T {
-  return JSON.parse(JSON.stringify(val, (_, v) => (v === undefined ? null : v)))
 }
 
 // ── Publish (simple overwrite — used by manual share button) ─────────────

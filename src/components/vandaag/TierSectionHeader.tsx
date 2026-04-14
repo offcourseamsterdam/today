@@ -1,11 +1,11 @@
 import { Target, CheckCircle, RotateCcw } from 'lucide-react'
+import type { Tier } from '../../types'
+import { useVandaagDark } from './VandaagDarkContext'
 
-type Tier = 'deep' | 'short' | 'maintenance'
-
-const TIER_CONFIG: Record<Tier, { icon: typeof Target; label: string; color: string }> = {
-  deep: { icon: Target, label: 'DEEP BLOCK', color: 'text-indigo-600/60' },
-  short: { icon: CheckCircle, label: 'SHORT THREE', color: 'text-amber-600/60' },
-  maintenance: { icon: RotateCcw, label: 'MAINTENANCE', color: 'text-stone/40' },
+const TIER_CONFIG: Record<Tier, { icon: typeof Target; label: string; lightColor: string; darkColor: string }> = {
+  deep: { icon: Target, label: 'DEEP BLOCK', lightColor: 'text-indigo-600/60', darkColor: 'text-indigo-400/50' },
+  short: { icon: CheckCircle, label: 'SHORT THREE', lightColor: 'text-amber-600/60', darkColor: 'text-amber-400/50' },
+  maintenance: { icon: RotateCcw, label: 'MAINTENANCE', lightColor: 'text-stone/40', darkColor: 'text-citadel-text/30' },
 }
 
 interface TierSectionHeaderProps {
@@ -15,7 +15,9 @@ interface TierSectionHeaderProps {
 }
 
 export function TierSectionHeader({ tier, slotCount, slotMax }: TierSectionHeaderProps) {
-  const { icon: Icon, label, color } = TIER_CONFIG[tier]
+  const { icon: Icon, label, lightColor, darkColor } = TIER_CONFIG[tier]
+  const dark = useVandaagDark()
+  const color = dark ? darkColor : lightColor
   return (
     <div className="flex items-center gap-2 py-2 mt-2 first:mt-0">
       <Icon size={12} className={color} />
@@ -23,7 +25,7 @@ export function TierSectionHeader({ tier, slotCount, slotMax }: TierSectionHeade
         {label}
       </span>
       {slotMax != null && (
-        <span className="text-[10px] text-stone/30">{slotCount}/{slotMax}</span>
+        <span className={`text-[10px] ${dark ? 'text-citadel-text/20' : 'text-stone/30'}`}>{slotCount}/{slotMax}</span>
       )}
     </div>
   )

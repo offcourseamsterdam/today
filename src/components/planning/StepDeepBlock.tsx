@@ -5,6 +5,7 @@ import { useStore } from '../../store'
 import { CATEGORY_CONFIG } from '../../types'
 import type { AssignedCalendarEvent } from '../../types'
 import { CategoryBadge } from '../ui/CategoryBadge'
+import { formatDuration } from '../../lib/formatting'
 
 const DEEP_BLOCK_MINUTES = 180 // 3 × 60 min sessions
 
@@ -22,13 +23,6 @@ interface StepDeepBlockProps {
 function formatTimeRange(start: string, end: string): string {
   const fmt = (iso: string) => format(new Date(iso), 'HH:mm')
   return `${fmt(start)} – ${fmt(end)}`
-}
-
-function formatDuration(m: number): string {
-  if (m < 60) return `${m}m`
-  const h = Math.floor(m / 60)
-  const r = m % 60
-  return r ? `${h}h${r}` : `${h}h`
 }
 
 export function StepDeepBlock({

@@ -16,24 +16,15 @@ import { useStore } from '../../store'
 import { useTodayPlan } from '../../hooks/useTodayPlan'
 import { useTaskToggle } from '../../hooks/useTaskToggle'
 import { deriveItemOrder, deriveBlockOrder } from '../../lib/planOrder'
-import type { PlanItem, PlanTier } from '../../types'
+import type { PlanItem } from '../../types'
 import { SortableVandaagItem } from './SortableVandaagItem'
 import { TierSectionHeader } from './TierSectionHeader'
 
-interface CitadelContext {
-  tier: PlanTier
-  taskId: string
-  taskTitle: string
-  projectTitle?: string
-  projectId?: string
-}
-
 interface DailyPlanListProps {
-  onEnterCitadel: (ctx?: CitadelContext) => void
   onOpenMeetings: () => void
 }
 
-export function DailyPlanList({ onEnterCitadel, onOpenMeetings }: DailyPlanListProps) {
+export function DailyPlanList({ onOpenMeetings }: DailyPlanListProps) {
   const { dailyPlan } = useTodayPlan()
   const setItemOrder = useStore(s => s.setItemOrder)
   const setBlockOrder = useStore(s => s.setBlockOrder)
@@ -201,7 +192,6 @@ export function DailyPlanList({ onEnterCitadel, onOpenMeetings }: DailyPlanListP
                 )}
                 <SortableVandaagItem
                   item={item}
-                  onEnterCitadel={onEnterCitadel}
                   onOpenMeetings={onOpenMeetings}
                   onRemove={handleRemove}
                   onTierChange={handleTierChange}

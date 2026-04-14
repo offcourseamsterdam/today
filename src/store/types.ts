@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand'
-import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, AgendaItem, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, FocusSession, MeetingSession, PlanItem } from '../types'
+import type { Project, Task, Meeting, MeetingNotes, AgendaItemNotes, AgendaItem, Settings, Category, ProjectStatus, DailyPlan, RecurrenceRule, CalendarEvent, PlanTier, InlineTimerState, InlineTimerMode, MeetingSession, PlanItem } from '../types'
 
 export interface ProjectDecision {
   decision: string
@@ -49,9 +49,8 @@ export interface VandaagState {
   greetedDate: string | null  // YYYY-MM-DD — last date the morning screen was dismissed
   artworkLoadingIds: string[]  // project IDs with in-flight artwork fetch (not persisted)
 
-  // Focus session state
-  focusSession: FocusSession | null
-  showCitadel: boolean
+  // Inline timer state
+  inlineTimer: InlineTimerState | null
 
   // Meeting session state
   meetingSession: MeetingSession | null
@@ -62,16 +61,18 @@ export interface VandaagState {
   processingItemErrors: Record<string, string>
   isLiveMeetingOpen: boolean
 
-  // Focus session actions
-  startFocusSession: (params: { tier: PlanTier; taskId: string; taskTitle: string; projectTitle?: string; intention?: string; projectId?: string }) => void
-  endFocusSession: () => void
-  showCitadelOverlay: () => void
-  hideCitadelOverlay: () => void
-  tickFocusSession: () => void
-  pauseFocusSession: () => void
-  resumeFocusSession: () => void
-  resetFocusSession: () => void
-  skipFocusPhase: () => void
+  // Inline timer actions
+  startInlineTimer: (mode: InlineTimerMode, linkedItemId?: string, linkedItemTitle?: string, linkedProjectTitle?: string, linkedProjectId?: string) => void
+  stopInlineTimer: () => void
+  pauseInlineTimer: () => void
+  resumeInlineTimer: () => void
+  resetInlineTimer: () => void
+  skipInlineTimerPhase: () => void
+  setInlineTimerMode: (mode: InlineTimerMode) => void
+  tickInlineTimer: () => void
+
+  // Plan item completion
+  togglePlanItemCompletion: (itemId: string) => void
 
   // Calendar state (non-persisted)
   calendarEvents: CalendarEvent[]
@@ -120,6 +121,7 @@ export interface VandaagState {
   addOrphanTask: (title: string) => string
   updateOrphanTask: (taskId: string, updates: Partial<Omit<Task, 'id'>>) => void
   deleteOrphanTask: (taskId: string) => void
+  restoreOrphanTask: (task: Task) => void
   moveOrphanTaskToProject: (taskId: string, projectId: string) => void
 
   // Meeting actions

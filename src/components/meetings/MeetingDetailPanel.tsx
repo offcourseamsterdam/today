@@ -1,22 +1,16 @@
-import { format, parseISO, isToday, isFuture } from 'date-fns'
+import { format, parseISO, isToday, isFuture, isPast } from 'date-fns'
 import { nl } from 'date-fns/locale'
-import { Calendar, Clock, MapPin, Users } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Play } from 'lucide-react'
 import { useStore } from '../../store'
 import { MeetingNotesDisplay, OUTCOME_CONFIG } from './MeetingNotesDisplay'
 import { MeetingInlineCard } from './MeetingInlineCard'
+import { formatDuration } from '../../lib/formatting'
 import type { Meeting } from '../../types'
 
 interface MeetingDetailPanelProps {
   meeting: Meeting | null
   onBeginMeeting?: () => void
   onDelete?: () => void
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return m > 0 ? `${h}u ${m}m` : `${h}u`
 }
 
 export function MeetingDetailPanel({ meeting, onBeginMeeting, onDelete }: MeetingDetailPanelProps) {
@@ -36,42 +30,76 @@ export function MeetingDetailPanel({ meeting, onBeginMeeting, onDelete }: Meetin
 
   const hasMeetingNotes = !!meeting.meetingNotes
   const meetingDate = meeting.date ? parseISO(meeting.date) : null
-  const isUpcomingOrToday = meetingDate
-    ? isToday(meetingDate) || isFuture(meetingDate)
-    : false
+  // Treat undated meetings (no notes yet) as startable — same as upcoming
+  const isUpcomingOrToday = !meetingDate || isToday(meetingDate) || isFuture(meetingDate)
   const linkedProject = meeting.projectId
     ? projects.find(p => p.id === meeting.projectId)
     : null
 
-  // ── Upcoming / today: canvas header strip + white body with inline card ──────
+  // ── Upcoming / today: canvas header with Start button + white body ──────────
   if (!hasMeetingNotes && isUpcomingOrToday) {
     return (
       <div className="flex flex-col h-full bg-white overflow-y-auto">
-        {/* Canvas-coloured meta bar (header) */}
-        {(linkedProject || meeting.location || meeting.context) && (
-          <div className="bg-canvas px-6 py-3 border-b border-border/60 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-stone/70 flex-shrink-0">
-            {linkedProject && (
+        {/* Canvas header */}
+        <div className="bg-canvas px-6 py-5 border-b border-border/60 flex-shrink-0">
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="font-serif text-[20px] text-charcoal leading-snug">
+              {meeting.title || 'Naamloos gesprek'}
+            </h2>
+            {onBeginMeeting && (
               <button
-                onClick={() => setOpenProjectId(linkedProject.id)}
-                className="font-medium text-charcoal/80 hover:text-charcoal transition-colors"
+                onClick={onBeginMeeting}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-charcoal text-white text-[13px] font-medium hover:bg-charcoal/85 transition-colors shrink-0"
               >
-                {linkedProject.title}
+                <Play size={13} fill="currentColor" />
+                Start
               </button>
             )}
+          </div>
+
+          {/* Meta row */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[12px] text-stone">
+            {meetingDate && (
+              <span className="flex items-center gap-1.5">
+                <Calendar size={12} className="text-stone/40" />
+                {format(meetingDate, 'EEEE d MMMM', { locale: nl })}
+              </span>
+            )}
+            {meeting.time && (
+              <span className="flex items-center gap-1.5">
+                <Clock size={12} className="text-stone/40" />
+                {meeting.time} &middot; {formatDuration(meeting.durationMinutes)}
+              </span>
+            )}
             {meeting.location && (
-              <span className="flex items-center gap-1">
-                <MapPin size={11} className="text-stone/40" />
+              <span className="flex items-center gap-1.5">
+                <MapPin size={12} className="text-stone/40" />
                 {meeting.location}
               </span>
             )}
-            {meeting.context && (
-              <span className="flex items-center gap-1">
-                <Users size={11} className="text-stone/40" />
-                {meeting.context}
-              </span>
-            )}
           </div>
-        )}
+
+          {/* Context */}
+          {meeting.context && (
+            <div className="flex items-start gap-1.5 mt-2 text-[12px] text-stone/70">
+              <Users size={12} className="text-stone/40 mt-0.5 flex-shrink-0" />
+              <span className="leading-relaxed">{meeting.context}</span>
+            </div>
+          )}
+
+          {/* Project link */}
+          {linkedProject && (
+            <div className="mt-3">
+              <button
+                onClick={() => setOpenProjectId(linkedProject.id)}
+                className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-stone/8 text-stone hover:bg-stone/12 transition-colors"
+              >
+                {linkedProject.title}
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="px-6 py-5">
           <MeetingInlineCard
             meeting={meeting}
@@ -89,7 +117,7 @@ export function MeetingDetailPanel({ meeting, onBeginMeeting, onDelete }: Meetin
   const header = (
     <div className="bg-canvas px-6 py-5 border-b border-border/60 flex-shrink-0">
       <h2 className="font-serif text-[20px] text-charcoal leading-snug">
-        {meeting.title}
+        {meeting.title || 'Naamloos gesprek'}
       </h2>
 
       {/* Meta row */}
@@ -122,8 +150,13 @@ export function MeetingDetailPanel({ meeting, onBeginMeeting, onDelete }: Meetin
         </div>
       )}
 
-      {/* Outcome badge + project link */}
+      {/* Status badge + outcome badge + project link */}
       <div className="flex flex-wrap items-center gap-2 mt-3">
+        {meetingDate && isPast(meetingDate) && !isToday(meetingDate) && (
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-stone/8 text-stone/50">
+            Afgelopen
+          </span>
+        )}
         {hasMeetingNotes && meeting.meetingNotes!.outcome && (
           <span
             className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${OUTCOME_CONFIG[meeting.meetingNotes!.outcome].color}`}

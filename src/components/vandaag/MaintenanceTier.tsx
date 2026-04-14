@@ -27,7 +27,7 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
   const updateOrphanTask = useStore(s => s.updateOrphanTask)
   const updateRecurringTask = useStore(s => s.updateRecurringTask)
   const getTodayRecurringTasks = useStore(s => s.getTodayRecurringTasks)
-  const focusSession = useStore(s => s.focusSession)
+  const inlineTimer = useStore(s => s.inlineTimer)
   const pomodoroLog = useStore(s => s.dailyPlan?.pomodoroLog) ?? EMPTY_LOG
   const {
     maintenanceTaskIds, addMaintenanceTask, removeMaintenanceTask,
@@ -167,7 +167,7 @@ export function MaintenanceTier({ onEnterCitadel, onOpenMeetings }: MaintenanceT
               </span>
               {task.isRecurring && <RotateCcw size={10} className="text-stone/25 flex-shrink-0" />}
               {onEnterCitadel && (() => {
-                const info = getFocusTimeLabel(taskId, 'maintenance', focusSession, pomodoroLog)
+                const info = getFocusTimeLabel(taskId, inlineTimer, pomodoroLog)
                 return (
                   <button
                     onClick={() => onEnterCitadel({ tier: 'maintenance', taskId, taskTitle: task.title })}

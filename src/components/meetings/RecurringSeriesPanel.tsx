@@ -5,6 +5,7 @@ import { nl } from 'date-fns/locale'
 import { RotateCcw, ChevronDown, ChevronRight, Calendar } from 'lucide-react'
 import { useStore } from '../../store'
 import { getNextOccurrences, describeRule } from '../../lib/recurrence'
+import { formatDuration } from '../../lib/formatting'
 import { MeetingInlineCard } from './MeetingInlineCard'
 import { MeetingNotesDisplay, OUTCOME_CONFIG } from './MeetingNotesDisplay'
 import type { Meeting } from '../../types'
@@ -81,7 +82,7 @@ export function RecurringSeriesPanel({ template, onBeginMeeting, onDelete }: Rec
         </div>
         {template.recurrenceRule && (
           <p className="text-[12px] text-stone mt-1 ml-[22px]">
-            {describeRule(template.recurrenceRule)} · {template.time} · {template.durationMinutes} min
+            {describeRule(template.recurrenceRule)} · {template.time} · {formatDuration(template.durationMinutes)}
           </p>
         )}
 

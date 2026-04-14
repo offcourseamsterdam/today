@@ -6,15 +6,9 @@ import { useStore } from '../../store'
 import { useMeetingForm } from '../../hooks/useMeetingForm'
 import { AgendaItemEditor } from './AgendaItemEditor'
 import { RecurrenceFrequencyPicker } from '../ui/RecurrenceFrequencyPicker'
+import { formatDuration } from '../../lib/formatting'
 
 const DURATION_PRESETS = [15, 30, 60, 90, 120, 150, 180, 240, 300, 360, 480]
-
-function formatDuration(m: number): string {
-  if (m < 60) return `${m}m`
-  const h = Math.floor(m / 60)
-  const r = m % 60
-  return r ? `${h}h${r}` : `${h}h`
-}
 
 interface MeetingPrePanelProps {
   openMeetingId: string // 'new' or existing meeting id
