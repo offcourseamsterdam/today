@@ -89,7 +89,7 @@ export function KanbanBoard({
   } | null>(null)
   const [dragHeight, setDragHeight] = useState(80)
   const [backlogDragPreview, setBacklogDragPreview] = useState<{
-    section: 'not_yet' | 'maybe'
+    section: 'soon' | 'not_yet' | 'someday'
     afterItemId: string | null
     height: number
   } | null>(null)
@@ -146,10 +146,10 @@ export function KanbanBoard({
     if (activeId === overId) return
 
     // Backlog section handling — show ghost inside the correct section
-    if (overId === 'backlog-not_yet' || overId === 'backlog-maybe' || overId === 'backlog') {
+    if (overId === 'backlog-soon' || overId === 'backlog-not_yet' || overId === 'backlog-someday' || overId === 'backlog') {
       setDragPreview(null)
       if (!activeOrphanTask) {
-        const section = overId === 'backlog-maybe' ? 'maybe' : 'not_yet'
+        const section = overId === 'backlog-soon' ? 'soon' : overId === 'backlog-someday' ? 'someday' : 'not_yet'
         setBacklogDragPreview({ section, afterItemId: null, height: dragHeight })
       }
       return
@@ -219,7 +219,7 @@ export function KanbanBoard({
     // --- Orphan task drag ---
     if (wasOrphan) {
       // Dropped on a backlog section
-      if (overId === 'backlog-not_yet' || overId === 'backlog-maybe') {
+      if (overId === 'backlog-soon' || overId === 'backlog-not_yet' || overId === 'backlog-someday') {
         updateOrphanTask(activeId, { kanbanColumn: 'backlog' })
         return
       }
@@ -245,8 +245,8 @@ export function KanbanBoard({
     }
 
     // --- Project drag ---
-    if (overId === 'backlog-not_yet' || overId === 'backlog-maybe') {
-      const section = overId === 'backlog-not_yet' ? 'not_yet' : 'maybe'
+    if (overId === 'backlog-soon' || overId === 'backlog-not_yet' || overId === 'backlog-someday') {
+      const section = overId === 'backlog-soon' ? 'soon' : overId === 'backlog-not_yet' ? 'not_yet' : 'someday'
       const moved = moveProject(activeId, 'backlog')
       if (moved) reorderProjectToEnd(activeId)
       setProjectBacklogSection(activeId, section)

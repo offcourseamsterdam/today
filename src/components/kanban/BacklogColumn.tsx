@@ -7,7 +7,7 @@ import { DropGhost } from '../ui/DropGhost'
 import type { Project, Task } from '../../types'
 
 interface BacklogSectionProps {
-  sectionId: 'not_yet' | 'maybe'
+  sectionId: 'soon' | 'not_yet' | 'someday'
   title: string
   projects: Project[]
   onProjectClick: (project: Project) => void
@@ -70,7 +70,7 @@ interface BacklogColumnProps {
   onOrphanOpenNotes: (task: Task) => void
   onOrphanUpdate: (taskId: string, updates: Partial<Task>) => void
   allProjects: Project[]
-  backlogDragPreview?: { section: 'not_yet' | 'maybe'; afterItemId: string | null; height: number }
+  backlogDragPreview?: { section: 'soon' | 'not_yet' | 'someday'; afterItemId: string | null; height: number }
 }
 
 export function BacklogColumn({
@@ -78,8 +78,10 @@ export function BacklogColumn({
   onOrphanComplete, onOrphanDelete, onOrphanAssignProject, onOrphanOpenNotes, onOrphanUpdate, allProjects,
   backlogDragPreview,
 }: BacklogColumnProps) {
-  const notYetProjects = projects.filter(p => (p.backlogSection ?? 'not_yet') === 'not_yet')
-  const maybeProjects = projects.filter(p => p.backlogSection === 'maybe')
+  const soonProjects = projects.filter(p => p.backlogSection === 'soon')
+  const notYetProjects = projects.filter(p => !p.backlogSection || p.backlogSection === 'not_yet')
+  // backward compat: treat old 'maybe' as 'someday'
+  const somedayProjects = projects.filter(p => p.backlogSection === 'someday')
 
   return (
     <div className="bg-border-light/60 rounded-[10px] p-4 min-h-[300px]">
@@ -117,6 +119,14 @@ export function BacklogColumn({
       {/* Sections */}
       <div className="space-y-3">
         <BacklogSection
+          sectionId="soon"
+          title="Soon"
+          projects={soonProjects}
+          onProjectClick={onProjectClick}
+          dragPreview={backlogDragPreview?.section === 'soon' ? backlogDragPreview : undefined}
+        />
+        <div className="h-px bg-border/50" />
+        <BacklogSection
           sectionId="not_yet"
           title="Not yet"
           projects={notYetProjects}
@@ -125,11 +135,11 @@ export function BacklogColumn({
         />
         <div className="h-px bg-border/50" />
         <BacklogSection
-          sectionId="maybe"
-          title="Maybe / Someday"
-          projects={maybeProjects}
+          sectionId="someday"
+          title="Someday"
+          projects={somedayProjects}
           onProjectClick={onProjectClick}
-          dragPreview={backlogDragPreview?.section === 'maybe' ? backlogDragPreview : undefined}
+          dragPreview={backlogDragPreview?.section === 'someday' ? backlogDragPreview : undefined}
         />
       </div>
     </div>

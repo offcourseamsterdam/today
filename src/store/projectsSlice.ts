@@ -129,7 +129,7 @@ export function makeProjectActions(set: StoreSet, get: StoreGet) {
     setWaitingPromptProjectId: (id: string | null) => set({ waitingPromptProjectId: id }),
     clearProjectModalDefaultTab: () => set({ projectModalDefaultTab: null }),
 
-    setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => {
+    setProjectBacklogSection: (id: string, section: 'soon' | 'not_yet' | 'someday') => {
       set(state => ({
         projects: state.projects.map(p =>
           p.id === id ? { ...p, backlogSection: section } : p

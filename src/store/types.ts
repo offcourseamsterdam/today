@@ -107,7 +107,7 @@ export interface VandaagState {
   reorderProjectToStart: (activeId: string) => void
   setSwapModalProjectId: (id: string | null) => void
   setWaitingPromptProjectId: (id: string | null) => void
-  setProjectBacklogSection: (id: string, section: 'not_yet' | 'maybe') => void
+  setProjectBacklogSection: (id: string, section: 'soon' | 'not_yet' | 'someday') => void
   clearProjectModalDefaultTab: () => void
 
   // Task actions
