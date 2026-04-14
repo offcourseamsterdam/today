@@ -338,6 +338,26 @@ export default function ProjectReviewCard({
             {/* Waiting-on list */}
             <WaitingOnSection project={project} onUpdate={updateProject} />
 
+            {/* Backlog section labels */}
+            {project.status === 'backlog' && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] text-stone/40 mr-0.5">Backlog:</span>
+                {(['soon', 'not_yet', 'someday'] as const).map(sec => (
+                  <button
+                    key={sec}
+                    onClick={() => updateProject(project.id, { backlogSection: sec })}
+                    className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                      project.backlogSection === sec
+                        ? 'border-charcoal bg-charcoal text-white'
+                        : 'border-border text-stone hover:border-stone/40'
+                    }`}
+                  >
+                    {sec === 'soon' ? 'Soon' : sec === 'not_yet' ? 'Not yet' : 'Someday'}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Move buttons */}
             <div className="flex items-center gap-2">
               {project.status !== 'backlog' && (

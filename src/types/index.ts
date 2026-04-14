@@ -27,7 +27,7 @@ export interface Project {
   title: string
   category: Category
   status: ProjectStatus
-  backlogSection?: 'not_yet' | 'maybe'  // only relevant when status === 'backlog'
+  backlogSection?: 'soon' | 'not_yet' | 'someday'  // only relevant when status === 'backlog'
   contextIds?: string[]
   coverImageUrl?: string
   coverImageTitle?: string
