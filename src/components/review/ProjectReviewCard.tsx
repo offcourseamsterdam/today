@@ -1,15 +1,18 @@
-import { useState } from 'react'
-import { ChevronRight, ChevronDown, Clock, Trash2, CheckCircle2, GripVertical, Plus, AlertTriangle } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { ChevronRight, ChevronDown, Clock, Trash2, CheckCircle2, GripVertical, Plus, AlertTriangle, X } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { Project, ProjectStatus, Task } from '../../types'
+import type { Project, ProjectStatus, Task, WaitingOn } from '../../types'
 import { useStore } from '../../store'
 import { daysSince, getWaitingLabel, getWaitingStatus } from '../../lib/utils'
 import { CategoryBadge } from '../ui/CategoryBadge'
 
 interface ProjectReviewCardProps {
   project: Project
+  expanded: boolean
+  onToggle: () => void
+  onNext?: () => void
   onTaskCompleted: () => void
   onTaskDeleted: () => void
   onProjectMoved: () => void
@@ -47,16 +50,34 @@ function SortableTaskRow({
   task,
   onToggle,
   onDelete,
+  onRename,
 }: {
   task: Task
   onToggle: () => void
   onDelete: () => void
+  onRename: (title: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+  }
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(task.title)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function startEdit() {
+    if (task.status === 'done') return
+    setDraft(task.title)
+    setEditing(true)
+    setTimeout(() => inputRef.current?.select(), 0)
+  }
+
+  function commitEdit() {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== task.title) onRename(trimmed)
+    setEditing(false)
   }
 
   return (
@@ -71,9 +92,26 @@ function SortableTaskRow({
           fill={task.status === 'done' ? 'currentColor' : 'none'}
         />
       </button>
-      <span className={`text-[13px] flex-1 ${task.status === 'done' ? 'line-through text-stone' : 'text-charcoal'}`}>
-        {task.title}
-      </span>
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commitEdit()
+            if (e.key === 'Escape') { setDraft(task.title); setEditing(false) }
+          }}
+          className="text-[13px] flex-1 bg-transparent border-b border-stone/30 outline-none text-charcoal focus:border-charcoal transition-colors"
+        />
+      ) : (
+        <span
+          onClick={startEdit}
+          className={`text-[13px] flex-1 ${task.status === 'done' ? 'line-through text-stone cursor-default' : 'text-charcoal cursor-text hover:text-charcoal/70'}`}
+        >
+          {task.title}
+        </span>
+      )}
       <button
         onClick={onDelete}
         className="opacity-0 group-hover:opacity-100 text-stone hover:text-red-500 transition-all"
@@ -84,13 +122,80 @@ function SortableTaskRow({
   )
 }
 
+function WaitingOnSection({
+  project,
+  onUpdate,
+}: {
+  project: Project
+  onUpdate: (id: string, updates: Partial<Project>) => void
+}) {
+  const [newPerson, setNewPerson] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const waitingOn = project.waitingOn ?? []
+
+  function addWaiting(e: React.FormEvent) {
+    e.preventDefault()
+    const person = newPerson.trim()
+    if (!person) return
+    onUpdate(project.id, {
+      waitingOn: [...waitingOn, { person, since: new Date().toISOString() }],
+    })
+    setNewPerson('')
+    inputRef.current?.focus()
+  }
+
+  function removeWaiting(person: string) {
+    onUpdate(project.id, { waitingOn: waitingOn.filter(w => w.person !== person) })
+  }
+
+  return (
+    <div>
+      <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
+        Wachten op
+      </h4>
+      {waitingOn.map((w: WaitingOn) => {
+        const days = daysSince(w.since)
+        const status = getWaitingStatus(days)
+        return (
+          <div key={w.person} className="flex items-center gap-2 py-1 group">
+            <span className="text-[13px] text-charcoal flex-1">{w.person}</span>
+            <span className={`text-[11px] ${status === 'red' ? 'text-red-600' : status === 'amber' ? 'text-amber-600' : 'text-stone'}`}>
+              {getWaitingLabel(days)}
+            </span>
+            <button
+              onClick={() => removeWaiting(w.person)}
+              className="opacity-0 group-hover:opacity-100 p-0.5 text-stone/40 hover:text-red-500 transition-all"
+              title="Verwijderen"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )
+      })}
+      <form onSubmit={addWaiting} className="flex items-center gap-2 mt-1">
+        <Plus size={14} className="text-stone/30 shrink-0" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={newPerson}
+          onChange={e => setNewPerson(e.target.value)}
+          placeholder="Wachten op..."
+          className="flex-1 text-[13px] px-2 py-1 rounded-md border border-transparent bg-transparent outline-none focus:border-border focus:bg-white transition-colors placeholder:text-stone/30"
+        />
+      </form>
+    </div>
+  )
+}
+
 export default function ProjectReviewCard({
   project,
+  expanded,
+  onToggle,
+  onNext,
   onTaskCompleted,
   onTaskDeleted,
   onProjectMoved,
 }: ProjectReviewCardProps) {
-  const [expanded, setExpanded] = useState(false)
   const [newTask, setNewTask] = useState('')
   const updateProject = useStore(s => s.updateProject)
   const moveProject = useStore(s => s.moveProject)
@@ -122,6 +227,12 @@ export default function ProjectReviewCard({
     if (newStatus === 'done') onTaskCompleted()
   }
 
+  function renameTask(taskId: string, title: string) {
+    updateProject(project.id, {
+      tasks: project.tasks.map(t => t.id === taskId ? { ...t, title } : t),
+    })
+  }
+
   function deleteTask(taskId: string) {
     updateProject(project.id, { tasks: project.tasks.filter(t => t.id !== taskId) })
     onTaskDeleted()
@@ -148,12 +259,6 @@ export default function ProjectReviewCard({
     updateProject(project.id, { tasks: arrayMove(project.tasks, oldIndex, newIndex) })
   }
 
-  function resolveWaiting(person: string) {
-    updateProject(project.id, {
-      waitingOn: (project.waitingOn ?? []).filter(w => w.person !== person),
-    })
-  }
-
   function handleMove(newStatus: ProjectStatus) {
     moveProject(project.id, newStatus)
     onProjectMoved()
@@ -162,7 +267,7 @@ export default function ProjectReviewCard({
   return (
     <div className={`border rounded-lg ${isStale ? 'border-l-2 border-l-amber-400 bg-amber-50/30' : 'border-border bg-white'}`}>
       <button
-        onClick={() => setExpanded(prev => !prev)}
+        onClick={onToggle}
         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-canvas transition-colors rounded-lg"
       >
         {expanded
@@ -222,6 +327,7 @@ export default function ProjectReviewCard({
                         task={task}
                         onToggle={() => toggleTask(task.id)}
                         onDelete={() => deleteTask(task.id)}
+                        onRename={(title) => renameTask(task.id, title)}
                       />
                     ))}
                   </SortableContext>
@@ -230,34 +336,10 @@ export default function ProjectReviewCard({
             )}
 
             {/* Waiting-on list */}
-            {hasWaiting && (
-              <div className="space-y-1">
-                <h4 className="text-[11px] font-medium uppercase tracking-wide text-stone mb-2">
-                  Wachten op
-                </h4>
-                {project.waitingOn!.map(w => {
-                  const days = daysSince(w.since)
-                  const status = getWaitingStatus(days)
-                  return (
-                    <div key={w.person} className="flex items-center gap-2 py-1">
-                      <span className="text-[13px] text-charcoal">{w.person}</span>
-                      <span className={`text-[11px] ${status === 'red' ? 'text-red-600' : status === 'amber' ? 'text-amber-600' : 'text-stone'}`}>
-                        {getWaitingLabel(days)}
-                      </span>
-                      <button
-                        onClick={() => resolveWaiting(w.person)}
-                        className="ml-auto text-[12px] text-green-600 hover:text-green-700 font-medium transition-colors"
-                      >
-                        Opgelost
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            <WaitingOnSection project={project} onUpdate={updateProject} />
 
             {/* Move buttons */}
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               {project.status !== 'backlog' && (
                 <button
                   onClick={() => handleMove('backlog')}
@@ -266,12 +348,28 @@ export default function ProjectReviewCard({
                   &rarr; Backlog
                 </button>
               )}
+              {project.status !== 'in_progress' && (
+                <button
+                  onClick={() => handleMove('in_progress')}
+                  className="text-[12px] px-3 py-1.5 rounded-md border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+                >
+                  &rarr; In progress
+                </button>
+              )}
               {project.status !== 'done' && (
                 <button
                   onClick={() => handleMove('done')}
                   className="text-[12px] px-3 py-1.5 rounded-md border border-green-200 text-green-700 hover:bg-green-50 transition-colors"
                 >
                   &rarr; Done
+                </button>
+              )}
+              {onNext && (
+                <button
+                  onClick={onNext}
+                  className="ml-auto text-[12px] px-3 py-1.5 rounded-md border border-border text-stone hover:bg-canvas transition-colors"
+                >
+                  Volgend project &rarr;
                 </button>
               )}
             </div>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../../store'
 import type { Project, ProjectStatus } from '../../types'
 import { daysSince } from '../../lib/utils'
@@ -23,6 +23,7 @@ export default function ProjectsSection({
   onProjectMoved,
 }: ProjectsSectionProps) {
   const projects = useStore((s) => s.projects)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const grouped = useMemo(() => {
     const map = new Map<ProjectStatus, Project[]>()
@@ -42,6 +43,20 @@ export default function ProjectsSection({
     }))
   }, [projects])
 
+  // Flat ordered list of all project IDs for "next" navigation
+  const allProjectIds = useMemo(() => grouped.flatMap(g => g.items.map(p => p.id)), [grouped])
+
+  function goNext(currentId: string) {
+    const idx = allProjectIds.indexOf(currentId)
+    const nextId = idx >= 0 && idx < allProjectIds.length - 1 ? allProjectIds[idx + 1] : null
+    setExpandedId(nextId)
+    if (nextId) {
+      setTimeout(() => {
+        document.getElementById(`project-card-${nextId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }
+
   if (projects.length === 0) {
     return <p className="text-[var(--color-stone)] italic text-sm">Geen projecten</p>
   }
@@ -55,15 +70,23 @@ export default function ProjectsSection({
             <span className="ml-1.5 text-[var(--color-stone)]/60">{group.items.length}</span>
           </h3>
           <div className="space-y-2">
-            {group.items.map((project) => (
-              <ProjectReviewCard
-                key={project.id}
-                project={project}
-                onTaskCompleted={onTaskCompleted}
-                onTaskDeleted={onTaskDeleted}
-                onProjectMoved={onProjectMoved}
-              />
-            ))}
+            {group.items.map((project, idx) => {
+              const globalIdx = allProjectIds.indexOf(project.id)
+              const hasNext = globalIdx < allProjectIds.length - 1
+              return (
+                <div key={project.id} id={`project-card-${project.id}`}>
+                  <ProjectReviewCard
+                    project={project}
+                    expanded={expandedId === project.id}
+                    onToggle={() => setExpandedId(prev => prev === project.id ? null : project.id)}
+                    onNext={hasNext ? () => goNext(project.id) : undefined}
+                    onTaskCompleted={onTaskCompleted}
+                    onTaskDeleted={onTaskDeleted}
+                    onProjectMoved={onProjectMoved}
+                  />
+                </div>
+              )
+            })}
           </div>
         </div>
       ))}

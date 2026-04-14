@@ -156,15 +156,29 @@ export function WeeklyReviewPage() {
   }, [])
 
   const todayFormatted = useMemo(() => format(new Date(), 'EEEE d MMMM yyyy', { locale: nl }), [])
+  const setActiveView = useStore(s => s.setActiveView)
+
+  function handleDoneWithReview() {
+    handleFinish()
+    setTimeout(() => setActiveView('vandaag'), 400)
+  }
 
   return (
     <div className="max-w-[900px] mx-auto px-4 sm:px-6 pb-12">
       {/* Header */}
-      <div className="pt-8 pb-6">
-        <h1 className="font-[Fraunces] text-2xl text-charcoal">
-          Weekly Review
-        </h1>
-        <p className="text-[13px] text-stone mt-1">{todayFormatted}</p>
+      <div className="pt-8 pb-6 flex items-end justify-between">
+        <div>
+          <h1 className="font-[Fraunces] text-2xl text-charcoal">
+            Weekly Review
+          </h1>
+          <p className="text-[13px] text-stone mt-1">{todayFormatted}</p>
+        </div>
+        <button
+          onClick={handleDoneWithReview}
+          className="text-[13px] italic font-serif text-stone/50 hover:text-charcoal transition-colors pb-1"
+        >
+          Review afronden →
+        </button>
       </div>
 
       {/* Progress bar */}
