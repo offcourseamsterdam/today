@@ -1,5 +1,6 @@
 import type { InlineTimerMode, InlineTimerState } from '../types'
 import type { StoreSet, StoreGet } from './types'
+import { playChime } from '../lib/chime'
 
 export const INLINE_DURATIONS = {
   short: { workMinutes: 25, breakMinutes: 5 },
@@ -120,6 +121,7 @@ export function makeInlineTimerActions(set: StoreSet, get: StoreGet) {
           if (inlineTimer.linkedItemId) {
             get().logPomodoroSession(inlineTimer.linkedItemId, 'short', inlineTimer.workMinutes)
           }
+          playChime('work')
           set({
             inlineTimer: {
               ...inlineTimer,
@@ -132,6 +134,7 @@ export function makeInlineTimerActions(set: StoreSet, get: StoreGet) {
           })
         } else {
           // Break ended — switch to work, auto-pause
+          playChime('break')
           set({
             inlineTimer: {
               ...inlineTimer,
